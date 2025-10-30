@@ -110,33 +110,65 @@ const positionOrder = {Portero:0, Defensa:1, Delantero:2};
 const shirtImages = { black:'camiseta-negra.png', white:'camiseta-blanca.png' };
 
 // ---------------- LOGIN ----------------
-document.getElementById('loginBtn').addEventListener('click', async ()=>{
+document.getElementById('loginBtn').addEventListener('click', async () => {
   const username = document.getElementById('loginUser').value.trim();
   const password = document.getElementById('loginPass').value.trim();
-  const loginMsg = document.getElementById('loginMsg');
+  const loginMsg = document.getElementById('loginMsg'); 
   loginMsg.textContent = '';
 
-  if(!username || !password){ loginMsg.textContent='Introduce usuario y contraseña'; return; }
+  if (!username || !password) {
+    loginMsg.textContent = 'Introduce usuario y contraseña';
+    return;
+  }
 
-  try{
-    const res = await fetch(`${API_URL}/login`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({username,password})
+  try {
+    // Hacer login
+    const res = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
     });
     const data = await res.json();
-    if(!data.success){ loginMsg.textContent = data.message; return; }
 
-    currentUser = data.user;
-    currentPlayers = data.user.players || [];
+    if (!data.success) {
+      loginMsg.textContent = data.message;
+      return;
+    }
 
-    document.getElementById('loginCard').style.display='none';
-    document.getElementById('registerCard').style.display='none';
-    document.getElementById('playersCard').style.display='block';
-    document.getElementById('addPlayerCard').style.display='block';
+    // Login correcto
+    currentUser = { username };
+
+    // Obtener jugadores de manera segura
+    let dataPlayers = { players: [] };
+    try {
+      const resPlayers = await fetch(`${API_URL}/get-players`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      const playersResp = await resPlayers.json();
+      dataPlayers.players = Array.isArray(playersResp.players) ? playersResp.players : [];
+    } catch (err) {
+      console.warn('No se pudieron cargar los jugadores, se inicializa vacío', err);
+      dataPlayers.players = [];
+    }
+
+    currentPlayers = dataPlayers.players;
+
+    // Mostrar interfaz
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('registerCard').style.display = 'none';
+    document.getElementById('playersCard').style.display = 'block';
+    document.getElementById('addPlayerCard').style.display = 'block';
+
     renderPlayerList();
-  }catch(err){ console.error(err); loginMsg.textContent='Error de conexión'; }
+
+  } catch (err) {
+    console.error(err);
+    loginMsg.textContent = 'Error de conexión';
+  }
 });
+
 
 // ---------------- REGISTRO ----------------
 document.getElementById('registerBtn').addEventListener('click', async ()=>{

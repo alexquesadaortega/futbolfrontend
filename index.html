@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Equipos</title>
+<style>
+/* --- ESTILOS --- */
+body{font-family:Arial,sans-serif;background:#0f1724;color:#e6eef6;padding:10px;text-align:center;}
+h1{margin-bottom:10px;}
+.card{background:#0b1220;padding:12px;border-radius:10px;margin:10px auto;width:95%;max-width:600px;text-align:left;}
+.players-list{list-style:none;padding:0;max-height:200px;overflow:auto;}
+.players-list li{padding:4px;margin:2px;background:rgba(255,255,255,0.05);border-radius:6px;display:flex;justify-content:space-between;}
+button{background:#06b6d4;color:#022;cursor:pointer;margin:5px;padding:6px;border-radius:6px;border:none;}
+#proposalsContainer{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;}
+.proposal{padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;cursor:pointer;display:flex;flex-direction:column;gap:6px;}
+.team-box{background:rgba(255,255,255,0.02);padding:6px;border-radius:6px;display:flex;flex-direction:column;gap:3px;}
+.team-title{font-weight:bold;margin-bottom:4px;}
+.player-entry{display:flex;justify-content:space-between;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;font-size:14px;}
+#fieldsContainer{display:flex;justify-content:center;gap:20px;margin-top:20px;flex-wrap:wrap;}
+.field{position:relative;width:320px;height:480px;background:#0f4720;border:2px solid #fff;border-radius:8px;display:none;}
+.field-title{position:absolute;top:4px;width:100%;text-align:center;font-weight:bold;color:#fff;}
+.player-card{position:absolute;width:45px;height:50px;text-align:center;font-weight:bold;color:#fff;cursor:grab;}
+.player-card img{width:100%;height:100%;display:block;}
+.player-card span{display:block;font-size:10px;margin-top:2px;word-wrap:break-word;}
+.export-btn{margin-top:6px;}
+.login-card,#registerCard{max-width:300px;margin:20px auto;padding:20px;background:#0b1220;border-radius:8px;text-align:center;}
+.login-input,#registerCard input{width:90%;margin:5px 0;padding:6px;border-radius:6px;border:none;}
+</style>
+</head>
+<body>
+
+<h1>GENERADOR DE EQUIPOS Y ALINEACIONES</h1>
+
+<!-- LOGIN -->
+<div class="login-card" id="loginCard">
+  <strong>Identifícate</strong><br>
+  <input type="text" id="loginUser" placeholder="Usuario" class="login-input"><br>
+  <input type="password" id="loginPass" placeholder="Contraseña" class="login-input"><br>
+  <button id="loginBtn">Entrar</button>
+  <div id="loginMsg" style="color:red;margin-top:6px;"></div>
+</div>
+
+<!-- REGISTRO -->
+<div id="registerCard">
+  <strong>Regístrate</strong><br>
+  <input type="text" id="regUser" placeholder="Usuario"><br>
+  <input type="password" id="regPass" placeholder="Contraseña"><br>
+  <button id="registerBtn">Registrar</button>
+  <div id="regMsg" style="color:red;margin-top:6px;"></div>
+</div>
+
+<!-- JUGADORES -->
+<div class="card" id="playersCard" style="display:none;">
+  <strong>Selecciona los jugadores que van a jugar (máx. 14):</strong>
+  <ul id="playersContainer" class="players-list"></ul>
+  <button id="generate">Generar hasta 5 combinaciones</button>
+  <button id="generateOptimized">Optimizar equilibrio</button>
+</div>
+
+<div class="card" id="addPlayerCard" style="display:none;">
+  <strong>Agregar jugador:</strong><br>
+  <input type="text" id="newName" placeholder="Nombre" class="login-input"><br>
+  <select id="newPos" class="login-input">
+    <option value="Portero">Portero</option>
+    <option value="Defensa">Defensa</option>
+    <option value="Mediocentro">Mediocentro</option>
+    <option value="Delantero">Delantero</option>
+    <option value="Otros">Otros</option>
+  </select><br>
+  <input type="number" id="newMedia" placeholder="Media (0-10)" class="login-input" min="0" max="10"><br>
+  <button id="addPlayerBtn">Agregar jugador</button>
+</div>
+
+<!-- PROPUESTAS -->
+<div class="card" id="proposalsCard" style="display:none;">
+  <strong>Propuestas generadas (haz click en la que prefieras):</strong>
+  <div id="proposalsContainer"></div>
+</div>
+
+<!-- CAMPOS -->
+<div id="fieldsContainer">
+  <div>
+    <div id="field1" class="field"><div class="field-title">Equipo Negro</div></div>
+    <button class="export-btn" onclick="exportField('field1')">Exportar Equipo Negro</button>
+  </div>
+  <div>
+    <div id="field2" class="field"><div class="field-title">Equipo Blanco</div></div>
+    <button class="export-btn" onclick="exportField('field2')">Exportar Equipo Blanco</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const API_URL = 'https://futbol-backend-0gnv.onrender.com';
+let currentUser = null;
+let currentPlayers = [];
+const positionOrder = {Portero:0, Defensa:1, Mediocentro:2, Delantero:3, Otros:4};
+const shirtImages = { black:'camiseta-negra.png', white:'camiseta-blanca.png' };
+
+// ---------- LOGIN ----------
+document.getElementById('loginBtn').addEventListener('click', async ()=>{
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value.trim();
+  const msg = document.getElementById('loginMsg');
+  msg.textContent = '';
+  if(!username || !password){ msg.textContent='Introduce usuario y contraseña'; return; }
+
+  try{
+    const res = await fetch(`${API_URL}/login`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username,password})
+    });
+    const data = await res.json();
+    if(!data.success){ msg.textContent=data.message; return; }
+
+    // Guardar usuario
+    currentUser = data.user;
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    await loadPlayers();
+    showApp();
+  }catch(e){ console.error(e); msg.textContent='Error de conexión'; }
+});
+
+// ---------- REGISTRO ----------
+document.getElementById('registerBtn').addEventListener('click', async ()=>{
+  const username = document.getElementById('regUser').value.trim();
+  const password = document.getElementById('regPass').value.trim();
+  const msg = document.getElementById('regMsg');
+  msg.textContent = '';
+  if(!username || !password){ msg.textContent='Introduce usuario y contraseña'; return; }
+
+  try{
+    const res = await fetch(`${API_URL}/register`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username,password})
+    });
+    const data = await res.json();
+    msg.textContent = data.message;
+    if(data.success){ document.getElementById('regUser').value=''; document.getElementById('regPass').value=''; }
+  }catch(e){ console.error(e); msg.textContent='Error de conexión'; }
+});
+
+// ---------- CARGAR JUGADORES ----------
+async function loadPlayers(){
+  try{
+    const res = await fetch(`${API_URL}/players/${currentUser.username}`);
+    const data = await res.json();
+    if(data.success){ currentPlayers = data.players || []; renderPlayerList(); }
+  }catch(e){ console.error(e); alert('No se pudieron cargar los jugadores'); }
+}
+
+// ---------- MOSTRAR APP ----------
+function showApp(){
+  document.getElementById('loginCard').style.display='none';
+  document.getElementById('registerCard').style.display='none';
+  document.getElementById('playersCard').style.display='block';
+  document.getElementById('addPlayerCard').style.display='block';
+}
+
+// ---------- RENDER LISTA ----------
+function renderPlayerList(){
+  const sorted = currentPlayers.slice().sort((a,b)=>positionOrder[a.pos]-positionOrder[b.pos]);
+  const container = document.getElementById('playersContainer');
+  container.innerHTML='';
+  sorted.forEach((p,i)=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<label><input type="checkbox" data-index="${i}"> ${p.name} (${p.pos}) [${p.media}]</label>`;
+    container.appendChild(li);
+  });
+}
+
+// ---------- AGREGAR JUGADOR ----------
+document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('newName').value.trim();
+  const pos = document.getElementById('newPos').value;
+  const media = parseFloat(document.getElementById('newMedia').value);
+  if(!name || isNaN(media)){ alert('Completa todos los datos'); return; }
+
+  try{
+    const res = await fetch(`${API_URL}/add-player`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:currentUser.username, player:{name,pos,media}})
+    });
+    const data = await res.json();
+    if(!data.success){ alert(data.message); return; }
+    currentPlayers.push({name,pos,media});
+    renderPlayerList();
+    document.getElementById('newName').value='';
+    document.getElementById('newMedia').value='';
+  }catch(e){ console.error(e); alert('Error al guardar jugador'); }
+});
+
+// ---------------- EQUIPOS ----------------
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
+function averageMedia(team){ return team.reduce((a,b)=>a+b.media,0)/team.length; }
+
+function generateTeams(players, numTeams){
+  const maxPlayers=7; const iterations=500;
+  let bestTeams=null, smallestDiff=Infinity;
+  for(let it=0; it<iterations; it++){
+    const teams = Array.from({length:numTeams},()=>[]);
+    const posGroups={Portero:[],Defensa:[],Mediocentro:[],Delantero:[],Otros:[]};
+    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); else posGroups.Otros.push(p); });
+    function assign(pos,minPerTeam){
+      let idx=0; shuffle(posGroups[pos]);
+      while(posGroups[pos].length>0 && idx<numTeams*minPerTeam){ teams[idx%numTeams].push(posGroups[pos].shift()); idx++; }
+    }
+    assign('Portero',1); assign('Defensa',3); assign('Delantero',1); assign('Mediocentro',1);
+    ['Portero','Defensa','Mediocentro','Delantero','Otros'].forEach(cat=>{
+      shuffle(posGroups[cat]);
+      posGroups[cat].forEach(p=>{
+        let t=teams.reduce((a,b)=>a.length<b.length?a:b);
+        if(t.length<maxPlayers) t.push(p);
+      });
+    });
+    const diff=Math.abs(averageMedia(teams[0])-averageMedia(teams[1]));
+    if(diff<smallestDiff){ smallestDiff=diff; bestTeams=teams; }
+  }
+  return bestTeams;
+}
+
+function isDuplicate(proposals,newTeams){
+  const newStr = JSON.stringify(newTeams.map(t=>t.map(p=>p.name).sort()));
+  return proposals.some(p=>JSON.stringify(p.map(t=>t.map(p2=>p2.name).sort()))===newStr);
+}
+
+// --- BOTONES GENERAR ---
+document.getElementById('generate').addEventListener('click',()=>{
+  const selectedIndexes=[...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));
+  if(selectedIndexes.length<5){alert('Selecciona al menos 5 jugadores');return;}
+  const selected = selectedIndexes.map(i=>currentPlayers[i]);
+  const count = {Portero:0, Defensa:0, Delantero:0, Mediocentro:0};
+  selected.forEach(p=>{if(count[p.pos]!==undefined) count[p.pos]++});
+  if(count.Portero<1 || count.Defensa<3 || count.Delantero<1){alert('Faltan posiciones mínimas: 1 portero, 3 defensas, 1 delantero');return;}
+  const proposals=[];
+  let attempts=0;
+  while(proposals.length<5 && attempts<300){
+    const teams = generateTeams(selected,2);
+    if(!isDuplicate(proposals,teams)) proposals.push(teams);
+    attempts++;
+  }
+  currentProposals = proposals;
+  renderProposalList(proposals);
+});
+
+document.getElementById('generateOptimized').addEventListener('click', ()=>{
+  const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));
+  if(selectedIndexes.length<5){alert('Selecciona al menos 5 jugadores'); return;}
+  const selected = selectedIndexes.map(i=>currentPlayers[i]);
+  const bestTeams = generateTeams(selected,2);
+  currentProposals = [bestTeams];
+  renderProposalList(currentProposals);
+});
+
+// ---------------- RENDER PROPUESTAS ----------------
+function renderProposalList(proposals){
+  const container=document.getElementById('proposalsContainer');
+  container.innerHTML='';
+  document.getElementById('proposalsCard').style.display='block';
+  proposals.forEach((teams,i)=>{
+    const div=document.createElement('div'); div.className='proposal';
+    const diffMedia = Math.abs(averageMedia(teams[0])-averageMedia(teams[1])).toFixed(2);
+    teams.forEach((t,j)=>{
+      const teamDiv=document.createElement('div'); teamDiv.className='team-box';
+      teamDiv.innerHTML=`<div class="team-title">Equipo ${j+1} (Media: ${averageMedia(t).toFixed(2)})</div>`+
+                        t.map(p=>`<div class="player-entry">${p.name} (${p.pos})</div>`).join('');
+      div.appendChild(teamDiv);
+    });
+    const diffDiv=document.createElement('div');
+    diffDiv.style.fontSize='12px'; diffDiv.style.color='#a0f0ff';
+    diffDiv.textContent=`Diferencia de media: ${diffMedia}`;
+    div.appendChild(diffDiv);
+    div.addEventListener('click',()=>showField(teams));
+    container.appendChild(div);
+  });
+}
+
+// ---------------- DIBUJAR CAMPO Y JUGADORES ----------------
+function showField(teams){
+  const field1=document.getElementById('field1');
+  const field2=document.getElementById('field2');
+  field1.innerHTML='<div class="field-title">Equipo Negro</div>';
+  field2.innerHTML='<div class="field-title">Equipo Blanco</div>';
+  field1.style.display='block';
+  field2.style.display='block';
+  drawField(field1);
+  drawField(field2);
+  drawTeamOnField(field1,teams[0],'black');
+  drawTeamOnField(field2,teams[1],'white');
+}
+
+// ---------------- DRAG & DROP, SNAP Y EXPORT ----------------
+function drawField(field){
+  const fieldHeight = 480, fieldWidth = 320;
+  const canvas = document.createElement('canvas');
+  canvas.width = fieldWidth; canvas.height = fieldHeight;
+  canvas.style.position='absolute'; canvas.style.left='0'; canvas.style.top='0';
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0f4720'; ctx.fillRect(0,0,fieldWidth,fieldHeight);
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.strokeRect(0,0,fieldWidth,fieldHeight);
+  ctx.beginPath(); ctx.moveTo(0,fieldHeight/2); ctx.lineTo(fieldWidth,fieldHeight/2); ctx.stroke();
+  const centerX=fieldWidth/2, centerY=fieldHeight/2, radius=40;
+  ctx.beginPath(); ctx.arc(centerX,centerY,radius,0,2*Math.PI); ctx.stroke();
+  ctx.strokeRect((fieldWidth-160)/2,0,160,100);
+  ctx.strokeRect((fieldWidth-160)/2,fieldHeight-100,160,100);
+  field.appendChild(canvas);
+}
+
+function drawTeamOnField(field,team,color){
+  const fieldWidth=320, positionsY={Delantero:50, Mediocentro:160, Defensa:300, Portero:410};
+  let mediocentro=null;
+  const possibleMC=team.filter(p=>p.pos==='Mediocentro'); if(possibleMC.length>0) mediocentro=possibleMC[0];
+  field.querySelectorAll('.player-card').forEach(c=>c.remove());
+  ['Portero','Defensa','Mediocentro','Delantero','Otros'].forEach(cat=>{
+    let arr=team.filter(p=>p.pos===cat || (cat==='Otros' && !['Portero','Defensa','Mediocentro','Delantero'].includes(p.pos)));
+    if(mediocentro && cat!=='Mediocentro') arr=arr.filter(p=>p!==mediocentro);
+    arr.forEach((p,i)=>{
+      const div=document.createElement('div'); div.className='player-card';
+      const img=document.createElement('img'); img.src=shirtImages[color]; div.appendChild(img);
+      const span=document.createElement('span'); span.textContent=p.name; div.appendChild(span);
+      const y = p===mediocentro? positionsY.Mediocentro : positionsY[p.pos]||50;
+      const spacing = fieldWidth/(arr.length+1);
+      div.style.top = y+'px'; div.style.left=(spacing*(i+1)-20)+'px';
+      field.appendChild(div); makeDraggable(div,field,positionsY);
+    });
+  });
+}
+
+function makeDraggable(el, field, positionsY){
+  let offsetX, offsetY;
+  function startDrag(clientX,clientY){
+    const rect = el.getBoundingClientRect();
+    offsetX = clientX - rect.left;
+    offsetY = clientY - rect.top;
+  }
+  function onMove(clientX,clientY){
+    let x=clientX-field.getBoundingClientRect().left-offsetX;
+    let y=clientY-field.getBoundingClientRect().top-offsetY;
+    x=Math.max(0,Math.min(field.clientWidth-el.clientWidth,x));
+    y=Math.max(0,Math.min(field.clientHeight-el.clientHeight,y));
+    el.style.left=x+'px'; el.style.top=y+'px';
+  }
+  function endDrag(){
+    let posY = parseFloat(el.style.top);
+    let closest = Object.values(positionsY).reduce((a,b)=>Math.abs(b-posY)<Math.abs(a-posY)?b:a);
+    el.style.top = closest+'px';
+    const linePlayers=Array.from(field.querySelectorAll('.player-card')).filter(p=>parseFloat(p.style.top)===closest);
+    const spacing = field.clientWidth/(linePlayers.length+1);
+    linePlayers.forEach((p,i)=>p.style.left=(spacing*(i+1)-20)+'px');
+  }
+  el.onmousedown=function(e){ e.preventDefault(); startDrag(e.clientX,e.clientY); document.onmousemove=mm; document.onmouseup=mu;}
+  function mm(e){ onMove(e.clientX,e.clientY); }
+  function mu(e){ endDrag(); document.onmousemove=null; document.onmouseup=null; }
+}
+
+function exportField(fieldId){
+  const field=document.getElementById(fieldId);
+  html2canvas(field).then(canvas=>{
+    const link=document.createElement('a');
+    link.download=fieldId+'.png';
+    link.href=canvas.toDataURL();
+    link.click();
+  });
+}
+</script>
+
+</body>
+</html>

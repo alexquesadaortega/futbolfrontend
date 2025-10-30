@@ -278,9 +278,9 @@ document.getElementById('generate').addEventListener('click',()=>{
   const selected = selectedIndexes.map(i=>currentPlayers[i]);
   const count = {Portero:0, Defensa:0, Delantero:0};
   selected.forEach(p=>count[p.pos]=(count[p.pos]||0)+1);
-  // Validar que haya al menos 1 portero y 3 defensa en total
-if (count.Portero < 1 || count.Defensa < 3) {
-  alert('Debe haber al menos 1 portero y 3 defensas seleccionados');
+  // Validar que haya al menos 1 portero, 3 defensas y 1 delantero en total
+if (count.Portero < 1 || count.Defensa < 3 || count.Delantero < 1) {
+  alert('Debe haber al menos 1 portero, 3 defensas y 2 delanteros seleccionados');
   return;
 }
 

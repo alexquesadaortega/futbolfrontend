@@ -171,11 +171,19 @@ function renderPlayerList(){
   const sorted = currentPlayers.slice().sort((a,b)=>positionOrder[a.pos]-positionOrder[b.pos]);
   const container = document.getElementById('playersContainer');
   container.innerHTML='';
+
   sorted.forEach((p,i)=>{
     const li = document.createElement('li');
-    li.innerHTML = `<label><input type="checkbox" data-index="${i}"> ${p.name} (${p.pos}) [${p.media}]</label>`;
+    li.innerHTML = `
+      <label>
+        <input type="checkbox" data-index="${i}"> ${p.name} (${p.pos}) [${p.media}]
+      </label>
+      <button class="delete-btn" data-name="${p.name}">Eliminar</button>
+    `;
     container.appendChild(li);
   });
+
+  // Manejo de checkboxes
   const checkboxes = container.querySelectorAll('input[type="checkbox"]');
   checkboxes.forEach(cb=>{
     cb.addEventListener('change',()=>{
@@ -183,7 +191,28 @@ function renderPlayerList(){
       if(checked.length>14){ cb.checked=false; alert('No se pueden seleccionar más de 14 jugadores'); }
     });
   });
+
+  // Manejo de botones eliminar
+  const deleteButtons = container.querySelectorAll('.delete-btn');
+  deleteButtons.forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const playerName = btn.dataset.name;
+      try {
+        const res = await fetch(`${API_URL}/delete-player`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ username: currentUser.username, playerName })
+        });
+        const data = await res.json();
+        if(!data.success){ alert(data.message); return; }
+        // Actualizar lista local y rerender
+        currentPlayers = currentPlayers.filter(p=>p.name !== playerName);
+        renderPlayerList();
+      } catch(err){ console.error(err); alert('Error al eliminar jugador'); }
+    });
+  });
 }
+
 
 // ---------------- AGREGAR JUGADOR ----------------
 document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{

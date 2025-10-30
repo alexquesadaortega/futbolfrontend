@@ -236,45 +236,31 @@ document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
     document.getElementById('newMedia').value='';
   }catch(err){ console.error(err); alert('Error al guardar jugador'); }
 });
-// --- GENERAR EQUIPOS ---
+// ---------------- EQUIPOS ----------------
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
 function averageMedia(team){ return team.reduce((a,b)=>a+b.media,0)/team.length; }
 
 function generateTeams(players, numTeams){
-  const maxPlayers=7;
-  const iterations = 500;
-  let bestTeams = null;
-  let smallestDiff = Infinity;
-
+  const maxPlayers=7; const iterations=500;
+  let bestTeams=null, smallestDiff=Infinity;
   for(let it=0; it<iterations; it++){
     const teams = Array.from({length:numTeams},()=>[]);
-    const posGroups = {Portero:[],Defensa:[],Mediocentro:[],Delantero:[],Otros:[]};
-    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); else posGroups.Otros.push(p); });
-
-    function assign(pos, minPerTeam){
-      let idx=0;
-      shuffle(posGroups[pos]);
-      while(posGroups[pos].length>0 && idx<numTeams*minPerTeam){
-        teams[idx%numTeams].push(posGroups[pos].shift());
-        idx++;
-      }
+    const posGroups={Portero:[],Defensa:[],Delantero:[]};
+    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); });
+    function assign(pos,minPerTeam){
+      let idx=0; shuffle(posGroups[pos]);
+      while(posGroups[pos].length>0 && idx<numTeams*minPerTeam){ teams[idx%numTeams].push(posGroups[pos].shift()); idx++; }
     }
-
-    assign('Portero',1);
-    assign('Defensa',3);
-    assign('Delantero',1);
-    assign('Mediocentro',1);
-
-    ['Portero','Defensa','Mediocentro','Delantero','Otros'].forEach(cat=>{
+    assign('Portero',1); assign('Defensa',3); assign('Delantero',1);
+    ['Portero','Defensa','Delantero'].forEach(cat=>{
       shuffle(posGroups[cat]);
       posGroups[cat].forEach(p=>{
-        let t = teams.reduce((a,b)=>a.length<b.length?a:b);
+        let t=teams.reduce((a,b)=>a.length<b.length?a:b);
         if(t.length<maxPlayers) t.push(p);
       });
     });
-
-    const diff = Math.abs(averageMedia(teams[0])-averageMedia(teams[1]));
-    if(diff < smallestDiff){ smallestDiff = diff; bestTeams = teams; }
+    const diff=Math.abs(averageMedia(teams[0])-averageMedia(teams[1]));
+    if(diff<smallestDiff){ smallestDiff=diff; bestTeams=teams; }
   }
   return bestTeams;
 }
@@ -283,39 +269,58 @@ function isDuplicate(proposals,newTeams){
   const newStr = JSON.stringify(newTeams.map(t=>t.map(p=>p.name).sort()));
   return proposals.some(p=>JSON.stringify(p.map(t=>t.map(p2=>p2.name).sort()))===newStr);
 }
+
 // --- BOTONES GENERAR ---
-document.getElementById('generate').addEventListener('click',()=>{
-  const selectedIndexes=[...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));
-  if(selectedIndexes.length<5){alert('Selecciona al menos 5 jugadores');return;}
-  const selected = selectedIndexes.map(i=>currentPlayers[i]);
-  const count = {Portero:0, Defensa:0, Delantero:0};
-  selected.forEach(p=>count[p.pos]=(count[p.pos]||0)+1);
-  // Validar que haya al menos 1 portero, 3 defensas y 1 delantero en total
-if (count.Portero < 1 || count.Defensa < 3 || count.Delantero < 1) {
-  alert('Debe haber al menos 1 portero, 3 defensas y 2 delanteros seleccionados');
-  return;
-}
+document.getElementById('generate').addEventListener('click', () => {
+  const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')]
+    .map(i => Number(i.dataset.index));
+
+  if (selectedIndexes.length < 5) {
+    alert('Selecciona al menos 5 jugadores');
+    return;
+  }
+
+  const selected = selectedIndexes.map(i => currentPlayers[i]);
+
+  const count = { Portero: 0, Defensa: 0, Delantero: 0 };
+  selected.forEach(p => count[p.pos] = (count[p.pos] || 0) + 1);
+
+  // ✅ Validar que haya al menos 1 portero, 3 defensas y 1 delantero
+  if (count.Portero < 1 || count.Defensa < 3 || count.Delantero < 1) {
+    alert('Debe haber al menos 1 portero, 3 defensas y 1 delantero seleccionados');
+    return;
+  }
 
   generateProposals(selected);
 });
 
-document.getElementById('generateOptimized').addEventListener('click',()=>{
-  const selectedIndexes=[...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));
-  if(selectedIndexes.length<5){alert('Selecciona al menos 5 jugadores');return;}
-  const selected = selectedIndexes.map(i=>currentPlayers[i]);
-  generateProposals(selected,true);
+document.getElementById('generateOptimized').addEventListener('click', () => {
+  const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')]
+    .map(i => Number(i.dataset.index));
+
+  if (selectedIndexes.length < 5) {
+    alert('Selecciona al menos 5 jugadores');
+    return;
+  }
+
+  const selected = selectedIndexes.map(i => currentPlayers[i]);
+
+  generateProposals(selected, true);
 });
 
-function generateProposals(selected,optimized=false){
-  currentProposals=[];
-  let attempts=0;
-  while(currentProposals.length<5 && attempts<50){
-    const teams = generateTeams(selected,2);
-    if(!isDuplicate(currentProposals,teams)) currentProposals.push(teams);
+function generateProposals(selected, optimized = false) {
+  currentProposals = [];
+  let attempts = 0;
+
+  while (currentProposals.length < 5 && attempts < 50) {
+    const teams = generateTeams(selected, 2);
+    if (!isDuplicate(currentProposals, teams)) currentProposals.push(teams);
     attempts++;
   }
+
   renderProposals();
 }
+
 
 // --- RENDER PROPOSALS ---
 function renderProposals(){

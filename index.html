@@ -278,7 +278,12 @@ document.getElementById('generate').addEventListener('click',()=>{
   const selected = selectedIndexes.map(i=>currentPlayers[i]);
   const count = {Portero:0, Defensa:0, Delantero:0};
   selected.forEach(p=>count[p.pos]=(count[p.pos]||0)+1);
-  if(count.Portero>2 || count.Defensa>6 || count.Delantero>2){ alert('Distribución no válida');return; }
+  // Validar que haya al menos 1 portero y 1 defensa en total
+if (count.Portero < 1 || count.Defensa < 2) {
+  alert('Debe haber al menos 1 portero y 2 defensas seleccionados');
+  return;
+}
+
   generateProposals(selected);
 });
 

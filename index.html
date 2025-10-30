@@ -75,9 +75,7 @@ button{background:#06b6d4;color:#022;cursor:pointer;margin:5px;padding:6px;borde
   <select id="newPos" class="login-input">
     <option value="Portero">Portero</option>
     <option value="Defensa">Defensa</option>
-    <option value="Mediocentro">Mediocentro</option>
     <option value="Delantero">Delantero</option>
-    <option value="Otros">Otros</option>
   </select><br>
   <input type="number" id="newMedia" placeholder="Media (0-10)" class="login-input" min="0" max="10"><br>
   <button id="addPlayerBtn">Agregar jugador</button>
@@ -108,7 +106,7 @@ const API_URL = 'https://futbol-backend-0gnv.onrender.com';
 let currentUser = null;
 let currentPlayers = [];
 let currentProposals = [];
-const positionOrder = {Portero:0, Defensa:1, Mediocentro:2, Delantero:3, Otros:4};
+const positionOrder = {Portero:0, Defensa:1, Delantero:2};
 const shirtImages = { black:'camiseta-negra.png', white:'camiseta-blanca.png' };
 
 // ---------------- LOGIN ----------------
@@ -129,11 +127,9 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const data = await res.json();
     if(!data.success){ loginMsg.textContent = data.message; return; }
 
-    // --- Evitar errores si data.user es undefined ---
-    currentUser = data.user || { username, players: [] };
-    currentPlayers = currentUser.players || [];
+    currentUser = data.user;
+    currentPlayers = data.user.players || [];
 
-    // Mostrar secciones
     document.getElementById('loginCard').style.display='none';
     document.getElementById('registerCard').style.display='none';
     document.getElementById('playersCard').style.display='block';
@@ -171,19 +167,11 @@ function renderPlayerList(){
   const sorted = currentPlayers.slice().sort((a,b)=>positionOrder[a.pos]-positionOrder[b.pos]);
   const container = document.getElementById('playersContainer');
   container.innerHTML='';
-
   sorted.forEach((p,i)=>{
     const li = document.createElement('li');
-    li.innerHTML = `
-      <label>
-        <input type="checkbox" data-index="${i}"> ${p.name} (${p.pos}) [${p.media}]
-      </label>
-      <button class="delete-btn" data-name="${p.name}">Eliminar</button>
-    `;
+    li.innerHTML = `<label><input type="checkbox" data-index="${i}"> ${p.name} (${p.pos}) [${p.media}]</label>`;
     container.appendChild(li);
   });
-
-  // Manejo de checkboxes
   const checkboxes = container.querySelectorAll('input[type="checkbox"]');
   checkboxes.forEach(cb=>{
     cb.addEventListener('change',()=>{
@@ -191,28 +179,7 @@ function renderPlayerList(){
       if(checked.length>14){ cb.checked=false; alert('No se pueden seleccionar más de 14 jugadores'); }
     });
   });
-
-  // Manejo de botones eliminar
-  const deleteButtons = container.querySelectorAll('.delete-btn');
-  deleteButtons.forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      const playerName = btn.dataset.name;
-      try {
-        const res = await fetch(`${API_URL}/delete-player`, {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ username: currentUser.username, playerName })
-        });
-        const data = await res.json();
-        if(!data.success){ alert(data.message); return; }
-        // Actualizar lista local y rerender
-        currentPlayers = currentPlayers.filter(p=>p.name !== playerName);
-        renderPlayerList();
-      } catch(err){ console.error(err); alert('Error al eliminar jugador'); }
-    });
-  });
 }
-
 
 // ---------------- AGREGAR JUGADOR ----------------
 document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
@@ -223,7 +190,6 @@ document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
 
   const newPlayer = {name,pos,media};
 
-  // Guardar en backend
   try{
     const res = await fetch(`${API_URL}/add-player`,{
       method:'POST',
@@ -248,14 +214,14 @@ function generateTeams(players, numTeams){
   let bestTeams=null, smallestDiff=Infinity;
   for(let it=0; it<iterations; it++){
     const teams = Array.from({length:numTeams},()=>[]);
-    const posGroups={Portero:[],Defensa:[],Mediocentro:[],Delantero:[],Otros:[]};
-    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); else posGroups.Otros.push(p); });
+    const posGroups={Portero:[],Defensa:[],Delantero:[]};
+    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); });
     function assign(pos,minPerTeam){
       let idx=0; shuffle(posGroups[pos]);
       while(posGroups[pos].length>0 && idx<numTeams*minPerTeam){ teams[idx%numTeams].push(posGroups[pos].shift()); idx++; }
     }
-    assign('Portero',1); assign('Defensa',3); assign('Delantero',1); assign('Mediocentro',1);
-    ['Portero','Defensa','Mediocentro','Delantero','Otros'].forEach(cat=>{
+    assign('Portero',1); assign('Defensa',3); assign('Delantero',1);
+    ['Portero','Defensa','Delantero'].forEach(cat=>{
       shuffle(posGroups[cat]);
       posGroups[cat].forEach(p=>{
         let t=teams.reduce((a,b)=>a.length<b.length?a:b);
@@ -278,51 +244,56 @@ document.getElementById('generate').addEventListener('click',()=>{
   const selectedIndexes=[...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));
   if(selectedIndexes.length<5){alert('Selecciona al menos 5 jugadores');return;}
   const selected = selectedIndexes.map(i=>currentPlayers[i]);
-  const count = {Portero:0, Defensa:0, Delantero:0, Mediocentro:0};
-  selected.forEach(p=>{if(count[p.pos]!==undefined) count[p.pos]++});
-  if(count.Portero<1 || count.Defensa<3 || count.Delantero<1){alert('Faltan posiciones mínimas: 1 portero, 3 defensas, 1 delantero');return;}
-  const proposals=[];
+  const count = {Portero:0, Defensa:0, Delantero:0};
+  selected.forEach(p=>count[p.pos]=(count[p.pos]||0)+1);
+  if(count.Portero>2 || count.Defensa>6 || count.Delantero>2){ alert('Distribución no válida');return; }
+  generateProposals(selected);
+});
+
+document.getElementById('generateOptimized').addEventListener('click',()=>{
+  const selectedIndexes=[...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));
+  if(selectedIndexes.length<5){alert('Selecciona al menos 5 jugadores');return;}
+  const selected = selectedIndexes.map(i=>currentPlayers[i]);
+  generateProposals(selected,true);
+});
+
+function generateProposals(selected,optimized=false){
+  currentProposals=[];
   let attempts=0;
-  while(proposals.length<5 && attempts<300){
+  while(currentProposals.length<5 && attempts<50){
     const teams = generateTeams(selected,2);
-    if(!isDuplicate(proposals,teams)) proposals.push(teams);
+    if(!isDuplicate(currentProposals,teams)) currentProposals.push(teams);
     attempts++;
   }
-  currentProposals = proposals;
-  renderProposalList(proposals);
-});
+  renderProposals();
+}
 
-document.getElementById('generateOptimized').addEventListener('click', ()=>{
-  const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));
-  if(selectedIndexes.length<5){alert('Selecciona al menos 5 jugadores'); return;}
-  const selected = selectedIndexes.map(i=>currentPlayers[i]);
-  const bestTeams = generateTeams(selected,2);
-  currentProposals = [bestTeams];
-  renderProposalList(currentProposals);
-});
-
-// ---------------- RENDER PROPUESTAS ----------------
-function renderProposalList(proposals){
-  const container=document.getElementById('proposalsContainer');
+// --- RENDER PROPOSALS ---
+function renderProposals(){
+  const container = document.getElementById('proposalsContainer');
   container.innerHTML='';
-  document.getElementById('proposalsCard').style.display='block';
-  proposals.forEach((teams,i)=>{
-    const div=document.createElement('div'); div.className='proposal';
-    const diffMedia = Math.abs(averageMedia(teams[0])-averageMedia(teams[1])).toFixed(2);
-    teams.forEach((t,j)=>{
-      const teamDiv=document.createElement('div'); teamDiv.className='team-box';
-      teamDiv.innerHTML=`<div class="team-title">Equipo ${j+1} (Media: ${averageMedia(t).toFixed(2)})</div>`+
-                        t.map(p=>`<div class="player-entry">${p.name} (${p.pos})</div>`).join('');
+  currentProposals.forEach((teams,i)=>{
+    const div = document.createElement('div'); div.className='proposal';
+    ['Equipo Negro','Equipo Blanco'].forEach((title,idx)=>{
+      const teamDiv = document.createElement('div'); teamDiv.className='team-box';
+      const tTitle = document.createElement('div'); tTitle.className='team-title'; tTitle.textContent=title;
+      teamDiv.appendChild(tTitle);
+      teams[idx].forEach(p=>{
+        const pDiv = document.createElement('div'); pDiv.className='player-entry';
+        pDiv.textContent=`${p.name} (${p.pos}) [${p.media}]`;
+        teamDiv.appendChild(pDiv);
+      });
       div.appendChild(teamDiv);
     });
-    const diffDiv=document.createElement('div');
-    diffDiv.style.fontSize='12px'; diffDiv.style.color='#a0f0ff';
-    diffDiv.textContent=`Diferencia de media: ${diffMedia}`;
-    div.appendChild(diffDiv);
-    div.addEventListener('click',()=>showField(teams));
+    div.addEventListener('click',()=>applyTeams(teams));
     container.appendChild(div);
   });
+  document.getElementById('proposalsCard').style.display='block';
 }
+
+function applyTeams(teams){
+  document.getElementById('field1').style.display='block';
+  document.getElementById('field2').style.display='block';
 
 // ---------------- DIBUJAR CAMPO Y JUGADORES ----------------
 function showField(teams){

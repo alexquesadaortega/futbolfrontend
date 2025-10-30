@@ -236,32 +236,45 @@ document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
     document.getElementById('newMedia').value='';
   }catch(err){ console.error(err); alert('Error al guardar jugador'); }
 });
-
-// ---------------- EQUIPOS ----------------
+// --- GENERAR EQUIPOS ---
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
 function averageMedia(team){ return team.reduce((a,b)=>a+b.media,0)/team.length; }
 
 function generateTeams(players, numTeams){
-  const maxPlayers=7; const iterations=500;
-  let bestTeams=null, smallestDiff=Infinity;
+  const maxPlayers=7;
+  const iterations = 500;
+  let bestTeams = null;
+  let smallestDiff = Infinity;
+
   for(let it=0; it<iterations; it++){
     const teams = Array.from({length:numTeams},()=>[]);
-    const posGroups={Portero:[],Defensa:[],Delantero:[]};
-    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); });
-    function assign(pos,minPerTeam){
-      let idx=0; shuffle(posGroups[pos]);
-      while(posGroups[pos].length>0 && idx<numTeams*minPerTeam){ teams[idx%numTeams].push(posGroups[pos].shift()); idx++; }
+    const posGroups = {Portero:[],Defensa:[],Mediocentro:[],Delantero:[],Otros:[]};
+    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); else posGroups.Otros.push(p); });
+
+    function assign(pos, minPerTeam){
+      let idx=0;
+      shuffle(posGroups[pos]);
+      while(posGroups[pos].length>0 && idx<numTeams*minPerTeam){
+        teams[idx%numTeams].push(posGroups[pos].shift());
+        idx++;
+      }
     }
-    assign('Portero',1); assign('Defensa',3); assign('Delantero',1);
-    ['Portero','Defensa','Delantero'].forEach(cat=>{
+
+    assign('Portero',1);
+    assign('Defensa',3);
+    assign('Delantero',1);
+    assign('Mediocentro',1);
+
+    ['Portero','Defensa','Mediocentro','Delantero','Otros'].forEach(cat=>{
       shuffle(posGroups[cat]);
       posGroups[cat].forEach(p=>{
-        let t=teams.reduce((a,b)=>a.length<b.length?a:b);
+        let t = teams.reduce((a,b)=>a.length<b.length?a:b);
         if(t.length<maxPlayers) t.push(p);
       });
     });
-    const diff=Math.abs(averageMedia(teams[0])-averageMedia(teams[1]));
-    if(diff<smallestDiff){ smallestDiff=diff; bestTeams=teams; }
+
+    const diff = Math.abs(averageMedia(teams[0])-averageMedia(teams[1]));
+    if(diff < smallestDiff){ smallestDiff = diff; bestTeams = teams; }
   }
   return bestTeams;
 }
@@ -269,7 +282,6 @@ function generateTeams(players, numTeams){
 function isDuplicate(proposals,newTeams){
   const newStr = JSON.stringify(newTeams.map(t=>t.map(p=>p.name).sort()));
   return proposals.some(p=>JSON.stringify(p.map(t=>t.map(p2=>p2.name).sort()))===newStr);
-}
 
 // --- BOTONES GENERAR ---
 document.getElementById('generate').addEventListener('click',()=>{

@@ -129,11 +129,9 @@ document.getElementById('loginBtn').addEventListener('click', async ()=>{
     const data = await res.json();
     if(!data.success){ loginMsg.textContent = data.message; return; }
 
-    // Guardar usuario y jugadores
-    currentUser = data.user;
-    currentPlayers = data.user.players || [];
-
-    console.log('Usuario logueado:', currentUser);
+    // --- Evitar errores si data.user es undefined ---
+    currentUser = data.user || { username, players: [] };
+    currentPlayers = currentUser.players || [];
 
     // Mostrar secciones
     document.getElementById('loginCard').style.display='none';
@@ -189,10 +187,6 @@ function renderPlayerList(){
 
 // ---------------- AGREGAR JUGADOR ----------------
 document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
-  if(!currentUser){
-    alert('Debes iniciar sesión primero');
-    return;
-  }
   const name = document.getElementById('newName').value.trim();
   const pos = document.getElementById('newPos').value;
   const media = parseFloat(document.getElementById('newMedia').value);
@@ -200,6 +194,7 @@ document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
 
   const newPlayer = {name,pos,media};
 
+  // Guardar en backend
   try{
     const res = await fetch(`${API_URL}/add-player`,{
       method:'POST',

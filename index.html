@@ -282,7 +282,7 @@ function generateTeams(players, numTeams){
 function isDuplicate(proposals,newTeams){
   const newStr = JSON.stringify(newTeams.map(t=>t.map(p=>p.name).sort()));
   return proposals.some(p=>JSON.stringify(p.map(t=>t.map(p2=>p2.name).sort()))===newStr);
-
+}
 // --- BOTONES GENERAR ---
 document.getElementById('generate').addEventListener('click',()=>{
   const selectedIndexes=[...document.querySelectorAll('#playersContainer input:checked')].map(i=>Number(i.dataset.index));

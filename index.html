@@ -196,19 +196,25 @@ document.getElementById('registerBtn').addEventListener('click', async ()=>{
 
 // ---------------- LISTA DE JUGADORES ----------------
 function renderPlayerList(){
-  const sorted = currentPlayers.slice().sort((a,b)=>positionOrder[a.pos]-positionOrder[b.pos]);
+  // Creamos una lista que contiene { player, origIndex }, y la ordenamos para mostrar
+  const mapped = currentPlayers.map((p, idx) => ({ p, idx }));
+  mapped.sort((a,b) => positionOrder[a.p.pos] - positionOrder[b.p.pos]);
+
   const container = document.getElementById('playersContainer');
-  container.innerHTML='';
-  sorted.forEach((p,i)=>{
+  container.innerHTML = '';
+
+  mapped.forEach(({ p, idx }) => {
     const li = document.createElement('li');
-    li.innerHTML = `<label><input type="checkbox" data-index="${i}"> ${p.name} (${p.pos}) [${p.media}]</label>`;
+    // guardamos el índice original (idx) en data-index
+    li.innerHTML = `<label><input type="checkbox" data-index="${idx}"> ${p.name} (${p.pos}) [${p.media}]</label>`;
     container.appendChild(li);
   });
+
   const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-  checkboxes.forEach(cb=>{
-    cb.addEventListener('change',()=>{
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
       const checked = container.querySelectorAll('input[type="checkbox"]:checked');
-      if(checked.length>14){ cb.checked=false; alert('No se pueden seleccionar más de 14 jugadores'); }
+      if (checked.length > 14) { cb.checked = false; alert('No se pueden seleccionar más de 14 jugadores'); }
     });
   });
 }
@@ -272,20 +278,19 @@ function isDuplicate(proposals,newTeams){
 
 // --- BOTONES GENERAR ---
 document.getElementById('generate').addEventListener('click', () => {
+  // Tomamos los índices originales (data-index) de los checkboxes marcados
   const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')]
-    .map(i => Number(i.dataset.index));
+    .map(chk => Number(chk.dataset.index));
 
-  if (selectedIndexes.length < 5) {
-    alert('Selecciona al menos 5 jugadores');
-    return;
-  }
+  if (selectedIndexes.length < 5) { alert('Selecciona al menos 5 jugadores'); return; }
 
-  const selected = selectedIndexes.map(i => currentPlayers[i]);
+  // Construimos el array de jugadores seleccionados a partir de currentPlayers usando los índices originales
+  const selected = selectedIndexes.map(i => currentPlayers[i]).filter(Boolean);
 
   const count = { Portero: 0, Defensa: 0, Delantero: 0 };
   selected.forEach(p => count[p.pos] = (count[p.pos] || 0) + 1);
 
-  // ✅ Validar que haya al menos 1 portero, 3 defensas y 1 delantero
+  // Validación (puedes ajustar los mínimos)
   if (count.Portero < 1 || count.Defensa < 3 || count.Delantero < 1) {
     alert('Debe haber al menos 1 portero, 3 defensas y 1 delantero seleccionados');
     return;
@@ -296,31 +301,14 @@ document.getElementById('generate').addEventListener('click', () => {
 
 document.getElementById('generateOptimized').addEventListener('click', () => {
   const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')]
-    .map(i => Number(i.dataset.index));
+    .map(chk => Number(chk.dataset.index));
 
-  if (selectedIndexes.length < 5) {
-    alert('Selecciona al menos 5 jugadores');
-    return;
-  }
+  if (selectedIndexes.length < 5) { alert('Selecciona al menos 5 jugadores'); return; }
 
-  const selected = selectedIndexes.map(i => currentPlayers[i]);
+  const selected = selectedIndexes.map(i => currentPlayers[i]).filter(Boolean);
 
   generateProposals(selected, true);
 });
-
-function generateProposals(selected, optimized = false) {
-  currentProposals = [];
-  let attempts = 0;
-
-  while (currentProposals.length < 5 && attempts < 50) {
-    const teams = generateTeams(selected, 2);
-    if (!isDuplicate(currentProposals, teams)) currentProposals.push(teams);
-    attempts++;
-  }
-
-  renderProposals();
-}
-
 
 // --- RENDER PROPOSALS ---
 function renderProposals(){

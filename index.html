@@ -205,16 +205,34 @@ function renderPlayerList(){
 
   mapped.forEach(({ p, idx }) => {
     const li = document.createElement('li');
-    // guardamos el índice original (idx) en data-index
-    li.innerHTML = `<label><input type="checkbox" data-index="${idx}"> ${p.name} (${p.pos}) [${p.media}]</label>`;
+    li.innerHTML = `
+      <label>
+        <input type="checkbox" data-index="${idx}"> ${p.name} (${p.pos}) [${p.media}]
+      </label>
+      <button class="delete-btn" data-index="${idx}">Eliminar</button>
+    `;
     container.appendChild(li);
   });
 
+  // Manejo de checkboxes
   const checkboxes = container.querySelectorAll('input[type="checkbox"]');
   checkboxes.forEach(cb => {
     cb.addEventListener('change', () => {
       const checked = container.querySelectorAll('input[type="checkbox"]:checked');
-      if (checked.length > 14) { cb.checked = false; alert('No se pueden seleccionar más de 14 jugadores'); }
+      if (checked.length > 14) { 
+        cb.checked = false; 
+        alert('No se pueden seleccionar más de 14 jugadores'); 
+      }
+    });
+  });
+
+  // Manejo de eliminar jugadores
+  const deleteBtns = container.querySelectorAll('.delete-btn');
+  deleteBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.index);
+      currentPlayers.splice(idx, 1); // eliminamos del array
+      renderPlayerList(); // volvemos a renderizar la lista
     });
   });
 }

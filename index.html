@@ -246,30 +246,77 @@ document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
 function averageMedia(team){ return team.reduce((a,b)=>a+b.media,0)/team.length; }
 
-function generateTeams(players, numTeams){
-  const maxPlayers=7; const iterations=500;
-  let bestTeams=null, smallestDiff=Infinity;
-  for(let it=0; it<iterations; it++){
-    const teams = Array.from({length:numTeams},()=>[]);
-    const posGroups={Portero:[],Defensa:[],Delantero:[]};
-    players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); });
-    function assign(pos,minPerTeam){
-      let idx=0; shuffle(posGroups[pos]);
-      while(posGroups[pos].length>0 && idx<numTeams*minPerTeam){ teams[idx%numTeams].push(posGroups[pos].shift()); idx++; }
-    }
-    assign('Portero',1); assign('Defensa',3); assign('Delantero',1);
-    ['Portero','Defensa','Delantero'].forEach(cat=>{
-      shuffle(posGroups[cat]);
-      posGroups[cat].forEach(p=>{
-        let t=teams.reduce((a,b)=>a.length<b.length?a:b);
-        if(t.length<maxPlayers) t.push(p);
-      });
-    });
-    const diff=Math.abs(averageMedia(teams[0])-averageMedia(teams[1]));
-    if(diff<smallestDiff){ smallestDiff=diff; bestTeams=teams; }
+function generateTeams(players, numTeams = 2){
+  const maxPlayers = 7;
+
+  // Agrupar jugadores por posición
+  const posGroups = {Portero:[], Defensa:[], Delantero:[], Otros:[]};
+  players.forEach(p => {
+    if(posGroups[p.pos]) posGroups[p.pos].push(p);
+    else posGroups.Otros.push(p); // por si hay otras posiciones
+  });
+
+  // Validar mínimos para formar equipos
+  if(posGroups.Portero.length < 2 || posGroups.Defensa.length < 6 || posGroups.Delantero.length < 2){
+    alert('No hay suficientes jugadores para formar equipos completos respetando mínimos por posición');
+    return [[],[]];
   }
+
+  // Generar todas las combinaciones posibles para equilibrar medias
+  let bestTeams = null;
+  let smallestDiff = Infinity;
+  const iterations = 500;
+
+  for(let it=0; it<iterations; it++){
+    let teamA = [], teamB = [];
+
+    // Clonar arrays para no modificar originales
+    const porteros = [...posGroups.Portero];
+    const defensas = [...posGroups.Defensa];
+    const delanteros = [...posGroups.Delantero];
+    const otros = [...posGroups.Otros];
+
+    shuffle(porteros);
+    shuffle(defensas);
+    shuffle(delanteros);
+    shuffle(otros);
+
+    // Asignar mínimos
+    teamA.push(porteros.shift());
+    teamB.push(porteros.shift());
+
+    teamA.push(...defensas.splice(0,3));
+    teamB.push(...defensas.splice(0,3));
+
+    teamA.push(delanteros.shift());
+    teamB.push(delanteros.shift());
+
+    // Rellenar hasta 7 jugadores con los restantes
+    const remaining = [...porteros, ...defensas, ...delanteros, ...otros];
+    while(teamA.length < maxPlayers && remaining.length > 0){
+      teamA.push(remaining.shift());
+    }
+    while(teamB.length < maxPlayers && remaining.length > 0){
+      teamB.push(remaining.shift());
+    }
+
+    // Calcular diferencia de media
+    const diff = Math.abs(averageMedia(teamA) - averageMedia(teamB));
+    if(diff < smallestDiff){
+      smallestDiff = diff;
+      bestTeams = [teamA, teamB];
+    }
+  }
+
+  // Verificación final
+  if(!bestTeams || bestTeams[0].length !== 7 || bestTeams[1].length !== 7){
+    alert('No se pudieron generar equipos completos con los jugadores seleccionados');
+    return [[],[]];
+  }
+
   return bestTeams;
 }
+
 
 function isDuplicate(proposals,newTeams){
   const newStr = JSON.stringify(newTeams.map(t=>t.map(p=>p.name).sort()));

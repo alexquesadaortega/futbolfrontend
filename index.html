@@ -331,6 +331,25 @@ document.getElementById('generateOptimized').addEventListener('click', () => {
   generateProposals(selected, true);
 });
 
+  function applyTeams(teams) {
+  // Mostrar campos
+  const field1 = document.getElementById('field1');
+  const field2 = document.getElementById('field2');
+  field1.style.display = 'block';
+  field2.style.display = 'block';
+
+  // Limpiar cualquier contenido previo
+  field1.innerHTML = '<div class="field-title">Equipo Negro</div>';
+  field2.innerHTML = '<div class="field-title">Equipo Blanco</div>';
+
+  // Dibujar campo y jugadores
+  drawField(field1);
+  drawField(field2);
+  drawTeamOnField(field1, teams[0], 'black');
+  drawTeamOnField(field2, teams[1], 'white');
+}
+
+
 // ---------------- RENDER PROPUESTAS ----------------
 function renderProposals() {
   const container = document.getElementById('proposalsContainer');

@@ -331,26 +331,42 @@ function renderProposals(){
   const container = document.getElementById('proposalsContainer');
   container.innerHTML='';
   currentProposals.forEach((teams,i)=>{
-    const div = document.createElement('div'); div.className='proposal';
+    const div = document.createElement('div'); 
+    div.className='proposal';
+
+    // Calcular medias de cada equipo
+    const media1 = teams[0].reduce((a,b)=>a+b.media,0);
+    const media2 = teams[1].reduce((a,b)=>a+b.media,0);
+    const diff = Math.abs(media1 - media2).toFixed(1);
+
+    // Mostrar diferencia de nivel arriba
+    const diffDiv = document.createElement('div');
+    diffDiv.style.fontSize = '14px';
+    diffDiv.style.fontWeight = 'bold';
+    diffDiv.style.marginBottom = '4px';
+    diffDiv.textContent = `Diferencia de nivel: ${diff} puntos (Equipo Negro: ${media1.toFixed(1)}, Equipo Blanco: ${media2.toFixed(1)})`;
+    div.appendChild(diffDiv);
+
     ['Equipo Negro','Equipo Blanco'].forEach((title,idx)=>{
-      const teamDiv = document.createElement('div'); teamDiv.className='team-box';
-      const tTitle = document.createElement('div'); tTitle.className='team-title'; tTitle.textContent=title;
+      const teamDiv = document.createElement('div'); 
+      teamDiv.className='team-box';
+      const tTitle = document.createElement('div'); 
+      tTitle.className='team-title'; 
+      tTitle.textContent=title;
       teamDiv.appendChild(tTitle);
       teams[idx].forEach(p=>{
-        const pDiv = document.createElement('div'); pDiv.className='player-entry';
+        const pDiv = document.createElement('div'); 
+        pDiv.className='player-entry';
         pDiv.textContent=`${p.name} (${p.pos}) [${p.media}]`;
         teamDiv.appendChild(pDiv);
       });
       div.appendChild(teamDiv);
     });
+
     div.addEventListener('click',()=>applyTeams(teams));
     container.appendChild(div);
   });
   document.getElementById('proposalsCard').style.display='block';
-}
-
-function applyTeams(teams){
-  showField(teams);
 }
 
 // ---------------- DIBUJAR CAMPO Y JUGADORES ----------------

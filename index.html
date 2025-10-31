@@ -195,36 +195,79 @@ document.getElementById('registerBtn').addEventListener('click', async ()=>{
 });
 
 // ---------------- LISTA DE JUGADORES ----------------
-function renderPlayerList(){
-  // Creamos una lista que contiene { player, origIndex }, y la ordenamos para mostrar
+function renderPlayerList() {
+  // Creamos una lista que contiene { player, origIndex }, y la ordenamos por posición
   const mapped = currentPlayers.map((p, idx) => ({ p, idx }));
-  mapped.sort((a,b) => positionOrder[a.p.pos] - positionOrder[b.p.pos]);
+  mapped.sort((a, b) => positionOrder[a.p.pos] - positionOrder[b.p.pos]);
 
   const container = document.getElementById('playersContainer');
   container.innerHTML = '';
 
   mapped.forEach(({ p, idx }) => {
     const li = document.createElement('li');
+
+    // Mostramos el jugador con su checkbox y botón de eliminar
     li.innerHTML = `
       <label>
-        <input type="checkbox" data-index="${idx}"> ${p.name} (${p.pos}) [${p.media}]
+        <input type="checkbox" data-index="${idx}">
+        ${p.name} (${p.pos}) [${p.media}]
       </label>
-      <button class="delete-btn" data-index="${idx}">Eliminar</button>
+      <button class="delete-btn" data-index="${idx}" style="margin-left:8px; background-color:#e74c3c; color:white; border:none; border-radius:5px; padding:4px 8px; cursor:pointer;">
+        Eliminar
+      </button>
     `;
+
     container.appendChild(li);
   });
 
-  // Manejo de checkboxes
+  // Limitar selección a máximo 14 jugadores
   const checkboxes = container.querySelectorAll('input[type="checkbox"]');
   checkboxes.forEach(cb => {
     cb.addEventListener('change', () => {
       const checked = container.querySelectorAll('input[type="checkbox"]:checked');
-      if (checked.length > 14) { 
-        cb.checked = false; 
-        alert('No se pueden seleccionar más de 14 jugadores'); 
+      if (checked.length > 14) {
+        cb.checked = false;
+        alert('No se pueden seleccionar más de 14 jugadores');
       }
     });
   });
+
+  // --- ELIMINAR JUGADORES ---
+  const deleteButtons = container.querySelectorAll('.delete-btn');
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.index);
+      const player = currentPlayers[idx];
+
+      if (!confirm(`¿Seguro que quieres eliminar a ${player.name}?`)) return;
+
+      try {
+        const res = await fetch(`${API_URL}/delete-player`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: currentUser.username,
+            playerName: player.name
+          })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          alert(data.message || 'Error al eliminar jugador');
+          return;
+        }
+
+        // Eliminar jugador del array local y volver a renderizar
+        currentPlayers.splice(idx, 1);
+        renderPlayerList();
+
+      } catch (err) {
+        console.error('Error al eliminar jugador:', err);
+        alert('Error de conexión al eliminar jugador');
+      }
+    });
+  });
+}
 
   // Manejo de eliminar jugadores
   const deleteBtns = container.querySelectorAll('.delete-btn');

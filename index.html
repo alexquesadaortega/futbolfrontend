@@ -351,19 +351,24 @@ document.getElementById('generateOptimized').addEventListener('click', () => {
 
 
 // ---------------- RENDER PROPUESTAS ----------------
-function renderProposals() {
+function renderProposals(){
   const container = document.getElementById('proposalsContainer');
   container.innerHTML = '';
 
-  currentProposals.forEach((proposal, i) => {
+  currentProposals.forEach((teams, i) => {
     const div = document.createElement('div');
     div.className = 'proposal';
 
-    // Mostrar diferencia de media arriba
+    // Calcular media de cada equipo y diferencia
+    const media1 = averageMedia(teams[0]);
+    const media2 = averageMedia(teams[1]);
+    const diff = Math.abs(media1 - media2).toFixed(2);
+
+    // Mostrar diferencia de media
     const diffDiv = document.createElement('div');
-    diffDiv.style.fontWeight = 'bold';
-    diffDiv.style.marginBottom = '6px';
-    diffDiv.textContent = `Diferencia de media: ${proposal.diff}`;
+    diffDiv.textContent = `Diferencia de media: ${diff}`;
+    diffDiv.style.fontSize = '12px';
+    diffDiv.style.color = '#aaa';
     div.appendChild(diffDiv);
 
     ['Equipo Negro', 'Equipo Blanco'].forEach((title, idx) => {
@@ -375,7 +380,7 @@ function renderProposals() {
       tTitle.textContent = title;
       teamDiv.appendChild(tTitle);
 
-      proposal.teams[idx].forEach(p => {
+      teams[idx].forEach(p => {
         const pDiv = document.createElement('div');
         pDiv.className = 'player-entry';
         pDiv.textContent = `${p.name} (${p.pos}) [${p.media}]`;
@@ -385,7 +390,7 @@ function renderProposals() {
       div.appendChild(teamDiv);
     });
 
-    div.addEventListener('click', () => applyTeams(proposal.teams));
+    div.addEventListener('click', () => applyTeams(teams));
     container.appendChild(div);
   });
 

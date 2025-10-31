@@ -276,14 +276,19 @@ function isDuplicate(proposals,newTeams){
   return proposals.some(p=>JSON.stringify(p.map(t=>t.map(p2=>p2.name).sort()))===newStr);
 }
 
-// --- GENERAR PROPUESTAS (función + listeners) ---
+// ---------------- GENERAR PROPUESTAS ----------------
 function generateProposals(selected, optimized = false) {
   currentProposals = [];
   let attempts = 0;
 
   while (currentProposals.length < 5 && attempts < 50) {
-    const teams = generateTeams(selected, 2);
-    if (!isDuplicate(currentProposals, teams)) currentProposals.push(teams);
+    const teams = generateTeams(selected, 2); // Genera equipos equilibrados
+    const diff = Math.abs(averageMedia(teams[0]) - averageMedia(teams[1]));
+
+    // Evitar duplicados
+    if (!isDuplicate(currentProposals.map(p => p.teams), teams)) {
+      currentProposals.push({ teams, diff: diff.toFixed(2) });
+    }
     attempts++;
   }
 
@@ -326,47 +331,46 @@ document.getElementById('generateOptimized').addEventListener('click', () => {
   generateProposals(selected, true);
 });
 
-// --- RENDER PROPOSALS ---
-function renderProposals(){
+// ---------------- RENDER PROPUESTAS ----------------
+function renderProposals() {
   const container = document.getElementById('proposalsContainer');
-  container.innerHTML='';
-  currentProposals.forEach((teams,i)=>{
-    const div = document.createElement('div'); 
-    div.className='proposal';
+  container.innerHTML = '';
 
-    // Calcular medias de cada equipo
-    const media1 = teams[0].reduce((a,b)=>a+b.media,0);
-    const media2 = teams[1].reduce((a,b)=>a+b.media,0);
-    const diff = Math.abs(media1 - media2).toFixed(1);
+  currentProposals.forEach((proposal, i) => {
+    const div = document.createElement('div');
+    div.className = 'proposal';
 
-    // Mostrar diferencia de nivel arriba
+    // Mostrar diferencia de media arriba
     const diffDiv = document.createElement('div');
-    diffDiv.style.fontSize = '14px';
     diffDiv.style.fontWeight = 'bold';
-    diffDiv.style.marginBottom = '4px';
-    diffDiv.textContent = `Diferencia de nivel: ${diff} puntos (Equipo Negro: ${media1.toFixed(1)}, Equipo Blanco: ${media2.toFixed(1)})`;
+    diffDiv.style.marginBottom = '6px';
+    diffDiv.textContent = `Diferencia de media: ${proposal.diff}`;
     div.appendChild(diffDiv);
 
-    ['Equipo Negro','Equipo Blanco'].forEach((title,idx)=>{
-      const teamDiv = document.createElement('div'); 
-      teamDiv.className='team-box';
-      const tTitle = document.createElement('div'); 
-      tTitle.className='team-title'; 
-      tTitle.textContent=title;
+    ['Equipo Negro', 'Equipo Blanco'].forEach((title, idx) => {
+      const teamDiv = document.createElement('div');
+      teamDiv.className = 'team-box';
+
+      const tTitle = document.createElement('div');
+      tTitle.className = 'team-title';
+      tTitle.textContent = title;
       teamDiv.appendChild(tTitle);
-      teams[idx].forEach(p=>{
-        const pDiv = document.createElement('div'); 
-        pDiv.className='player-entry';
-        pDiv.textContent=`${p.name} (${p.pos}) [${p.media}]`;
+
+      proposal.teams[idx].forEach(p => {
+        const pDiv = document.createElement('div');
+        pDiv.className = 'player-entry';
+        pDiv.textContent = `${p.name} (${p.pos}) [${p.media}]`;
         teamDiv.appendChild(pDiv);
       });
+
       div.appendChild(teamDiv);
     });
 
-    div.addEventListener('click',()=>applyTeams(teams));
+    div.addEventListener('click', () => applyTeams(proposal.teams));
     container.appendChild(div);
   });
-  document.getElementById('proposalsCard').style.display='block';
+
+  document.getElementById('proposalsCard').style.display = 'block';
 }
 
 // ---------------- DIBUJAR CAMPO Y JUGADORES ----------------

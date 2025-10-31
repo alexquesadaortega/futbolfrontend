@@ -571,15 +571,36 @@ function makeDraggable(el, field, positionsY){
     el.style.top = y + 'px';
   }
 
-  function endDrag(){
-    let posY = parseFloat(el.style.top);
-    const closest = Object.values(positionsY).reduce((a,b)=>Math.abs(b-posY)<Math.abs(a-posY)?b:a);
-    el.style.top = closest+'px';
-    const linePlayers = Array.from(field.querySelectorAll('.player-card'))
-      .filter(p => parseFloat(p.style.top) === closest);
-    const spacing = field.clientWidth/(linePlayers.length+1);
-    linePlayers.forEach((p,i)=>p.style.left=(spacing*(i+1)-20)+'px');
+  function endDrag(clientX) {
+  let posY = parseFloat(el.style.top);
+
+  // Encuentra la línea más cercana (snap vertical)
+  let closest = Object.values(positionsY).reduce((a, b) =>
+    Math.abs(b - posY) < Math.abs(a - posY) ? b : a
+  );
+  el.style.top = closest + 'px';
+
+  // --- Detectar jugadores en esa línea ---
+  const linePlayers = Array.from(field.querySelectorAll('.player-card')).filter(
+    (p) => parseFloat(p.style.top) === closest
+  );
+
+  // --- Reordenar horizontalmente según posición actual (clientX del toque/ratón) ---
+  if (clientX) {
+    // Ordenamos los jugadores de esa línea por su posición actual en pantalla
+    const sorted = linePlayers.sort((a, b) => {
+      const ax = parseFloat(a.style.left);
+      const bx = parseFloat(b.style.left);
+      return ax - bx;
+    });
+
+    // Recalculamos el espaciado horizontal
+    const spacing = field.clientWidth / (sorted.length + 1);
+    sorted.forEach((p, i) => {
+      p.style.left = spacing * (i + 1) - 20 + 'px';
+    });
   }
+}
 
   // --- Eventos de ratón ---
   el.onmousedown = function(e){

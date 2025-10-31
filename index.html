@@ -276,21 +276,35 @@ function isDuplicate(proposals,newTeams){
   return proposals.some(p=>JSON.stringify(p.map(t=>t.map(p2=>p2.name).sort()))===newStr);
 }
 
+// --- GENERAR PROPUESTAS (función + listeners) ---
+function generateProposals(selected, optimized = false) {
+  currentProposals = [];
+  let attempts = 0;
+
+  while (currentProposals.length < 5 && attempts < 50) {
+    const teams = generateTeams(selected, 2);
+    if (!isDuplicate(currentProposals, teams)) currentProposals.push(teams);
+    attempts++;
+  }
+
+  renderProposals();
+}
+
 // --- BOTONES GENERAR ---
 document.getElementById('generate').addEventListener('click', () => {
-  // Tomamos los índices originales (data-index) de los checkboxes marcados
   const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')]
     .map(chk => Number(chk.dataset.index));
 
-  if (selectedIndexes.length < 5) { alert('Selecciona al menos 5 jugadores'); return; }
+  if (selectedIndexes.length < 5) {
+    alert('Selecciona al menos 5 jugadores');
+    return;
+  }
 
-  // Construimos el array de jugadores seleccionados a partir de currentPlayers usando los índices originales
   const selected = selectedIndexes.map(i => currentPlayers[i]).filter(Boolean);
 
   const count = { Portero: 0, Defensa: 0, Delantero: 0 };
   selected.forEach(p => count[p.pos] = (count[p.pos] || 0) + 1);
 
-  // Validación (puedes ajustar los mínimos)
   if (count.Portero < 1 || count.Defensa < 3 || count.Delantero < 1) {
     alert('Debe haber al menos 1 portero, 3 defensas y 1 delantero seleccionados');
     return;
@@ -303,10 +317,12 @@ document.getElementById('generateOptimized').addEventListener('click', () => {
   const selectedIndexes = [...document.querySelectorAll('#playersContainer input:checked')]
     .map(chk => Number(chk.dataset.index));
 
-  if (selectedIndexes.length < 5) { alert('Selecciona al menos 5 jugadores'); return; }
+  if (selectedIndexes.length < 5) {
+    alert('Selecciona al menos 5 jugadores');
+    return;
+  }
 
   const selected = selectedIndexes.map(i => currentPlayers[i]).filter(Boolean);
-
   generateProposals(selected, true);
 });
 

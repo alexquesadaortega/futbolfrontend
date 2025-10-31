@@ -269,17 +269,6 @@ function renderPlayerList() {
   });
 }
 
-  // Manejo de eliminar jugadores
-  const deleteBtns = container.querySelectorAll('.delete-btn');
-  deleteBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = Number(btn.dataset.index);
-      currentPlayers.splice(idx, 1); // eliminamos del array
-      renderPlayerList(); // volvemos a renderizar la lista
-    });
-  });
-}
-
 // ---------------- AGREGAR JUGADOR ----------------
 document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('newName').value.trim();

@@ -610,7 +610,11 @@ function makeDraggable(el, field, positionsY){
     document.onmouseup = mu;
   }
   function mm(e){ onMove(e.clientX,e.clientY); }
-  function mu(e){ endDrag(); document.onmousemove=null; document.onmouseup=null; }
+  function mu(e) {
+  endDrag(e.clientX);
+  document.onmousemove = null;
+  document.onmouseup = null;
+}
 
   // --- Eventos táctiles ---
   el.ontouchstart = function(e){

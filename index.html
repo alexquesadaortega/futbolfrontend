@@ -324,19 +324,26 @@ function isDuplicate(proposals,newTeams){
 }
 
 // ---------------- GENERAR PROPUESTAS ----------------
-function generateProposals(selected, optimized = false) {
+function generateProposals(selected, optimized = false){
   currentProposals = [];
   let attempts = 0;
 
-  while (currentProposals.length < 5 && attempts < 50) {
-    const teams = generateTeams(selected, 2); // Genera equipos equilibrados
-    const diff = Math.abs(averageMedia(teams[0]) - averageMedia(teams[1]));
+  while(currentProposals.length < 5 && attempts < 50){
+    const teams = generateTeams(selected, 2);
 
-    // Evitar duplicados
-    if (!isDuplicate(currentProposals.map(p => p.teams), teams)) {
-      currentProposals.push({ teams, diff: diff.toFixed(2) });
+    // <-- Validar equipos antes de continuar
+    if(!teams || !teams[0].length || !teams[1].length){
+      attempts++;
+      continue; // ignora esta iteración si los equipos no son válidos
     }
+
+    if(!isDuplicate(currentProposals, teams)) currentProposals.push(teams);
     attempts++;
+  }
+
+  if(currentProposals.length === 0){
+    alert('No se pudieron generar equipos válidos con los jugadores seleccionados');
+    return;
   }
 
   renderProposals();

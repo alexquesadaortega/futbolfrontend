@@ -386,30 +386,33 @@ function isDuplicate(proposals, newTeams) {
 }
 
 // ---------------- GENERAR PROPUESTAS ----------------
-function generateProposals(selected, optimized = false){
+function generateProposals(selected, optimized = false) {
   currentProposals = [];
   let attempts = 0;
 
-  while(currentProposals.length < 5 && attempts < 50){
+  while (currentProposals.length < 5 && attempts < 50) {
     const teams = generateTeams(selected, 2);
 
-    // <-- Validar equipos antes de continuar
-    if(!teams || !teams[0].length || !teams[1].length){
+    // Validar equipos antes de continuar
+    if (!teams || !teams[0].length || !teams[1].length) {
       attempts++;
-      continue; // ignora esta iteración si los equipos no son válidos
+      continue;
     }
 
-    if(!isDuplicate(currentProposals, teams)) currentProposals.push(teams);
+    if (!isDuplicate(currentProposals, teams)) currentProposals.push(teams);
     attempts++;
   }
 
-  if(currentProposals.length === 0){
-    alert('No se pudieron generar equipos válidos con los jugadores seleccionados');
+  // ✅ Evitamos alert doble si generateTeams ya mostró uno
+  if (currentProposals.length === 0) {
+    // Si generateTeams devolvió vacíos, no repetimos el alert
+    console.warn('No se pudieron generar equipos válidos con los jugadores seleccionados');
     return;
   }
 
   renderProposals();
 }
+
 
 // --- BOTONES GENERAR ---
 document.getElementById('generate').addEventListener('click', () => {

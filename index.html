@@ -293,23 +293,36 @@ document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
   }catch(err){ console.error(err); alert('Error al guardar jugador'); }
 });
 // ---------------- EQUIPOS ----------------
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;}
-function averageMedia(team){ return team.reduce((a,b)=>a+b.media,0)/team.length; }
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
-function generateTeams(players, numTeams = 2){
+function averageMedia(team) {
+  return team.reduce((a, b) => a + b.media, 0) / team.length;
+}
+
+function generateTeams(players, numTeams = 2) {
   const maxPlayers = 7;
 
   // Agrupar jugadores por posición
-  const posGroups = {Portero:[], Defensa:[], Delantero:[], Otros:[]};
+  const posGroups = { Portero: [], Defensa: [], Delantero: [], Otros: [] };
   players.forEach(p => {
-    if(posGroups[p.pos]) posGroups[p.pos].push(p);
+    if (posGroups[p.pos]) posGroups[p.pos].push(p);
     else posGroups.Otros.push(p); // por si hay otras posiciones
   });
 
   // Validar mínimos para formar equipos
-  if(posGroups.Portero.length < 2 || posGroups.Defensa.length < 6 || posGroups.Delantero.length < 2){
+  if (
+    posGroups.Portero.length < 2 ||
+    posGroups.Defensa.length < 6 ||
+    posGroups.Delantero.length < 2
+  ) {
     alert('No hay suficientes jugadores para formar equipos completos respetando mínimos por posición');
-    return [[],[]];
+    return null; // ⬅️ Cambiado a null para evitar reintentos infinitos
   }
 
   // Generar todas las combinaciones posibles para equilibrar medias
@@ -317,7 +330,7 @@ function generateTeams(players, numTeams = 2){
   let smallestDiff = Infinity;
   const iterations = 500;
 
-  for(let it=0; it<iterations; it++){
+  for (let it = 0; it < iterations; it++) {
     let teamA = [], teamB = [];
 
     // Clonar arrays para no modificar originales
@@ -335,42 +348,41 @@ function generateTeams(players, numTeams = 2){
     teamA.push(porteros.shift());
     teamB.push(porteros.shift());
 
-    teamA.push(...defensas.splice(0,3));
-    teamB.push(...defensas.splice(0,3));
+    teamA.push(...defensas.splice(0, 3));
+    teamB.push(...defensas.splice(0, 3));
 
     teamA.push(delanteros.shift());
     teamB.push(delanteros.shift());
 
     // Rellenar hasta 7 jugadores con los restantes
     const remaining = [...porteros, ...defensas, ...delanteros, ...otros];
-    while(teamA.length < maxPlayers && remaining.length > 0){
+    while (teamA.length < maxPlayers && remaining.length > 0) {
       teamA.push(remaining.shift());
     }
-    while(teamB.length < maxPlayers && remaining.length > 0){
+    while (teamB.length < maxPlayers && remaining.length > 0) {
       teamB.push(remaining.shift());
     }
 
     // Calcular diferencia de media
     const diff = Math.abs(averageMedia(teamA) - averageMedia(teamB));
-    if(diff < smallestDiff){
+    if (diff < smallestDiff) {
       smallestDiff = diff;
       bestTeams = [teamA, teamB];
     }
   }
 
   // Verificación final
-  if(!bestTeams || bestTeams[0].length !== 7 || bestTeams[1].length !== 7){
+  if (!bestTeams || bestTeams[0].length !== 7 || bestTeams[1].length !== 7) {
     alert('No se pudieron generar equipos completos con los jugadores seleccionados');
-    return [[],[]];
+    return null; // ⬅️ También cambiamos a null
   }
 
   return bestTeams;
 }
 
-
-function isDuplicate(proposals,newTeams){
-  const newStr = JSON.stringify(newTeams.map(t=>t.map(p=>p.name).sort()));
-  return proposals.some(p=>JSON.stringify(p.map(t=>t.map(p2=>p2.name).sort()))===newStr);
+function isDuplicate(proposals, newTeams) {
+  const newStr = JSON.stringify(newTeams.map(t => t.map(p => p.name).sort()));
+  return proposals.some(p => JSON.stringify(p.map(t => t.map(p2 => p2.name).sort())) === newStr);
 }
 
 // ---------------- GENERAR PROPUESTAS ----------------

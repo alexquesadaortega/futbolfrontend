@@ -911,150 +911,34 @@ function prepareCloneForCapture(node) {
   return clone;
 }
 
+<!-- Incluye html2canvas -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
 // ---------------- EXPORTAR UN CAMPO INDIVIDUAL ----------------
-async function exportFieldDirect(fieldId) {
+function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("No se encontró el campo.");
 
-  const fieldWidth = field.clientWidth;
-  const fieldHeight = field.clientHeight;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = fieldWidth * 3;
-  canvas.height = fieldHeight * 3;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(3, 3);
-
-  // Fondo del campo
-  ctx.fillStyle = "#0f4720";
-  ctx.fillRect(0, 0, fieldWidth, fieldHeight);
-
-  // Líneas del campo
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
-  ctx.beginPath();
-  ctx.moveTo(0, fieldHeight/2);
-  ctx.lineTo(fieldWidth, fieldHeight/2);
-  ctx.stroke();
-
-  // Círculo central
-  const centerX = fieldWidth/2;
-  const centerY = fieldHeight/2;
-  const radius = 40;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, 2*Math.PI);
-  ctx.stroke();
-
-  // Área porteros
-  ctx.strokeRect((fieldWidth-160)/2, 0, 160, 100);
-  ctx.strokeRect((fieldWidth-160)/2, fieldHeight-100, 160, 100);
-
-  // Jugadores
-  const players = Array.from(field.querySelectorAll(".player-card"));
-  for (let p of players) {
-    const img = p.querySelector("img");
-    const span = p.querySelector("span");
-    if (!img || !span) continue;
-
-    const x = parseFloat(p.style.left);
-    const y = parseFloat(p.style.top);
-
-    // Dibujar camiseta
-    await new Promise(res => {
-      const imgObj = new Image();
-      imgObj.crossOrigin = "anonymous";
-      imgObj.src = img.src;
-      imgObj.onload = () => {
-        ctx.drawImage(imgObj, x, y, p.clientWidth, p.clientHeight);
-        res();
-      };
-    });
-
-    // Dibujar nombre
-    ctx.fillStyle = "#fff";
-    ctx.font = "12px Poppins, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(span.textContent, x + p.clientWidth/2, y + p.clientHeight + 12);
-  }
-
-  // Descargar
-  const link = document.createElement("a");
-  link.download = `${fieldId}.png`;
-  link.href = canvas.toDataURL("image/png");
-  link.click();
+  html2canvas(field, {scale: 3, backgroundColor: null}).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `${fieldId}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
 }
 
 // ---------------- EXPORTAR AMBOS CAMPOS ----------------
-async function exportarAmbosAlineacionesDirect() {
+async function exportBothFields() {
   const field1 = document.getElementById('field1');
   const field2 = document.getElementById('field2');
-
   if (!field1 || !field2) return alert("No se encontraron los campos.");
 
-  const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽");
+  const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽") || "⚽ Partido ⚽";
 
-  // Exportar cada campo a canvas
-  async function getCanvas(field) {
-    const fieldWidth = field.clientWidth;
-    const fieldHeight = field.clientHeight;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = fieldWidth * 3;
-    canvas.height = fieldHeight * 3;
-    const ctx = canvas.getContext("2d");
-    ctx.scale(3, 3);
-
-    // Fondo y líneas
-    ctx.fillStyle = "#0f4720";
-    ctx.fillRect(0, 0, fieldWidth, fieldHeight);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
-    ctx.beginPath();
-    ctx.moveTo(0, fieldHeight/2);
-    ctx.lineTo(fieldWidth, fieldHeight/2);
-    ctx.stroke();
-    const centerX = fieldWidth/2;
-    const centerY = fieldHeight/2;
-    const radius = 40;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, 2*Math.PI);
-    ctx.stroke();
-    ctx.strokeRect((fieldWidth-160)/2, 0, 160, 100);
-    ctx.strokeRect((fieldWidth-160)/2, fieldHeight-100, 160, 100);
-
-    // Jugadores
-    const players = Array.from(field.querySelectorAll(".player-card"));
-    for (let p of players) {
-      const img = p.querySelector("img");
-      const span = p.querySelector("span");
-      if (!img || !span) continue;
-
-      const x = parseFloat(p.style.left);
-      const y = parseFloat(p.style.top);
-
-      await new Promise(res => {
-        const imgObj = new Image();
-        imgObj.crossOrigin = "anonymous";
-        imgObj.src = img.src;
-        imgObj.onload = () => {
-          ctx.drawImage(imgObj, x, y, p.clientWidth, p.clientHeight);
-          res();
-        };
-      });
-
-      ctx.fillStyle = "#fff";
-      ctx.font = "12px Poppins, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(span.textContent, x + p.clientWidth/2, y + p.clientHeight + 12);
-    }
-
-    return canvas;
-  }
-
-  const canvas1 = await getCanvas(field1);
-  const canvas2 = await getCanvas(field2);
+  // Capturar cada campo con html2canvas
+  const canvas1 = await html2canvas(field1, {scale: 3, backgroundColor: null});
+  const canvas2 = await html2canvas(field2, {scale: 3, backgroundColor: null});
 
   // Canvas combinado
   const spacing = 40;
@@ -1077,7 +961,7 @@ async function exportarAmbosAlineacionesDirect() {
   ctx.fillStyle = "#222";
   ctx.font = "bold 40px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 50);
+  ctx.fillText(titulo, totalWidth / 2, 50);
 
   // Dibujar campos
   const x1 = padding;
@@ -1102,10 +986,11 @@ async function exportarAmbosAlineacionesDirect() {
 
 // ---------------- EVENTOS BOTONES ----------------
 document.querySelectorAll(".export-btn").forEach(btn=>{
-  btn.onclick = () => exportFieldDirect(btn.previousElementSibling?.id || btn.id.replace('Btn',''));
+  btn.onclick = () => exportField(btn.dataset.field);
 });
 
-document.getElementById('exportarAmbosBtn').onclick = exportarAmbosAlineacionesDirect;
+document.getElementById('exportBothBtn').onclick = exportBothFields;
+</script>
 
 </script>
   

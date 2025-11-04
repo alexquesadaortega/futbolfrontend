@@ -654,6 +654,60 @@ function exportField(fieldId){
     link.click();
   });
 }
+  // ---------------- EXPORTAR AMBOS CAMPOS EN UNA SOLA IMAGEN ----------------
+async function exportarAmbosAlineaciones() {
+  const field1 = document.getElementById('field1');
+  const field2 = document.getElementById('field2');
+
+  if (!field1 || !field2) {
+    alert("No se encontraron los campos de los equipos.");
+    return;
+  }
+
+  // Capturar ambos campos
+  const canvas1 = await html2canvas(field1, { backgroundColor: null });
+  const canvas2 = await html2canvas(field2, { backgroundColor: null });
+
+  // Crear un nuevo canvas combinado
+  const spacing = 60;
+  const width = canvas1.width + canvas2.width + spacing;
+  const height = Math.max(canvas1.height, canvas2.height) + 100;
+
+  const combinedCanvas = document.createElement('canvas');
+  combinedCanvas.width = width;
+  combinedCanvas.height = height;
+  const ctx = combinedCanvas.getContext('2d');
+
+  // Fondo verde oscuro
+  ctx.fillStyle = "#0a3d0a";
+  ctx.fillRect(0, 0, width, height);
+
+  // Título central
+  ctx.fillStyle = "white";
+  ctx.font = "bold 40px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("⚽ Enfrentamiento ⚽", width / 2, 60);
+
+  // Dibujar ambos campos debajo del título
+  const yOffset = 100;
+  ctx.drawImage(canvas1, 0, yOffset);
+  ctx.drawImage(canvas2, canvas1.width + spacing, yOffset);
+
+  // Etiquetas de equipos
+  ctx.font = "bold 30px Arial";
+  ctx.fillText("Equipo Negro", canvas1.width / 2, 100);
+  ctx.fillText("Equipo Blanco", canvas1.width + spacing + canvas2.width / 2, 100);
+
+  // Descargar
+  const link = document.createElement("a");
+  link.download = "ambas_alineaciones.png";
+  link.href = combinedCanvas.toDataURL("image/png");
+  link.click();
+}
+
+// Asociar evento al botón
+document.getElementById('exportarAmbosBtn').addEventListener('click', exportarAmbosAlineaciones);
+
 </script>
 </body>
 </html>

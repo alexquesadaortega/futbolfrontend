@@ -293,6 +293,8 @@ document.getElementById('addPlayerBtn').addEventListener('click', async ()=>{
   }catch(err){ console.error(err); alert('Error al guardar jugador'); }
 });
 // ---------------- EQUIPOS ----------------
+let teamAlertShown = false; // 🔹 Evita que se repita el alert
+
 function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -312,7 +314,7 @@ function generateTeams(players, numTeams = 2) {
   const posGroups = { Portero: [], Defensa: [], Delantero: [], Otros: [] };
   players.forEach(p => {
     if (posGroups[p.pos]) posGroups[p.pos].push(p);
-    else posGroups.Otros.push(p); // por si hay otras posiciones
+    else posGroups.Otros.push(p);
   });
 
   // Validar mínimos para formar equipos
@@ -321,11 +323,13 @@ function generateTeams(players, numTeams = 2) {
     posGroups.Defensa.length < 6 ||
     posGroups.Delantero.length < 2
   ) {
-    alert('No hay suficientes jugadores para formar equipos completos respetando mínimos por posición');
-    return null; // ⬅️ Cambiado a null para evitar reintentos infinitos
+    if (!teamAlertShown) {
+      alert('No hay suficientes jugadores para formar equipos completos respetando mínimos por posición');
+      teamAlertShown = true;
+    }
+    return null;
   }
 
-  // Generar todas las combinaciones posibles para equilibrar medias
   let bestTeams = null;
   let smallestDiff = Infinity;
   const iterations = 500;
@@ -333,7 +337,6 @@ function generateTeams(players, numTeams = 2) {
   for (let it = 0; it < iterations; it++) {
     let teamA = [], teamB = [];
 
-    // Clonar arrays para no modificar originales
     const porteros = [...posGroups.Portero];
     const defensas = [...posGroups.Defensa];
     const delanteros = [...posGroups.Delantero];
@@ -344,7 +347,6 @@ function generateTeams(players, numTeams = 2) {
     shuffle(delanteros);
     shuffle(otros);
 
-    // Asignar mínimos
     teamA.push(porteros.shift());
     teamB.push(porteros.shift());
 
@@ -354,7 +356,6 @@ function generateTeams(players, numTeams = 2) {
     teamA.push(delanteros.shift());
     teamB.push(delanteros.shift());
 
-    // Rellenar hasta 7 jugadores con los restantes
     const remaining = [...porteros, ...defensas, ...delanteros, ...otros];
     while (teamA.length < maxPlayers && remaining.length > 0) {
       teamA.push(remaining.shift());
@@ -363,7 +364,6 @@ function generateTeams(players, numTeams = 2) {
       teamB.push(remaining.shift());
     }
 
-    // Calcular diferencia de media
     const diff = Math.abs(averageMedia(teamA) - averageMedia(teamB));
     if (diff < smallestDiff) {
       smallestDiff = diff;
@@ -371,10 +371,12 @@ function generateTeams(players, numTeams = 2) {
     }
   }
 
-  // Verificación final
   if (!bestTeams || bestTeams[0].length !== 7 || bestTeams[1].length !== 7) {
-    alert('No se pudieron generar equipos completos con los jugadores seleccionados');
-    return null; // ⬅️ También cambiamos a null
+    if (!teamAlertShown) {
+      alert('No se pudieron generar equipos completos con los jugadores seleccionados');
+      teamAlertShown = true;
+    }
+    return null;
   }
 
   return bestTeams;
@@ -387,14 +389,14 @@ function isDuplicate(proposals, newTeams) {
 
 // ---------------- GENERAR PROPUESTAS ----------------
 function generateProposals(selected, optimized = false) {
+  teamAlertShown = false; // 🔹 Se reinicia cada vez que generamos propuestas
   currentProposals = [];
   let attempts = 0;
 
   while (currentProposals.length < 5 && attempts < 50) {
     const teams = generateTeams(selected, 2);
 
-    // Validar equipos antes de continuar
-    if (!teams || !teams[0].length || !teams[1].length) {
+    if (!teams || !teams[0]?.length || !teams[1]?.length) {
       attempts++;
       continue;
     }
@@ -403,9 +405,7 @@ function generateProposals(selected, optimized = false) {
     attempts++;
   }
 
-  // ✅ Evitamos alert doble si generateTeams ya mostró uno
   if (currentProposals.length === 0) {
-    // Si generateTeams devolvió vacíos, no repetimos el alert
     console.warn('No se pudieron generar equipos válidos con los jugadores seleccionados');
     return;
   }

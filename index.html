@@ -686,9 +686,9 @@ async function exportarAmbosAlineaciones() {
 
   // Título central
   ctx.fillStyle = "white";
-  ctx.font = "bold 30px Arial";
+  ctx.font = "bold 28px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("⚽ Enfrentamiento ⚽", width / 2, 55);
+  ctx.fillText("⚽ ENFRENTAMIENTO ⚽", width / 2, 55);
 
   // Dibujar ambos campos debajo del título
   const yOffset = 90;
@@ -696,7 +696,7 @@ async function exportarAmbosAlineaciones() {
   ctx.drawImage(canvas2, canvas1.width + spacing, yOffset);
 
   // Etiquetas de equipos (más cortas y más arriba)
-  ctx.font = "bold 25px Arial";
+  ctx.font = "bold 20px Arial";
   ctx.fillText("NEGRO", canvas1.width / 2, yOffset - 10);
   ctx.fillText("BLANCO", canvas1.width + spacing + canvas2.width / 2, yOffset - 10);
 

@@ -656,7 +656,7 @@ function exportField(fieldId){
     link.click();
   });
 }
-// ---------------- EXPORTAR AMBOS CAMPOS EN UNA SOLA IMAGEN ----------------
+// ---------------- EXPORTAR AMBOS CAMPOS EN UNA SOLA IMAGEN (OPTIMIZADO PARA WHATSAPP) ----------------
 async function exportarAmbosAlineaciones() {
   const field1 = document.getElementById('field1');
   const field2 = document.getElementById('field2');
@@ -666,46 +666,56 @@ async function exportarAmbosAlineaciones() {
     return;
   }
 
-  // 🟢 Pedir título personalizado al usuario
-  const titulo = prompt("Introduce el título que quieres poner en la imagen:", "⚽ ENFRENTAMIENTO ⚽");
+  // 🟢 Preguntar por título dinámico
+  const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽");
 
   // Capturar ambos campos
   const canvas1 = await html2canvas(field1, { backgroundColor: null });
   const canvas2 = await html2canvas(field2, { backgroundColor: null });
 
-  // Crear un nuevo canvas combinado
-  const spacing = 60;
-  const width = canvas1.width + canvas2.width + spacing;
-  const height = Math.max(canvas1.height, canvas2.height) + 100;
+  // Parámetros de diseño
+  const spacing = 40; // menos separación horizontal
+  const padding = 40; // margen lateral
+  const topMargin = 60;
+  const bottomMargin = 40;
+  const totalWidth = canvas1.width * 2 + spacing + padding * 2;
+  const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
 
-  const combinedCanvas = document.createElement('canvas');
-  combinedCanvas.width = width;
-  combinedCanvas.height = height;
-  const ctx = combinedCanvas.getContext('2d');
+  // Crear canvas combinado
+  const combinedCanvas = document.createElement("canvas");
+  combinedCanvas.width = totalWidth;
+  combinedCanvas.height = totalHeight;
+  const ctx = combinedCanvas.getContext("2d");
 
-  // Fondo gris
-  ctx.fillStyle = "#2f2f2f";
-  ctx.fillRect(0, 0, width, height);
+  // Fondo gris claro
+  ctx.fillStyle = "#d9d9d9";
+  ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-  // Título central (dinámico)
-  ctx.fillStyle = "white";
-  ctx.font = "bold 24px Arial"; // 🔹 Letras más pequeñas
+  // Título centrado
+  ctx.fillStyle = "#222";
+  ctx.font = "bold 28px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(titulo || "⚽ ENFRENTAMIENTO ⚽", width / 2, 45); // 🔹 Un poco más arriba
+  ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 40);
 
-  // Dibujar ambos campos debajo del título
-  const yOffset = 80;
-  ctx.drawImage(canvas1, 0, yOffset);
-  ctx.drawImage(canvas2, canvas1.width + spacing, yOffset);
+  // Posiciones base
+  const yOffset = topMargin;
+  const x1 = padding;
+  const x2 = padding + canvas1.width + spacing;
 
-  // Etiquetas de equipos (más cortas y más arriba)
+  // Dibujar los campos
+  ctx.drawImage(canvas1, x1, yOffset);
+  ctx.drawImage(canvas2, x2, yOffset);
+
+  // Etiquetas “NEGRO” y “BLANCO”
+  ctx.fillStyle = "#000";
   ctx.font = "bold 18px Arial";
-  ctx.fillText("NEGRO", canvas1.width / 2, yOffset - 15);
-  ctx.fillText("BLANCO", canvas1.width + spacing + canvas2.width / 2, yOffset - 15);
+  ctx.textAlign = "center";
+  ctx.fillText("NEGRO", x1 + canvas1.width / 2, yOffset - 10);
+  ctx.fillText("BLANCO", x2 + canvas2.width / 2, yOffset - 10);
 
   // Descargar imagen
   const link = document.createElement("a");
-  link.download = "ambas_alineaciones.png";
+  link.download = "alineaciones_whatsapp.png";
   link.href = combinedCanvas.toDataURL("image/png");
   link.click();
 }

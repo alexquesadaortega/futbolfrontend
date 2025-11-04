@@ -251,6 +251,38 @@ button:active {
 .login-input::placeholder, #registerCard input::placeholder {
   color: #b8c2cc;
 }
+@media (display-mode: standalone) {
+  body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  h1 {
+    margin-top: 20px;
+    font-size: 22px;
+  }
+
+  .card {
+    width: 90%;
+    margin-top: 10px;
+  }
+
+  button {
+    font-size: 16px;
+    padding: 12px 18px;
+    border-radius: 10px;
+  }
+
+  #fieldsContainer {
+    transform: scale(0.9);
+  }
+}
+
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f1724">

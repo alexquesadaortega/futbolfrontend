@@ -915,122 +915,94 @@ const html2canvasOptions = {
   imageTimeout: 0
 };
 
-// ✅ FUNCIÓN PARA EXPORTAR UN SOLO CAMPO (sin transparencia)
+// ---------------- EXPORTAR UN CAMPO ----------------
 async function exportField(fieldId) {
   const field = document.getElementById(fieldId);
-  if (!field) {
-    alert("No se encontró el campo.");
-    return;
-  }
+  if (!field) return alert("No se encontró el campo.");
 
-  // Creamos un clon del campo dentro de un contenedor temporal
-  const clone = field.cloneNode(true);
-  clone.style.display = "block";
-  clone.style.opacity = "1";
-  clone.style.backgroundColor = "#0f4720"; // Fondo verde sólido del campo
-  clone.style.filter = "none";
-  document.body.appendChild(clone);
+  // Capturamos el campo con fondo sólido y sin transparencia
+  const canvas = await html2canvas(field, {
+    backgroundColor: "#d9d9d9", // Fondo sólido gris claro
+    scale: 3,                   // Mayor nitidez
+    useCORS: true
+  });
 
-  // Renderizamos el clon
-  const canvas = await html2canvas(clone, html2canvasOptions);
-  document.body.removeChild(clone);
+  // Creamos un nuevo canvas para eliminar cualquier canal alfa
+  const flatCanvas = document.createElement("canvas");
+  flatCanvas.width = canvas.width;
+  flatCanvas.height = canvas.height;
+  const ctx = flatCanvas.getContext("2d");
 
-  // Forzar todos los píxeles a opacos
-  const ctx = canvas.getContext("2d");
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const d = imgData.data;
-  for (let i = 3; i < d.length; i += 4) d[i] = 255;
-  ctx.putImageData(imgData, 0, 0);
+  // Fondo sólido + imagen
+  ctx.fillStyle = "#d9d9d9";
+  ctx.fillRect(0, 0, flatCanvas.width, flatCanvas.height);
+  ctx.drawImage(canvas, 0, 0);
 
-  // Descargar imagen
+  // Descargar
   const link = document.createElement("a");
   link.download = `${fieldId}.png`;
-  link.href = canvas.toDataURL("image/png", 1.0);
+  link.href = flatCanvas.toDataURL("image/png");
   link.click();
 }
 
-// ✅ EXPORTAR AMBOS CAMPOS JUNTOS (para WhatsApp)
+// ---------------- EXPORTAR AMBOS CAMPOS ----------------
 async function exportarAmbosAlineaciones() {
-  const field1 = document.getElementById("field1");
-  const field2 = document.getElementById("field2");
+  const field1 = document.getElementById('field1');
+  const field2 = document.getElementById('field2');
 
-  if (!field1 || !field2) {
-    alert("No se encontraron los campos de los equipos.");
-    return;
-  }
+  if (!field1 || !field2) return alert("No se encontraron los campos.");
 
   const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽");
 
-  // Clonar y preparar campos (así se evita cualquier transparencia del DOM original)
-  const clone1 = field1.cloneNode(true);
-  const clone2 = field2.cloneNode(true);
-  [clone1, clone2].forEach(clone => {
-    clone.style.display = "block";
-    clone.style.opacity = "1";
-    clone.style.backgroundColor = "#0f4720";
-    clone.style.filter = "none";
-    document.body.appendChild(clone);
-  });
+  // Capturamos con fondo gris para evitar transparencia
+  const canvas1 = await html2canvas(field1, { backgroundColor: "#d9d9d9", scale: 3, useCORS: true });
+  const canvas2 = await html2canvas(field2, { backgroundColor: "#d9d9d9", scale: 3, useCORS: true });
 
-  // Renderizar ambos clones
-  const [canvas1, canvas2] = await Promise.all([
-    html2canvas(clone1, html2canvasOptions),
-    html2canvas(clone2, html2canvasOptions)
-  ]);
-
-  document.body.removeChild(clone1);
-  document.body.removeChild(clone2);
-
-  // Crear lienzo final combinado
+  // Creamos un canvas combinado
   const spacing = 40;
   const padding = 40;
-  const topMargin = 60;
+  const topMargin = 80;
   const bottomMargin = 40;
   const totalWidth = canvas1.width * 2 + spacing + padding * 2;
   const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
+
   const combinedCanvas = document.createElement("canvas");
   combinedCanvas.width = totalWidth;
   combinedCanvas.height = totalHeight;
-
   const ctx = combinedCanvas.getContext("2d");
 
-  // Fondo gris
+  // Fondo sólido uniforme
   ctx.fillStyle = "#d9d9d9";
   ctx.fillRect(0, 0, totalWidth, totalHeight);
 
   // Título
   ctx.fillStyle = "#222";
-  ctx.font = "bold 26px Arial";
+  ctx.font = "bold 40px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 40);
+  ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 50);
 
+  // Posiciones
   const yOffset = topMargin;
   const x1 = padding;
   const x2 = padding + canvas1.width + spacing;
 
-  // Dibujar campos
   ctx.drawImage(canvas1, x1, yOffset);
   ctx.drawImage(canvas2, x2, yOffset);
 
   // Etiquetas
   ctx.fillStyle = "#000";
-  ctx.font = "bold 18px Arial";
+  ctx.font = "bold 28px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("NEGRO", x1 + canvas1.width / 2, yOffset - 10);
-  ctx.fillText("BLANCO", x2 + canvas2.width / 2, yOffset - 10);
+  ctx.fillText("NEGRO", x1 + canvas1.width / 2, yOffset - 15);
+  ctx.fillText("BLANCO", x2 + canvas2.width / 2, yOffset - 15);
 
-  // Forzar opacidad total
-  const imgData = ctx.getImageData(0, 0, combinedCanvas.width, combinedCanvas.height);
-  const d = imgData.data;
-  for (let i = 3; i < d.length; i += 4) d[i] = 255;
-  ctx.putImageData(imgData, 0, 0);
-
-  // Descargar
+  // Descargar imagen final sin transparencia
   const link = document.createElement("a");
   link.download = "alineaciones_whatsapp.png";
-  link.href = combinedCanvas.toDataURL("image/png", 1.0);
+  link.href = combinedCanvas.toDataURL("image/png");
   link.click();
 }
+
 
 // Asociar evento al botón
 document.getElementById('exportarAmbosBtn').addEventListener('click', exportarAmbosAlineaciones);

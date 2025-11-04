@@ -911,179 +911,201 @@ function prepareCloneForCapture(node) {
   return clone;
 }
 
-// ---------------- EXPORTAR UN CAMPO (Canvas directo) ----------------
-function exportField(fieldId) {
+// ---------------- EXPORTAR UN CAMPO INDIVIDUAL ----------------
+async function exportFieldDirect(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("No se encontró el campo.");
 
-  const fieldWidth = 320;
-  const fieldHeight = 480;
-  const canvas = document.createElement("canvas");
-  canvas.width = fieldWidth;
-  canvas.height = fieldHeight;
-  const ctx = canvas.getContext("2d");
+  const fieldWidth = field.clientWidth;
+  const fieldHeight = field.clientHeight;
 
-  // --- Fondo del campo ---
+  const canvas = document.createElement("canvas");
+  canvas.width = fieldWidth * 3;
+  canvas.height = fieldHeight * 3;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(3, 3);
+
+  // Fondo del campo
   ctx.fillStyle = "#0f4720";
   ctx.fillRect(0, 0, fieldWidth, fieldHeight);
 
-  // --- Líneas ---
+  // Líneas del campo
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2;
   ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
   ctx.beginPath();
-  ctx.moveTo(0, fieldHeight / 2);
-  ctx.lineTo(fieldWidth, fieldHeight / 2);
+  ctx.moveTo(0, fieldHeight/2);
+  ctx.lineTo(fieldWidth, fieldHeight/2);
   ctx.stroke();
-  const centerX = fieldWidth / 2, centerY = fieldHeight / 2, radius = 40;
+
+  // Círculo central
+  const centerX = fieldWidth/2;
+  const centerY = fieldHeight/2;
+  const radius = 40;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.arc(centerX, centerY, radius, 0, 2*Math.PI);
   ctx.stroke();
-  ctx.strokeRect((fieldWidth - 160) / 2, 0, 160, 100);
-  ctx.strokeRect((fieldWidth - 160) / 2, fieldHeight - 100, 160, 100);
 
-  // --- Dibujar jugadores ---
-  const players = Array.from(field.querySelectorAll('.player-card'));
-  players.forEach(playerDiv => {
-    const img = playerDiv.querySelector('img');
-    const name = playerDiv.querySelector('span').textContent;
+  // Área porteros
+  ctx.strokeRect((fieldWidth-160)/2, 0, 160, 100);
+  ctx.strokeRect((fieldWidth-160)/2, fieldHeight-100, 160, 100);
 
-    // Posición en el canvas
-    const x = parseFloat(playerDiv.style.left);
-    const y = parseFloat(playerDiv.style.top);
+  // Jugadores
+  const players = Array.from(field.querySelectorAll(".player-card"));
+  for (let p of players) {
+    const img = p.querySelector("img");
+    const span = p.querySelector("span");
+    if (!img || !span) continue;
+
+    const x = parseFloat(p.style.left);
+    const y = parseFloat(p.style.top);
 
     // Dibujar camiseta
-    const playerImg = new Image();
-    playerImg.src = img.src;
-    playerImg.onload = () => {
-      ctx.drawImage(playerImg, x, y, playerDiv.offsetWidth, playerDiv.offsetHeight);
+    await new Promise(res => {
+      const imgObj = new Image();
+      imgObj.crossOrigin = "anonymous";
+      imgObj.src = img.src;
+      imgObj.onload = () => {
+        ctx.drawImage(imgObj, x, y, p.clientWidth, p.clientHeight);
+        res();
+      };
+    });
 
-      // Dibujar nombre encima
-      ctx.fillStyle = "#fff";
-      ctx.font = "10px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(name, x + playerDiv.offsetWidth / 2, y + playerDiv.offsetHeight + 10);
-    };
-  });
+    // Dibujar nombre
+    ctx.fillStyle = "#fff";
+    ctx.font = "12px Poppins, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(span.textContent, x + p.clientWidth/2, y + p.clientHeight + 12);
+  }
 
-  // Descargar imagen después de un pequeño delay para asegurar que carguen imágenes
-  setTimeout(() => {
-    const link = document.createElement("a");
-    link.download = `${fieldId}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  }, 100);
+  // Descargar
+  const link = document.createElement("a");
+  link.download = `${fieldId}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
 }
 
 // ---------------- EXPORTAR AMBOS CAMPOS ----------------
-function exportarAmbosAlineaciones() {
+async function exportarAmbosAlineacionesDirect() {
   const field1 = document.getElementById('field1');
   const field2 = document.getElementById('field2');
+
   if (!field1 || !field2) return alert("No se encontraron los campos.");
 
   const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽");
 
-  const drawCanvas = (field) => {
-    const fieldWidth = 320;
-    const fieldHeight = 480;
-    const canvas = document.createElement("canvas");
-    canvas.width = fieldWidth;
-    canvas.height = fieldHeight;
-    const ctx = canvas.getContext("2d");
+  // Exportar cada campo a canvas
+  async function getCanvas(field) {
+    const fieldWidth = field.clientWidth;
+    const fieldHeight = field.clientHeight;
 
-    // Fondo
+    const canvas = document.createElement("canvas");
+    canvas.width = fieldWidth * 3;
+    canvas.height = fieldHeight * 3;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(3, 3);
+
+    // Fondo y líneas
     ctx.fillStyle = "#0f4720";
     ctx.fillRect(0, 0, fieldWidth, fieldHeight);
-
-    // Líneas
     ctx.strokeStyle = "#fff";
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
     ctx.beginPath();
-    ctx.moveTo(0, fieldHeight / 2);
-    ctx.lineTo(fieldWidth, fieldHeight / 2);
+    ctx.moveTo(0, fieldHeight/2);
+    ctx.lineTo(fieldWidth, fieldHeight/2);
     ctx.stroke();
-    const centerX = fieldWidth / 2, centerY = fieldHeight / 2, radius = 40;
+    const centerX = fieldWidth/2;
+    const centerY = fieldHeight/2;
+    const radius = 40;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.arc(centerX, centerY, radius, 0, 2*Math.PI);
     ctx.stroke();
-    ctx.strokeRect((fieldWidth - 160) / 2, 0, 160, 100);
-    ctx.strokeRect((fieldWidth - 160) / 2, fieldHeight - 100, 160, 100);
+    ctx.strokeRect((fieldWidth-160)/2, 0, 160, 100);
+    ctx.strokeRect((fieldWidth-160)/2, fieldHeight-100, 160, 100);
 
-    // Dibujar jugadores
-    const players = Array.from(field.querySelectorAll('.player-card'));
-    players.forEach(playerDiv => {
-      const img = playerDiv.querySelector('img');
-      const name = playerDiv.querySelector('span').textContent;
-      const x = parseFloat(playerDiv.style.left);
-      const y = parseFloat(playerDiv.style.top);
+    // Jugadores
+    const players = Array.from(field.querySelectorAll(".player-card"));
+    for (let p of players) {
+      const img = p.querySelector("img");
+      const span = p.querySelector("span");
+      if (!img || !span) continue;
 
-      const playerImg = new Image();
-      playerImg.src = img.src;
-      playerImg.onload = () => {
-        ctx.drawImage(playerImg, x, y, playerDiv.offsetWidth, playerDiv.offsetHeight);
+      const x = parseFloat(p.style.left);
+      const y = parseFloat(p.style.top);
 
-        ctx.fillStyle = "#fff";
-        ctx.font = "10px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(name, x + playerDiv.offsetWidth / 2, y + playerDiv.offsetHeight + 10);
-      };
-    });
+      await new Promise(res => {
+        const imgObj = new Image();
+        imgObj.crossOrigin = "anonymous";
+        imgObj.src = img.src;
+        imgObj.onload = () => {
+          ctx.drawImage(imgObj, x, y, p.clientWidth, p.clientHeight);
+          res();
+        };
+      });
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "12px Poppins, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(span.textContent, x + p.clientWidth/2, y + p.clientHeight + 12);
+    }
 
     return canvas;
-  };
+  }
 
-  const canvas1 = drawCanvas(field1);
-  const canvas2 = drawCanvas(field2);
+  const canvas1 = await getCanvas(field1);
+  const canvas2 = await getCanvas(field2);
 
-  // Combinamos en uno solo
-  setTimeout(() => {
-    const spacing = 40;
-    const padding = 40;
-    const topMargin = 80;
-    const bottomMargin = 40;
-    const totalWidth = canvas1.width * 2 + spacing + padding * 2;
-    const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
+  // Canvas combinado
+  const spacing = 40;
+  const padding = 40;
+  const topMargin = 80;
+  const bottomMargin = 40;
+  const totalWidth = canvas1.width + canvas2.width + spacing + padding*2;
+  const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
 
-    const combinedCanvas = document.createElement("canvas");
-    combinedCanvas.width = totalWidth;
-    combinedCanvas.height = totalHeight;
-    const ctx = combinedCanvas.getContext("2d");
+  const combinedCanvas = document.createElement("canvas");
+  combinedCanvas.width = totalWidth;
+  combinedCanvas.height = totalHeight;
+  const ctx = combinedCanvas.getContext("2d");
 
-    ctx.fillStyle = "#d9d9d9";
-    ctx.fillRect(0, 0, totalWidth, totalHeight);
+  // Fondo
+  ctx.fillStyle = "#d9d9d9";
+  ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-    // Título
-    ctx.fillStyle = "#222";
-    ctx.font = "bold 40px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 50);
+  // Título
+  ctx.fillStyle = "#222";
+  ctx.font = "bold 40px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 50);
 
-    // Posicionar campos
-    const x1 = padding;
-    const x2 = padding + canvas1.width + spacing;
-    const yOffset = topMargin;
+  // Dibujar campos
+  const x1 = padding;
+  const x2 = padding + canvas1.width + spacing;
+  const yOffset = topMargin;
+  ctx.drawImage(canvas1, x1, yOffset);
+  ctx.drawImage(canvas2, x2, yOffset);
 
-    ctx.drawImage(canvas1, x1, yOffset);
-    ctx.drawImage(canvas2, x2, yOffset);
+  // Etiquetas
+  ctx.fillStyle = "#000";
+  ctx.font = "bold 28px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("NEGRO", x1 + canvas1.width/2, yOffset - 15);
+  ctx.fillText("BLANCO", x2 + canvas2.width/2, yOffset - 15);
 
-    // Etiquetas
-    ctx.fillStyle = "#000";
-    ctx.font = "bold 28px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("NEGRO", x1 + canvas1.width / 2, yOffset - 15);
-    ctx.fillText("BLANCO", x2 + canvas2.width / 2, yOffset - 15);
-
-    // Descargar
-    const link = document.createElement("a");
-    link.download = "alineaciones_whatsapp.png";
-    link.href = combinedCanvas.toDataURL("image/png");
-    link.click();
-  }, 200);
+  // Descargar imagen final
+  const link = document.createElement("a");
+  link.download = "alineaciones_whatsapp.png";
+  link.href = combinedCanvas.toDataURL("image/png");
+  link.click();
 }
 
-// Asociar evento
-document.getElementById('exportarAmbosBtn').addEventListener('click', exportarAmbosAlineaciones);
+// ---------------- EVENTOS BOTONES ----------------
+document.querySelectorAll(".export-btn").forEach(btn=>{
+  btn.onclick = () => exportFieldDirect(btn.previousElementSibling?.id || btn.id.replace('Btn',''));
+});
+
+document.getElementById('exportarAmbosBtn').onclick = exportarAmbosAlineacionesDirect;
 
 </script>
   

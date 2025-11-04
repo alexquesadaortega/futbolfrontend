@@ -99,15 +99,14 @@ button{background:#06b6d4;color:#022;cursor:pointer;margin:5px;padding:6px;borde
   </div>
 </div>
 
+<!-- NUEVO BOTÓN GLOBAL -->
+<div style="text-align:center; margin-top:20px;">
+  <button id="exportarAmbosBtn" class="export-btn">📸 Exportar Ambos Equipos</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 const API_URL = 'https://futbol-backend-0gnv.onrender.com';
-
-let currentUser = null;
-let currentPlayers = [];
-let currentProposals = [];
-const positionOrder = {Portero:0, Defensa:1, Delantero:2};
-const shirtImages = { black:'camiseta-negra.png', white:'camiseta-blanca.png' };
 
 // ---------------- LOGIN ----------------
 document.getElementById('loginBtn').addEventListener('click', async () => {

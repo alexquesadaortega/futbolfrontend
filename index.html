@@ -897,12 +897,22 @@ function makeDraggable(el, field, positionsY){
 
 function exportField(fieldId){
   const field=document.getElementById(fieldId);
-  html2canvas(field).then(canvas=>{
-    const link=document.createElement('a');
-    link.download=fieldId+'.png';
-    link.href=canvas.toDataURL();
-    link.click();
-  });
+  html2canvas(container, {
+  backgroundColor: "#ccc",       // Fondo gris sólido
+  scale: 2,                      // Mejora la resolución
+  useCORS: true,                 // Evita problemas con imágenes externas
+  logging: false,
+  removeContainer: true,
+  allowTaint: false,
+}).then(canvas => {
+  const ctx = canvas.getContext('2d');
+  ctx.globalAlpha = 1.0;         // 🔥 Fuerza opacidad total
+
+  const link = document.createElement('a');
+  link.download = `${title}.png`;
+  link.href = canvas.toDataURL('image/png', 1.0); // calidad máxima
+  link.click();
+});
 }
 // ---------------- EXPORTAR AMBOS CAMPOS EN UNA SOLA IMAGEN (OPTIMIZADO PARA WHATSAPP) ----------------
 async function exportarAmbosAlineaciones() {

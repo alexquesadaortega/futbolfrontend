@@ -680,25 +680,25 @@ async function exportarAmbosAlineaciones() {
   combinedCanvas.height = height;
   const ctx = combinedCanvas.getContext('2d');
 
-  // Fondo verde oscuro
-  ctx.fillStyle = "#0a3d0a";
+    // Fondo gris
+  ctx.fillStyle = "#2f2f2f";
   ctx.fillRect(0, 0, width, height);
 
   // Título central
   ctx.fillStyle = "white";
   ctx.font = "bold 40px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("⚽ Enfrentamiento ⚽", width / 2, 60);
+  ctx.fillText("⚽ Enfrentamiento ⚽", width / 2, 55);
 
   // Dibujar ambos campos debajo del título
-  const yOffset = 100;
+  const yOffset = 90;
   ctx.drawImage(canvas1, 0, yOffset);
   ctx.drawImage(canvas2, canvas1.width + spacing, yOffset);
 
-  // Etiquetas de equipos
-  ctx.font = "bold 30px Arial";
-  ctx.fillText("Equipo Negro", canvas1.width / 2, 100);
-  ctx.fillText("Equipo Blanco", canvas1.width + spacing + canvas2.width / 2, 100);
+  // Etiquetas de equipos (más cortas y más arriba)
+  ctx.font = "bold 28px Arial";
+  ctx.fillText("NEGRO", canvas1.width / 2, yOffset - 10);
+  ctx.fillText("BLANCO", canvas1.width + spacing + canvas2.width / 2, yOffset - 10);
 
   // Descargar
   const link = document.createElement("a");

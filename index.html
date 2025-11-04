@@ -282,6 +282,16 @@ button:active {
     transform: scale(0.9);
   }
 }
+/* --- Mejora de nitidez en exportación --- */
+.player-card img,
+.player-card span {
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  opacity: 1 !important;
+  filter: none !important;
+}
 
 </style>
 <link rel="manifest" href="manifest.json">
@@ -895,45 +905,45 @@ function makeDraggable(el, field, positionsY){
   }
 }
 
-// ---------------- EXPORTAR UN SOLO CAMPO (SIN TRANSPARENCIAS, DEFINITIVO) ----------------
+// ===== EXPORTAR UN SOLO CAMPO =====
 async function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("Campo no encontrado.");
 
   const title = fieldId === "field1" ? "NEGRO" : "BLANCO";
 
-  // Captura del campo con fondo sólido
+  // Captura con fondo opaco y sin suavizados
   const canvas = await html2canvas(field, {
-    backgroundColor: "#0f4720", // fondo del campo
+    backgroundColor: "#0f4720",
     scale: 2,
     useCORS: true,
     allowTaint: true,
-    logging: false
+    logging: false,
+    removeContainer: true,
   });
 
-  // 🔥 Fuerza todos los píxeles a ser opacos
-  const ctx = canvas.getContext("2d");
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  for (let i = 3; i < imgData.data.length; i += 4) {
-    imgData.data[i] = 255; // alfa total
-  }
-  ctx.putImageData(imgData, 0, 0);
-
-  // Canvas final con fondo gris
+  // Copia exacta a un canvas nuevo sin transparencia ni suavizado
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = canvas.width;
   finalCanvas.height = canvas.height + 60;
-  const fctx = finalCanvas.getContext("2d");
+  const ctx = finalCanvas.getContext("2d", { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = false;
 
-  fctx.fillStyle = "#d9d9d9";
-  fctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+  // Fondo gris
+  ctx.fillStyle = "#d9d9d9";
+  ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-  fctx.fillStyle = "#000";
-  fctx.font = "bold 24px Arial";
-  fctx.textAlign = "center";
-  fctx.fillText(title, finalCanvas.width / 2, 40);
-  fctx.drawImage(canvas, 0, 60);
+  // Título
+  ctx.fillStyle = "#000";
+  ctx.font = "bold 22px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(title, finalCanvas.width / 2, 35);
 
+  // Dibujo sin mezcla
+  ctx.globalCompositeOperation = "source-over";
+  ctx.drawImage(canvas, 0, 60);
+
+  // Exportar
   const link = document.createElement("a");
   link.download = `${title.toLowerCase()}.png`;
   link.href = finalCanvas.toDataURL("image/png", 1.0);
@@ -942,7 +952,7 @@ async function exportField(fieldId) {
 
 
 
-// ---------------- EXPORTAR AMBOS CAMPOS (SIN TRANSPARENCIAS, DEFINITIVO) ----------------
+// ===== EXPORTAR AMBOS CAMPOS =====
 async function exportarAmbosAlineaciones() {
   const field1 = document.getElementById("field1");
   const field2 = document.getElementById("field2");
@@ -955,45 +965,57 @@ async function exportarAmbosAlineaciones() {
     scale: 2,
     useCORS: true,
     allowTaint: true,
-    logging: false
+    logging: false,
+    removeContainer: true,
   };
 
   const [canvas1, canvas2] = await Promise.all([
     html2canvas(field1, opts),
-    html2canvas(field2, opts)
+    html2canvas(field2, opts),
   ]);
-
-  // 🔥 Fuerza opacidad total en ambas capturas
-  [canvas1, canvas2].forEach(cv => {
-    const ctx = cv.getContext("2d");
-    const imgData = ctx.getImageData(0, 0, cv.width, cv.height);
-    for (let i = 3; i < imgData.data.length; i += 4) {
-      imgData.data[i] = 255;
-    }
-    ctx.putImageData(imgData, 0, 0);
-  });
 
   const spacing = 40;
   const padding = 40;
   const topMargin = 80;
   const bottomMargin = 40;
   const totalWidth = canvas1.width * 2 + spacing + padding * 2;
-  const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
+  const totalHeight =
+    Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
 
   const combined = document.createElement("canvas");
   combined.width = totalWidth;
   combined.height = totalHeight;
-  const ctx = combined.getContext("2d");
+  const ctx = combined.getContext("2d", { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = false;
 
-  // Fondo gris claro opaco
+  // Fondo gris
   ctx.fillStyle = "#d9d9d9";
   ctx.fillRect(0, 0, totalWidth, totalHeight);
 
   // Título
   ctx.fillStyle = "#111";
-  ctx.font = "bold 30px Arial";
+  ctx.font = "bold 28px Arial";
   ctx.textAlign = "center";
   ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 50);
+
+  const yOffset = topMargin;
+  const x1 = padding;
+  const x2 = padding + canvas1.width + spacing;
+
+  ctx.globalCompositeOperation = "source-over";
+  ctx.drawImage(canvas1, x1, yOffset);
+  ctx.drawImage(canvas2, x2, yOffset);
+
+  ctx.fillStyle = "#000";
+  ctx.font = "bold 18px Arial";
+  ctx.fillText("NEGRO", x1 + canvas1.width / 2, yOffset - 15);
+  ctx.fillText("BLANCO", x2 + canvas2.width / 2, yOffset - 15);
+
+  const link = document.createElement("a");
+  link.download = "alineaciones_whatsapp.png";
+  link.href = combined.toDataURL("image/png", 1.0);
+  link.click();
+}
 
   const yOffset = topMargin;
   const x1 = padding;

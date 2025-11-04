@@ -656,7 +656,7 @@ function exportField(fieldId){
     link.click();
   });
 }
-  // ---------------- EXPORTAR AMBOS CAMPOS EN UNA SOLA IMAGEN ----------------
+// ---------------- EXPORTAR AMBOS CAMPOS EN UNA SOLA IMAGEN ----------------
 async function exportarAmbosAlineaciones() {
   const field1 = document.getElementById('field1');
   const field2 = document.getElementById('field2');
@@ -665,6 +665,9 @@ async function exportarAmbosAlineaciones() {
     alert("No se encontraron los campos de los equipos.");
     return;
   }
+
+  // 🟢 Pedir título personalizado al usuario
+  const titulo = prompt("Introduce el título que quieres poner en la imagen:", "⚽ ENFRENTAMIENTO ⚽");
 
   // Capturar ambos campos
   const canvas1 = await html2canvas(field1, { backgroundColor: null });
@@ -680,27 +683,27 @@ async function exportarAmbosAlineaciones() {
   combinedCanvas.height = height;
   const ctx = combinedCanvas.getContext('2d');
 
-    // Fondo gris
+  // Fondo gris
   ctx.fillStyle = "#2f2f2f";
   ctx.fillRect(0, 0, width, height);
 
-  // Título central
+  // Título central (dinámico)
   ctx.fillStyle = "white";
-  ctx.font = "bold 28px Arial";
+  ctx.font = "bold 24px Arial"; // 🔹 Letras más pequeñas
   ctx.textAlign = "center";
-  ctx.fillText("⚽ ENFRENTAMIENTO ⚽", width / 2, 55);
+  ctx.fillText(titulo || "⚽ ENFRENTAMIENTO ⚽", width / 2, 45); // 🔹 Un poco más arriba
 
   // Dibujar ambos campos debajo del título
-  const yOffset = 90;
+  const yOffset = 80;
   ctx.drawImage(canvas1, 0, yOffset);
   ctx.drawImage(canvas2, canvas1.width + spacing, yOffset);
 
   // Etiquetas de equipos (más cortas y más arriba)
-  ctx.font = "bold 20px Arial";
-  ctx.fillText("NEGRO", canvas1.width / 2, yOffset - 10);
-  ctx.fillText("BLANCO", canvas1.width + spacing + canvas2.width / 2, yOffset - 10);
+  ctx.font = "bold 18px Arial";
+  ctx.fillText("NEGRO", canvas1.width / 2, yOffset - 15);
+  ctx.fillText("BLANCO", canvas1.width + spacing + canvas2.width / 2, yOffset - 15);
 
-  // Descargar
+  // Descargar imagen
   const link = document.createElement("a");
   link.download = "ambas_alineaciones.png";
   link.href = combinedCanvas.toDataURL("image/png");

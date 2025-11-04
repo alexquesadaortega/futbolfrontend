@@ -911,150 +911,180 @@ function prepareCloneForCapture(node) {
   return clone;
 }
 
-// Exportar UN campo (reemplaza exportField)
-async function exportField(fieldId) {
+// ---------------- EXPORTAR UN CAMPO (Canvas directo) ----------------
+function exportField(fieldId) {
   const field = document.getElementById(fieldId);
-  if (!field) return alert("Campo no encontrado.");
+  if (!field) return alert("No se encontró el campo.");
 
-  // clonamos y preparamos para captura
-  const clone = prepareCloneForCapture(field);
+  const fieldWidth = 320;
+  const fieldHeight = 480;
+  const canvas = document.createElement("canvas");
+  canvas.width = fieldWidth;
+  canvas.height = fieldHeight;
+  const ctx = canvas.getContext("2d");
 
-  // lo metemos offscreen para capturar (no visible al usuario)
-  clone.style.position = 'fixed';
-  clone.style.left = '-9999px';
-  clone.style.top = '-9999px';
-  clone.style.width = field.offsetWidth + 'px';
-  clone.style.height = field.offsetHeight + 'px';
-  document.body.appendChild(clone);
+  // --- Fondo del campo ---
+  ctx.fillStyle = "#0f4720";
+  ctx.fillRect(0, 0, fieldWidth, fieldHeight);
 
-  // captura con background sólido y mayor escala para nitidez
-  const canvas = await html2canvas(clone, {
-    backgroundColor: '#d9d9d9',
-    scale: Math.max(2, window.devicePixelRatio || 1) * 1.5,
-    useCORS: true,
-    logging: false,
-    allowTaint: false,
-    imageTimeout: 0
+  // --- Líneas ---
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
+  ctx.beginPath();
+  ctx.moveTo(0, fieldHeight / 2);
+  ctx.lineTo(fieldWidth, fieldHeight / 2);
+  ctx.stroke();
+  const centerX = fieldWidth / 2, centerY = fieldHeight / 2, radius = 40;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.strokeRect((fieldWidth - 160) / 2, 0, 160, 100);
+  ctx.strokeRect((fieldWidth - 160) / 2, fieldHeight - 100, 160, 100);
+
+  // --- Dibujar jugadores ---
+  const players = Array.from(field.querySelectorAll('.player-card'));
+  players.forEach(playerDiv => {
+    const img = playerDiv.querySelector('img');
+    const name = playerDiv.querySelector('span').textContent;
+
+    // Posición en el canvas
+    const x = parseFloat(playerDiv.style.left);
+    const y = parseFloat(playerDiv.style.top);
+
+    // Dibujar camiseta
+    const playerImg = new Image();
+    playerImg.src = img.src;
+    playerImg.onload = () => {
+      ctx.drawImage(playerImg, x, y, playerDiv.offsetWidth, playerDiv.offsetHeight);
+
+      // Dibujar nombre encima
+      ctx.fillStyle = "#fff";
+      ctx.font = "10px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(name, x + playerDiv.offsetWidth / 2, y + playerDiv.offsetHeight + 10);
+    };
   });
 
-  // limpiamos el clon
-  document.body.removeChild(clone);
-
-  // Guardamos como PNG sin alfa
-  const finalCanvas = document.createElement('canvas');
-  finalCanvas.width = canvas.width;
-  finalCanvas.height = canvas.height;
-  const ctx = finalCanvas.getContext('2d');
-  ctx.fillStyle = '#d9d9d9';
-  ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-  ctx.drawImage(canvas, 0, 0);
-
-  // descarga
-  const title = fieldId === 'field1' ? 'negro' : 'blanco';
-  const link = document.createElement('a');
-  link.download = `${title}.png`;
-  link.href = finalCanvas.toDataURL('image/png', 1.0);
-  link.click();
+  // Descargar imagen después de un pequeño delay para asegurar que carguen imágenes
+  setTimeout(() => {
+    const link = document.createElement("a");
+    link.download = `${fieldId}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }, 100);
 }
 
-// Exportar AMBOS campos (reemplaza exportarAmbosAlineaciones)
-async function exportarAmbosAlineaciones() {
+// ---------------- EXPORTAR AMBOS CAMPOS ----------------
+function exportarAmbosAlineaciones() {
   const field1 = document.getElementById('field1');
   const field2 = document.getElementById('field2');
   if (!field1 || !field2) return alert("No se encontraron los campos.");
 
   const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽");
 
-  // clonamos y preparamos
-  const clone1 = prepareCloneForCapture(field1);
-  const clone2 = prepareCloneForCapture(field2);
-  clone1.style.position = clone2.style.position = 'fixed';
-  clone1.style.left = clone2.style.left = '-9999px';
-  clone1.style.top = clone2.style.top = '-9999px';
-  document.body.appendChild(clone1);
-  document.body.appendChild(clone2);
+  const drawCanvas = (field) => {
+    const fieldWidth = 320;
+    const fieldHeight = 480;
+    const canvas = document.createElement("canvas");
+    canvas.width = fieldWidth;
+    canvas.height = fieldHeight;
+    const ctx = canvas.getContext("2d");
 
-  // capturamos ambos en paralelo
-  const opts = {
-    backgroundColor: '#d9d9d9',
-    scale: Math.max(2, window.devicePixelRatio || 1) * 1.5,
-    useCORS: true,
-    logging: false,
-    allowTaint: false,
-    imageTimeout: 0
+    // Fondo
+    ctx.fillStyle = "#0f4720";
+    ctx.fillRect(0, 0, fieldWidth, fieldHeight);
+
+    // Líneas
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
+    ctx.beginPath();
+    ctx.moveTo(0, fieldHeight / 2);
+    ctx.lineTo(fieldWidth, fieldHeight / 2);
+    ctx.stroke();
+    const centerX = fieldWidth / 2, centerY = fieldHeight / 2, radius = 40;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.strokeRect((fieldWidth - 160) / 2, 0, 160, 100);
+    ctx.strokeRect((fieldWidth - 160) / 2, fieldHeight - 100, 160, 100);
+
+    // Dibujar jugadores
+    const players = Array.from(field.querySelectorAll('.player-card'));
+    players.forEach(playerDiv => {
+      const img = playerDiv.querySelector('img');
+      const name = playerDiv.querySelector('span').textContent;
+      const x = parseFloat(playerDiv.style.left);
+      const y = parseFloat(playerDiv.style.top);
+
+      const playerImg = new Image();
+      playerImg.src = img.src;
+      playerImg.onload = () => {
+        ctx.drawImage(playerImg, x, y, playerDiv.offsetWidth, playerDiv.offsetHeight);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "10px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(name, x + playerDiv.offsetWidth / 2, y + playerDiv.offsetHeight + 10);
+      };
+    });
+
+    return canvas;
   };
-  const [canvas1, canvas2] = await Promise.all([
-    html2canvas(clone1, opts),
-    html2canvas(clone2, opts)
-  ]);
 
-  // limpiar clones
-  document.body.removeChild(clone1);
-  document.body.removeChild(clone2);
+  const canvas1 = drawCanvas(field1);
+  const canvas2 = drawCanvas(field2);
 
-  // combinamos en un canvas final con fondo sólido
-  const spacing = 40;
-  const padding = 40;
-  const topMargin = 80;
-  const bottomMargin = 40;
-  const totalWidth = canvas1.width + canvas2.width + spacing + padding * 2;
-  const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
+  // Combinamos en uno solo
+  setTimeout(() => {
+    const spacing = 40;
+    const padding = 40;
+    const topMargin = 80;
+    const bottomMargin = 40;
+    const totalWidth = canvas1.width * 2 + spacing + padding * 2;
+    const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
 
-  const combined = document.createElement('canvas');
-  combined.width = totalWidth;
-  combined.height = totalHeight;
-  const ctx = combined.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
+    const combinedCanvas = document.createElement("canvas");
+    combinedCanvas.width = totalWidth;
+    combinedCanvas.height = totalHeight;
+    const ctx = combinedCanvas.getContext("2d");
 
-  // fondo sólido gris
-  ctx.fillStyle = '#d9d9d9';
-  ctx.fillRect(0, 0, totalWidth, totalHeight);
+    ctx.fillStyle = "#d9d9d9";
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-  // título
-  ctx.fillStyle = '#111';
-  ctx.font = 'bold 28px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText(titulo || '⚽ Partido ⚽', totalWidth / 2, 50);
+    // Título
+    ctx.fillStyle = "#222";
+    ctx.font = "bold 40px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 50);
 
-  // dibujar campos
-  const yOffset = topMargin;
-  const x1 = padding;
-  const x2 = padding + canvas1.width + spacing;
-  ctx.drawImage(canvas1, x1, yOffset);
-  ctx.drawImage(canvas2, x2, yOffset);
+    // Posicionar campos
+    const x1 = padding;
+    const x2 = padding + canvas1.width + spacing;
+    const yOffset = topMargin;
 
-  // etiquetas pequeñas por encima (subidas un poco)
-  ctx.fillStyle = '#000';
-  ctx.font = 'bold 18px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('NEGRO', x1 + canvas1.width / 2, yOffset - 18);
-  ctx.fillText('BLANCO', x2 + canvas2.width / 2, yOffset - 18);
+    ctx.drawImage(canvas1, x1, yOffset);
+    ctx.drawImage(canvas2, x2, yOffset);
 
-  // descargar (sin transparencia)
-  const solid = document.createElement('canvas');
-  solid.width = combined.width;
-  solid.height = combined.height;
-  const sctx = solid.getContext('2d');
-  sctx.fillStyle = '#d9d9d9';
-  sctx.fillRect(0,0,solid.width, solid.height);
-  sctx.drawImage(combined, 0, 0);
+    // Etiquetas
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 28px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("NEGRO", x1 + canvas1.width / 2, yOffset - 15);
+    ctx.fillText("BLANCO", x2 + canvas2.width / 2, yOffset - 15);
 
-  const link = document.createElement('a');
-  link.download = 'alineaciones_whatsapp.png';
-  link.href = solid.toDataURL('image/png', 1.0);
-  link.click();
+    // Descargar
+    const link = document.createElement("a");
+    link.download = "alineaciones_whatsapp.png";
+    link.href = combinedCanvas.toDataURL("image/png");
+    link.click();
+  }, 200);
 }
 
-// Asociar evento al botón
+// Asociar evento
 document.getElementById('exportarAmbosBtn').addEventListener('click', exportarAmbosAlineaciones);
 
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-    .then(() => console.log('✅ Service Worker registrado'))
-    .catch(err => console.log('Error al registrar SW:', err));
-}
 </script>
   
   

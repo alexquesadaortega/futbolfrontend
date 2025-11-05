@@ -889,13 +889,19 @@ function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("No se encontró el campo.");
 
-  html2canvas(field, { backgroundColor: "#0f4720" }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = fieldId + '.png';
+  // Exportar el campo con fondo sólido
+  html2canvas(field, {
+    backgroundColor: "#0f4720", // ← color del césped
+    scale: 2, // mejora la calidad
+    useCORS: true
+  }).then(canvas => {
+    const link = document.createElement("a");
+    link.download = `${fieldId}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   });
 }
+
 
 // --- EXPORTAR AMBOS CAMPOS ---
 function exportarAmbosAlineaciones() {

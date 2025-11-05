@@ -291,14 +291,24 @@ button:active {
   }
 }
 /* --- Mejora de nitidez en exportación --- */
-.player-card img,
+.player-card, 
+.player-card img, 
 .player-card span {
-  image-rendering: crisp-edges;
-  image-rendering: -webkit-optimize-contrast;
-  backface-visibility: hidden;
-  transform: translateZ(0);
   opacity: 1 !important;
   filter: none !important;
+  transform: none !important;
+  mix-blend-mode: normal !important;
+  will-change: auto !important;
+  isolation: isolate !important;
+  background: transparent !important;
+}
+#field1, #field2 {
+  background-color: #0f4720 !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  transform: none !important;
+  will-change: auto !important;
+  isolation: isolate !important;
 }
 
 </style>

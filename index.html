@@ -939,75 +939,89 @@ function makeDraggable(el, field, positionsY){
 }
 
 // --- EXPORTAR UN CAMPO ---
+// ---------------- EXPORTAR CAMPO INDIVIDUAL ----------------
 function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("No se encontró el campo.");
 
-  // Exportar el campo con fondo sólido
   html2canvas(field, {
-    backgroundColor: "#0f4720", // ← color del césped
-    scale: 2, // mejora la calidad
-    useCORS: true
+    backgroundColor: "#0f4720",  // Fondo verde sólido del campo
+    useCORS: true,
+    scale: 2,                    // Mejora resolución
+    willReadFrequently: true,    // Evita difuminado de imágenes
+    logging: false
   }).then(canvas => {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.globalAlpha = 1.0;       // Forzar opacidad total
     const link = document.createElement("a");
     link.download = `${fieldId}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.href = canvas.toDataURL("image/png", 1.0);
     link.click();
   });
 }
 
-
-// --- EXPORTAR AMBOS CAMPOS ---
-function exportarAmbosAlineaciones() {
+// ---------------- EXPORTAR AMBAS ALINEACIONES ----------------
+async function exportarAmbosAlineaciones() {
   const field1 = document.getElementById("field1");
   const field2 = document.getElementById("field2");
   if (!field1 || !field2) return alert("No se encontraron los campos.");
 
   const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽");
 
-  // Capturar ambos campos
-  Promise.all([
-    html2canvas(field1, { backgroundColor: "#0f4720" }),
-    html2canvas(field2, { backgroundColor: "#0f4720" })
-  ]).then(([canvas1, canvas2]) => {
-    // Crear un canvas final combinando ambos
-    const width = Math.max(canvas1.width, canvas2.width);
-    const height = canvas1.height + canvas2.height + 50; // 50px espacio para el título
+  const [canvas1, canvas2] = await Promise.all([
+    html2canvas(field1, { backgroundColor: "#0f4720", scale: 2, useCORS: true, willReadFrequently: true }),
+    html2canvas(field2, { backgroundColor: "#0f4720", scale: 2, useCORS: true, willReadFrequently: true })
+  ]);
 
-    const finalCanvas = document.createElement("canvas");
-    finalCanvas.width = width;
-    finalCanvas.height = height;
-    const ctx = finalCanvas.getContext("2d");
+  const spacing = 40;
+  const padding = 40;
+  const topMargin = 70;
+  const bottomMargin = 40;
+  const totalWidth = canvas1.width * 2 + spacing + padding * 2;
+  const totalHeight = Math.max(canvas1.height, canvas2.height) + topMargin + bottomMargin;
 
-    // Fondo
-    ctx.fillStyle = "#0f4720";
-    ctx.fillRect(0, 0, width, height);
+  const combinedCanvas = document.createElement("canvas");
+  combinedCanvas.width = totalWidth;
+  combinedCanvas.height = totalHeight;
+  const ctx = combinedCanvas.getContext("2d", { willReadFrequently: true });
 
-    // Título
-    ctx.fillStyle = "#fff";
-    ctx.font = "20px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(titulo, width / 2, 30);
+  // Fondo gris claro
+  ctx.fillStyle = "#d9d9d9";
+  ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-    // Dibujar ambos campos
-    ctx.drawImage(canvas1, (width - canvas1.width) / 2, 50);
-    ctx.drawImage(canvas2, (width - canvas2.width) / 2, 50 + canvas1.height);
+  // Título centrado
+  ctx.fillStyle = "#222";
+  ctx.font = "bold 26px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(titulo || "⚽ Partido ⚽", totalWidth / 2, 45);
 
-    // Descargar
-    const link = document.createElement("a");
-    link.download = "alineaciones.png";
-    link.href = finalCanvas.toDataURL("image/png");
-    link.click();
-  });
+  // Posiciones
+  const yOffset = topMargin;
+  const x1 = padding;
+  const x2 = padding + canvas1.width + spacing;
+
+  // Dibujar campos
+  ctx.drawImage(canvas1, x1, yOffset);
+  ctx.drawImage(canvas2, x2, yOffset);
+
+  // Etiquetas "NEGRO" y "BLANCO"
+  ctx.fillStyle = "#000";
+  ctx.font = "bold 18px Arial";
+  ctx.fillText("NEGRO", x1 + canvas1.width / 2, yOffset - 15);
+  ctx.fillText("BLANCO", x2 + canvas2.width / 2, yOffset - 15);
+
+  // Descargar imagen
+  const link = document.createElement("a");
+  link.download = "alineaciones_whatsapp.png";
+  link.href = combinedCanvas.toDataURL("image/png", 1.0);
+  link.click();
 }
+
 
 // --- Asociar botón ---
 document.getElementById('exportarAmbosBtn').addEventListener('click', exportarAmbosAlineaciones);
 
 </script>
-
-</script>
-  
   
 </body>
 </html>

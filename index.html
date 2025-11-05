@@ -889,148 +889,47 @@ function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("No se encontró el campo.");
 
-  const fieldWidth = 320;
-  const fieldHeight = 480;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = fieldWidth;
-  canvas.height = fieldHeight;
-  const ctx = canvas.getContext("2d");
-
-  // Fondo y líneas
-  ctx.fillStyle = "#0f4720";
-  ctx.fillRect(0, 0, fieldWidth, fieldHeight);
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
-  ctx.beginPath();
-  ctx.moveTo(0, fieldHeight/2);
-  ctx.lineTo(fieldWidth, fieldHeight/2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(fieldWidth/2, fieldHeight/2, 40, 0, 2*Math.PI);
-  ctx.stroke();
-  ctx.strokeRect((fieldWidth-160)/2, 0, 160, 100);
-  ctx.strokeRect((fieldWidth-160)/2, fieldHeight-100, 160, 100);
-
-  // Dibujar jugadores
-  const players = Array.from(field.querySelectorAll(".player-card"));
-  const promises = players.map(playerDiv => {
-    return new Promise(resolve => {
-      const img = playerDiv.querySelector("img");
-      const name = playerDiv.querySelector("span").textContent;
-      const x = parseFloat(playerDiv.style.left);
-      const y = parseFloat(playerDiv.style.top);
-
-      const shirtImg = new Image();
-      shirtImg.src = img.src;
-      shirtImg.onload = () => {
-        ctx.drawImage(shirtImg, x, y, 45, 50);
-        ctx.fillStyle = "#fff";
-        ctx.font = "12px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(name, x + 22.5, y + 62);
-        resolve();
-      };
-    });
-  });
-
-  Promise.all(promises).then(() => {
-    const link = document.createElement("a");
-    link.download = `${fieldId}.png`;
+  html2canvas(field, {backgroundColor: "#0f4720"}).then(canvas => {
+    const link = document.createElement('a');
+    link.download = fieldId + '.png';
     link.href = canvas.toDataURL("image/png");
     link.click();
   });
 }
 
-
 // ---------------- EXPORTAR AMBOS CAMPOS ----------------
-function exportarAmbosAlineaciones() {
+async function exportarAmbosAlineaciones() {
   const field1 = document.getElementById("field1");
   const field2 = document.getElementById("field2");
   if (!field1 || !field2) return alert("No se encontraron los campos.");
 
-  const titulo = prompt("Introduce el título para la imagen:", "⚽ Partido ⚽");
+  // Captura ambos campos
+  const canvas1 = await html2canvas(field1, {backgroundColor: "#0f4720"});
+  const canvas2 = await html2canvas(field2, {backgroundColor: "#0f4720"});
 
-  const width = 320, height = 480;
-  const canvas1 = document.createElement("canvas");
-  const canvas2 = document.createElement("canvas");
-  canvas1.width = canvas2.width = width;
-  canvas1.height = canvas2.height = height;
+  // Crear un canvas final para juntar los dos campos
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = canvas1.width + canvas2.width;
+  finalCanvas.height = Math.max(canvas1.height, canvas2.height);
+  const ctx = finalCanvas.getContext("2d");
 
-  const ctx1 = canvas1.getContext("2d");
-  const ctx2 = canvas2.getContext("2d");
+  // Pegar ambos campos uno al lado del otro
+  ctx.drawImage(canvas1, 0, 0);
+  ctx.drawImage(canvas2, canvas1.width, 0);
 
-  // Función para dibujar campo y jugadores en un canvas
-  function drawField(ctx, field) {
-    // Fondo y líneas
-    ctx.fillStyle = "#0f4720";
-    ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, width, height);
-    ctx.beginPath();
-    ctx.moveTo(0, height/2);
-    ctx.lineTo(width, height/2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(width/2, height/2, 40, 0, 2*Math.PI);
-    ctx.stroke();
-    ctx.strokeRect((width-160)/2, 0, 160, 100);
-    ctx.strokeRect((width-160)/2, height-100, 160, 100);
-
-    const players = Array.from(field.querySelectorAll(".player-card"));
-    return Promise.all(players.map(playerDiv => {
-      return new Promise(resolve => {
-        const img = playerDiv.querySelector("img");
-        const name = playerDiv.querySelector("span").textContent;
-        const x = parseFloat(playerDiv.style.left);
-        const y = parseFloat(playerDiv.style.top);
-
-        const shirtImg = new Image();
-        shirtImg.src = img.src;
-        shirtImg.onload = () => {
-          ctx.drawImage(shirtImg, x, y, 45, 50);
-          ctx.fillStyle = "#fff";
-          ctx.font = "12px Arial";
-          ctx.textAlign = "center";
-          ctx.fillText(name, x + 22.5, y + 62);
-          resolve();
-        };
-      });
-    }));
-  }
-
-  // Dibujar ambos campos
-  Promise.all([drawField(ctx1, field1), drawField(ctx2, field2)]).then(() => {
-    // Crear canvas final combinando los dos
-    const finalCanvas = document.createElement("canvas");
-    const finalCtx = finalCanvas.getContext("2d");
-    const padding = 20;
-    finalCanvas.width = width * 2 + padding * 3;
-    finalCanvas.height = height + 60; // espacio para título
-
-    // Fondo final
-    finalCtx.fillStyle = "#0f4720";
-    finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-
-    // Título
-    finalCtx.fillStyle = "#fff";
-    finalCtx.font = "20px Arial";
-    finalCtx.textAlign = "center";
-    finalCtx.fillText(titulo, finalCanvas.width/2, 30);
-
-    // Dibujar campos uno al lado del otro
-    finalCtx.drawImage(canvas1, padding, 60);
-    finalCtx.drawImage(canvas2, width + padding * 2, 60);
-
-    // Descargar imagen final
-    const link = document.createElement("a");
-    link.download = "ambos_campos.png";
-    link.href = finalCanvas.toDataURL("image/png");
-    link.click();
-  });
+  // Descargar la imagen final
+  const link = document.createElement("a");
+  link.download = "ambos_campos.png";
+  link.href = finalCanvas.toDataURL("image/png");
+  link.click();
 }
+
+// ---------------- EXPORTAR INDIVIDUALMENTE CADA CAMPO ----------------
+function exportIndividual() {
+  const fields = document.querySelectorAll(".field-container"); // Cambia la clase si es diferente
+  fields.forEach(field => exportField(field.id));
+}
+
 
 // --- Asociar botón ---
 document.getElementById('exportarAmbosBtn').addEventListener('click', exportarAmbosAlineaciones);

@@ -983,250 +983,218 @@ function makeDraggable(el, field, positionsY){
   el.ontouchend = e => { endDrag(); }
 }
 
-// Exporta un campo dibujándolo manualmente en un canvas (sin html2canvas)
+// ---------------- EXPORTAR UN CAMPO (REEMPLAZAR exportField) ----------------
 async function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert('No se encontró el campo.');
 
-  // Parámetros del campo en px (debe coincidir con tu layout)
-  const fieldWidth = 320, fieldHeight = 480;
+  const FIELD_W = 320, FIELD_H = 480;
   const rectField = field.getBoundingClientRect();
 
-  // Recopilar jugadores y sus posiciones relativas al campo
-  const players = Array.from(field.querySelectorAll('.player-card')).map(pc => {
+  // Recoger jugadores y posiciones relativas
+  const players = Array.from(field.querySelectorAll('.player-card')).map(pc=>{
     const imgEl = pc.querySelector('img');
     const span = pc.querySelector('span');
-    const rect = pc.getBoundingClientRect();
+    const r = pc.getBoundingClientRect();
     return {
       name: span ? span.textContent : '',
-      imgSrc: imgEl ? imgEl.src : null,
-      // posición relativa al campo (no a la ventana)
-      x: rect.left - rectField.left,
-      y: rect.top - rectField.top,
+      src: imgEl ? imgEl.src : null,
+      x: r.left - rectField.left,
+      y: r.top  - rectField.top,
       w: pc.offsetWidth || 45,
       h: pc.offsetHeight || 50
     };
   });
 
-  // Cargar todas las imágenes (camisetas)
-  const loadImage = src => new Promise((res, rej) => {
-    if (!src) return res(null);
+  // Cargar imágenes (crossOrigin)
+  const loadImage = (src) => new Promise(res=>{
+    if(!src) return res(null);
     const im = new Image();
-    im.crossOrigin = "anonymous";
-    im.onload = () => res(im);
-    im.onerror = () => {
-      console.warn('Error cargando imagen', src);
-      res(null);
-    };
+    im.crossOrigin = 'anonymous';
+    im.onload = ()=>res(im);
+    im.onerror = ()=>{ console.warn('No se cargó', src); res(null); };
     im.src = src;
   });
-  const images = await Promise.all(players.map(p => loadImage(p.imgSrc)));
+  const images = await Promise.all(players.map(p=>loadImage(p.src)));
 
-  // Crear canvas final (doble escala para nitidez)
-  const scale = 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = fieldWidth * scale;
-  canvas.height = (fieldHeight + 60) * scale; // espacio para título
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false; // evitar blur
-  ctx.fillStyle = '#d9d9d9'; // fondo gris claro (sin transparencia)
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Canvas de trabajo (escala para nitidez)
+  const SCALE = 3;
+  const work = document.createElement('canvas');
+  work.width  = FIELD_W * SCALE;
+  work.height = (FIELD_H + 60) * SCALE; // espacio para etiqueta
+  const wctx = work.getContext('2d', { willReadFrequently: true });
+  wctx.imageSmoothingEnabled = false;
 
-  // Dibujar líneas del campo (escala incluida)
-  ctx.save();
-  ctx.scale(scale, scale);
-  // fondo campo
-  ctx.fillStyle = '#0f4720';
-  ctx.fillRect(0, 0, fieldWidth, fieldHeight);
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 2;
-  // borde
-  ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
-  // línea central
-  ctx.beginPath();
-  ctx.moveTo(0, fieldHeight/2);
-  ctx.lineTo(fieldWidth, fieldHeight/2);
-  ctx.stroke();
-  // círculo central
-  ctx.beginPath();
-  ctx.arc(fieldWidth/2, fieldHeight/2, 40, 0, Math.PI*2);
-  ctx.stroke();
-  // cuadros porteros
-  ctx.strokeRect((fieldWidth-160)/2, 0, 160, 100);
-  ctx.strokeRect((fieldWidth-160)/2, fieldHeight-100, 160, 100);
-  ctx.restore();
+  // Fondo sólido (gris claro)
+  wctx.fillStyle = '#d9d9d9';
+  wctx.fillRect(0,0,work.width,work.height);
 
-  // Título arriba
-  ctx.fillStyle = '#000';
-  ctx.font = `${18 * scale}px Arial`;
-  ctx.textAlign = 'center';
+  // Dibujar campo (escalado)
+  wctx.save();
+  wctx.scale(SCALE, SCALE);
+  wctx.fillStyle = '#0f4720';
+  wctx.fillRect(0,0,FIELD_W,FIELD_H);
+  wctx.strokeStyle = '#fff';
+  wctx.lineWidth = 2;
+  wctx.strokeRect(0,0,FIELD_W,FIELD_H);
+  wctx.beginPath(); wctx.moveTo(0,FIELD_H/2); wctx.lineTo(FIELD_W,FIELD_H/2); wctx.stroke();
+  wctx.beginPath(); wctx.arc(FIELD_W/2, FIELD_H/2, 40, 0, Math.PI*2); wctx.stroke();
+  wctx.strokeRect((FIELD_W-160)/2,0,160,100);
+  wctx.strokeRect((FIELD_W-160)/2,FIELD_H-100,160,100);
+  wctx.restore();
+
+  // Título encima
+  wctx.fillStyle = '#000';
+  wctx.font = `${18*SCALE}px Arial`;
+  wctx.textAlign = 'center';
   const title = (fieldId === 'field1') ? 'NEGRO' : 'BLANCO';
-  ctx.fillText(title, canvas.width / 2, 28 * scale);
+  wctx.fillText(title, work.width/2, 28*SCALE);
 
-  // Dibujar jugadores (sobre fondo sólido; no transparencias)
-  players.forEach((p, i) => {
+  // Dibujar jugadores (sin transparencia)
+  players.forEach((p,i)=>{
     const im = images[i];
-    const drawX = Math.round(p.x * scale);
-    const drawY = Math.round((p.y + 60) * scale); // 60px margen para título
-    const w = Math.round((p.w || 45) * scale);
-    const h = Math.round((p.h || 50) * scale);
+    const dx = Math.round(p.x * SCALE);
+    const dy = Math.round((p.y + 60) * SCALE);
+    const dw = Math.round(p.w * SCALE);
+    const dh = Math.round(p.h * SCALE);
 
-    // Si la imagen carga, la dibujamos usando compositing normal
-    if (im) {
-      ctx.globalAlpha = 1.0;
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.drawImage(im, drawX, drawY, w, h);
-    } else {
-      // fallback: dibujar un rectángulo simulando camiseta
-      ctx.fillStyle = '#000';
-      ctx.fillRect(drawX, drawY, w, h);
-    }
+    wctx.globalAlpha = 1;
+    wctx.globalCompositeOperation = 'source-over';
+    if (im) wctx.drawImage(im, dx, dy, dw, dh);
+    else { wctx.fillStyle='#000'; wctx.fillRect(dx,dy,dw,dh); }
 
-    // Nombre (debajo)
-    ctx.fillStyle = '#fff';
-    ctx.font = `${12 * scale}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.fillText(p.name, drawX + w/2, drawY + h + (14 * scale));
+    // Nombre debajo (siempre blanco sobre fondo sólido)
+    wctx.fillStyle = '#fff';
+    wctx.font = `${12*SCALE}px Arial`;
+    wctx.textAlign = 'center';
+    wctx.fillText(p.name, dx + dw/2, dy + dh + (14*SCALE));
   });
 
-  // Descargar archivo PNG sin canal alpha
-  const finalCanvas = document.createElement('canvas');
-  finalCanvas.width = canvas.width;
-  finalCanvas.height = canvas.height;
-  const fctx = finalCanvas.getContext('2d');
-  fctx.fillStyle = '#d9d9d9';
-  fctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-  fctx.drawImage(canvas, 0, 0);
+  // Verificar alpha medio en zona de la primera camiseta (diagnóstico)
+  try {
+    const sampleX = Math.max(2, Math.floor((players[0]?.x||20)*SCALE));
+    const sampleY = Math.max(60*SCALE+2, Math.floor((players[0]?.y||20 + 60)*SCALE));
+    const imgd = wctx.getImageData(sampleX, sampleY, 1, 1).data;
+    console.log('Alpha sample (0-255):', imgd[3]);
+  } catch(e){ console.warn('No se pudo leer pixel sample:', e); }
 
-  const link = document.createElement('a');
-  link.download = `${title.toLowerCase()}.png`;
-  link.href = finalCanvas.toDataURL('image/png');
-  link.click();
+  // Aplanar en canvas final sin canal alpha (fondo sólido)
+  const finalC = document.createElement('canvas');
+  finalC.width = work.width;
+  finalC.height = work.height;
+  const fctx = finalC.getContext('2d');
+  fctx.imageSmoothingEnabled = false;
+  fctx.fillStyle = '#d9d9d9';
+  fctx.fillRect(0,0,finalC.width, finalC.height);
+  fctx.drawImage(work, 0, 0);
+
+  // Descargar
+  const a = document.createElement('a');
+  a.download = `${title.toLowerCase()}.png`;
+  a.href = finalC.toDataURL('image/png');
+  a.click();
 }
 
-// Exporta ambos campos en un solo PNG, dibujando todo manualmente
+// ---------------- EXPORTAR AMBOS CAMPOS (REEMPLAZAR exportarAmbosAlineaciones) ----------------
 async function exportarAmbosAlineaciones() {
-  const field1 = document.getElementById('field1');
-  const field2 = document.getElementById('field2');
-  if (!field1 || !field2) return alert('No se encontraron los campos.');
+  const f1 = document.getElementById('field1');
+  const f2 = document.getElementById('field2');
+  if(!f1 || !f2) return alert('No se encontraron los campos.');
 
   const titulo = prompt('Introduce el título para la imagen:', '⚽ Partido ⚽');
 
-  // Reusar la lógica de exportField para crear dos canvases internos (sin descargar)
-  async function renderFieldToCanvas(field, shortTitle) {
-    const fieldWidth = 320, fieldHeight = 480;
+  // Reusar exportField internamente: renderizar cada campo a canvas (sin descargar)
+  async function renderFieldCanvas(field, shortTitle) {
+    const FIELD_W = 320, FIELD_H = 480;
     const rectField = field.getBoundingClientRect();
-    const players = Array.from(field.querySelectorAll('.player-card')).map(pc => {
+    const players = Array.from(field.querySelectorAll('.player-card')).map(pc=>{
       const imgEl = pc.querySelector('img');
       const span = pc.querySelector('span');
-      const rect = pc.getBoundingClientRect();
+      const r = pc.getBoundingClientRect();
       return {
         name: span ? span.textContent : '',
-        imgSrc: imgEl ? imgEl.src : null,
-        x: rect.left - rectField.left,
-        y: rect.top - rectField.top,
+        src: imgEl ? imgEl.src : null,
+        x: r.left - rectField.left,
+        y: r.top  - rectField.top,
         w: pc.offsetWidth || 45,
         h: pc.offsetHeight || 50
       };
     });
-    const loadImage = src => new Promise(res => {
-      if (!src) return res(null);
-      const im = new Image();
-      im.crossOrigin = 'anonymous';
-      im.onload = ()=>res(im);
-      im.onerror = ()=>res(null);
-      im.src = src;
+    const loadImage = (src)=>new Promise(res=>{
+      if(!src) return res(null);
+      const im = new Image(); im.crossOrigin='anonymous';
+      im.onload = ()=>res(im); im.onerror = ()=>res(null); im.src = src;
     });
-    const images = await Promise.all(players.map(p => loadImage(p.imgSrc)));
+    const images = await Promise.all(players.map(p=>loadImage(p.src)));
 
-    const scale = 2;
+    const SCALE = 2;
     const canvas = document.createElement('canvas');
-    canvas.width = fieldWidth * scale;
-    canvas.height = (fieldHeight + 80) * scale; // espacio para etiqueta/título
-    const ctx = canvas.getContext('2d');
+    canvas.width  = FIELD_W * SCALE;
+    canvas.height = (FIELD_H + 80) * SCALE;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#d9d9d9';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Dibujar campo
-    ctx.save();
-    ctx.scale(scale, scale);
-    ctx.fillStyle = '#0f4720';
-    ctx.fillRect(0, 0, fieldWidth, fieldHeight);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, fieldWidth, fieldHeight);
-    ctx.beginPath();
-    ctx.moveTo(0, fieldHeight/2); ctx.lineTo(fieldWidth, fieldHeight/2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(fieldWidth/2, fieldHeight/2, 40, 0, Math.PI*2); ctx.stroke();
-    ctx.strokeRect((fieldWidth-160)/2, 0, 160, 100);
-    ctx.strokeRect((fieldWidth-160)/2, fieldHeight-100, 160, 100);
+    // fondo
+    ctx.fillStyle = '#d9d9d9'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // campo
+    ctx.save(); ctx.scale(SCALE,SCALE);
+    ctx.fillStyle = '#0f4720'; ctx.fillRect(0,0,FIELD_W,FIELD_H);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.strokeRect(0,0,FIELD_W,FIELD_H);
+    ctx.beginPath(); ctx.moveTo(0,FIELD_H/2); ctx.lineTo(FIELD_W,FIELD_H/2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(FIELD_W/2, FIELD_H/2, 40, 0, Math.PI*2); ctx.stroke();
+    ctx.strokeRect((FIELD_W-160)/2,0,160,100);
+    ctx.strokeRect((FIELD_W-160)/2,FIELD_H-100,160,100);
     ctx.restore();
 
-    // Etiqueta encima del campo
-    ctx.fillStyle = '#000';
-    ctx.font = `${16 * scale}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.fillText(shortTitle, canvas.width / 2, 28 * scale);
+    // etiqueta
+    ctx.fillStyle = '#000'; ctx.font = `${16*SCALE}px Arial`; ctx.textAlign = 'center';
+    ctx.fillText(shortTitle, canvas.width/2, 28*SCALE);
 
-    // Dibujar jugadores
-    players.forEach((p, i) => {
+    // jugadores
+    players.forEach((p,i)=>{
       const im = images[i];
-      const drawX = Math.round(p.x * scale);
-      const drawY = Math.round((p.y + 80) * scale);
-      const w = Math.round((p.w || 45) * scale);
-      const h = Math.round((p.h || 50) * scale);
-
-      if (im) ctx.drawImage(im, drawX, drawY, w, h);
-      else { ctx.fillStyle='#000'; ctx.fillRect(drawX, drawY, w, h); }
-
-      ctx.fillStyle = '#fff';
-      ctx.font = `${11 * scale}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.fillText(p.name, drawX + w/2, drawY + h + (14 * scale));
+      const dx = Math.round(p.x * SCALE);
+      const dy = Math.round((p.y + 80) * SCALE);
+      const dw = Math.round(p.w * SCALE);
+      const dh = Math.round(p.h * SCALE);
+      if(im) ctx.drawImage(im, dx, dy, dw, dh);
+      else { ctx.fillStyle='#000'; ctx.fillRect(dx,dy,dw,dh); }
+      ctx.fillStyle = '#fff'; ctx.font = `${11*SCALE}px Arial`; ctx.textAlign='center';
+      ctx.fillText(p.name, dx + dw/2, dy + dh + (14*SCALE));
     });
 
     return canvas;
   }
 
-  // Renderizar ambos
-  const [c1, c2] = await Promise.all([
-    renderFieldToCanvas(field1, 'NEGRO'),
-    renderFieldToCanvas(field2, 'BLANCO')
-  ]);
+  const [c1, c2] = await Promise.all([ renderFieldCanvas(f1,'NEGRO'), renderFieldCanvas(f2,'BLANCO') ]);
 
-  // Combinar en resultado final
-  const spacing = 40;
-  const padding = 40;
-  const width = c1.width + c2.width + spacing + padding*2;
-  const height = Math.max(c1.height, c2.height) + 120; // margen para título principal
-
+  // combinar
+  const SP = 40, PAD = 40;
+  const width = c1.width + c2.width + SP + PAD*2;
+  const height = Math.max(c1.height, c2.height) + 120;
   const final = document.createElement('canvas');
-  final.width = width;
-  final.height = height;
-  const fctx = final.getContext('2d');
+  final.width = width; final.height = height;
+  const fctx = final.getContext('2d', { willReadFrequently: true });
   fctx.imageSmoothingEnabled = false;
-  fctx.fillStyle = '#d9d9d9';
-  fctx.fillRect(0, 0, width, height);
+  fctx.fillStyle = '#d9d9d9'; fctx.fillRect(0,0,width,height);
 
-  // Título grande arriba
-  fctx.fillStyle = '#111';
-  fctx.font = `bold ${28}px Arial`;
-  fctx.textAlign = 'center';
+  // titulo grande
+  fctx.fillStyle = '#111'; fctx.font = `bold 28px Arial`; fctx.textAlign = 'center';
   fctx.fillText(titulo || '⚽ Partido ⚽', width/2, 40);
 
-  const yOffset = 80;
-  const x1 = padding;
-  const x2 = padding + c1.width + spacing;
+  const yOff = 80;
+  const x1 = PAD;
+  const x2 = PAD + c1.width + SP;
+  fctx.drawImage(c1, x1, yOff);
+  fctx.drawImage(c2, x2, yOff);
 
-  fctx.drawImage(c1, x1, yOffset);
-  fctx.drawImage(c2, x2, yOffset);
-
-  // Descargar
-  const link = document.createElement('a');
-  link.download = 'alineaciones_whatsapp.png';
-  link.href = final.toDataURL('image/png');
-  link.click();
+  // descargar
+  const a = document.createElement('a');
+  a.download = 'alineaciones_whatsapp.png';
+  a.href = final.toDataURL('image/png');
+  a.click();
 }
 
 

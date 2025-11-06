@@ -796,6 +796,11 @@ async function exportField(fieldId) {
   field.style.filter = "none";
   field.style.backgroundColor = "#0f4720";
 
+  
+  // Forzar fondo opaco antes de la captura
+  const prevBackground = field.style.backgroundColor;
+  field.style.backgroundColor = '#0f4720'; // verde campo opaco
+
   // Captura con html2canvas (config similar al original)
   const canvas = await html2canvas(field, {
     backgroundColor: "#0f4720",
@@ -824,6 +829,10 @@ async function exportField(fieldId) {
   link.download = `${fieldId}.png`;
   link.href = canvas.toDataURL("image/png", 1.0);
   link.click();
+
+  // Restaurar fondo original
+  field.style.backgroundColor = prevBackground;
+
 }
 
 /* Exporta ambos campos en una sola imagen (combinada) */

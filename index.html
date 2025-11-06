@@ -320,6 +320,39 @@ button:active {
   border-radius: 8px;
   overflow: hidden;
 }
+.player {
+  position: absolute;
+  text-align: center;
+  color: white;
+  font-size: 12px;
+  user-select: none;
+}
+
+.shirt {
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  font-weight: bold;
+  margin: auto;
+  box-shadow: 0 0 4px rgba(0,0,0,0.4);
+}
+
+.shirt.black {
+  background: black;
+  color: white;
+}
+
+.shirt.white {
+  background: white;
+  color: black;
+}
+
+.player-name {
+  font-size: 10px;
+  color: white;
+  text-shadow: 0 0 3px black;
+}
 
 </style>
 <link rel="manifest" href="manifest.json">
@@ -752,11 +785,6 @@ document.getElementById('generateOptimized').addEventListener('click', () => {
   field1.innerHTML = '<div class="field-title">Equipo Negro</div>';
   field2.innerHTML = '<div class="field-title">Equipo Blanco</div>';
 
-  // Dibujar campo y jugadores
-  //drawField(field1);
-  //drawField(field2);
-  //drawTeamOnField(field1, teams[0], 'black');
-  //drawTeamOnField(field2, teams[1], 'white');
 }
 
 
@@ -829,6 +857,23 @@ function drawField(field) {
   field.style.border = "2px solid white";
   field.style.borderRadius = "8px";
   field.style.overflow = "hidden";
+  // ---------------- DIBUJAR JUGADORES ----------------
+function drawTeamOnField(field, team, color) {
+  team.forEach(player => {
+    const playerDiv = document.createElement("div");
+    playerDiv.classList.add("player");
+    playerDiv.style.position = "absolute";
+    playerDiv.style.left = player.x + "%";
+    playerDiv.style.top = player.y + "%";
+    playerDiv.style.transform = "translate(-50%, -50%)";
+    playerDiv.innerHTML = `
+      <div class="shirt ${color}">${player.number}</div>
+      <div class="player-name">${player.name}</div>
+    `;
+    field.appendChild(playerDiv);
+  });
+}
+
 
   // Dibujar líneas internas con divs (mejor compatibilidad que canvas)
   const lines = document.createElement("div");

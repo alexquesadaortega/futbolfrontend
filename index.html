@@ -983,27 +983,49 @@ function makeDraggable(el, field, positionsY){
   el.ontouchend = e => { endDrag(); }
 }
 
-// --- EXPORTAR UN CAMPO ---
 // ---------------- EXPORTAR CAMPO INDIVIDUAL ----------------
 function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("No se encontró el campo.");
 
-  html2canvas(field, {
-    backgroundColor: "#0f4720",  // Fondo verde sólido del campo
+  // Clonar el campo en un contenedor limpio
+  const clone = field.cloneNode(true);
+  clone.style.backgroundColor = "#0f4720";
+  clone.style.opacity = "1";
+  clone.style.mixBlendMode = "normal";
+  clone.style.filter = "none";
+  clone.style.transform = "none";
+  clone.style.isolation = "isolate";
+  clone.style.willChange = "auto";
+
+  // Crear un contenedor temporal oculto
+  const tempContainer = document.createElement("div");
+  tempContainer.style.position = "fixed";
+  tempContainer.style.top = "0";
+  tempContainer.style.left = "0";
+  tempContainer.style.zIndex = "-9999";
+  tempContainer.style.background = "#0f4720";
+  tempContainer.style.opacity = "1";
+  tempContainer.style.mixBlendMode = "normal";
+  tempContainer.appendChild(clone);
+  document.body.appendChild(tempContainer);
+
+  // Capturar el clon en lugar del campo original
+  html2canvas(clone, {
+    backgroundColor: "#0f4720",
     useCORS: true,
-    scale: 2,                    // Mejora resolución
-    willReadFrequently: true,    // Evita difuminado de imágenes
-    logging: false
+    scale: 2,
+    logging: false,
+    allowTaint: true
   }).then(canvas => {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.globalAlpha = 1.0;       // Forzar opacidad total
     const link = document.createElement("a");
     link.download = `${fieldId}.png`;
-    link.href = canvas.toDataURL("image/png", 1.0);
+    link.href = canvas.toDataURL("image/png");
     link.click();
+    tempContainer.remove(); // limpiar
   });
 }
+
 
 // ---------------- EXPORTAR AMBAS ALINEACIONES ----------------
 async function exportarAmbosAlineaciones() {

@@ -1007,15 +1007,27 @@ async function exportField(fieldId) {
   });
 
   // Cargar imágenes (crossOrigin)
-  const loadImage = (src) => new Promise(res=>{
-    if(!src) return res(null);
-    const im = new Image();
-    im.crossOrigin = 'anonymous';
-    im.onload = ()=>res(im);
-    im.onerror = ()=>{ console.warn('No se cargó', src); res(null); };
-    im.src = src;
-  });
-  const images = await Promise.all(players.map(p=>loadImage(p.src)));
+  // Sustituye la función loadImage dentro del exportField y exportarAmbosAlineaciones por esta
+const loadImage = (src) => new Promise(async (resolve) => {
+  if (!src) return resolve(null);
+  const im = new Image();
+  im.crossOrigin = "anonymous";
+  im.onload = async () => {
+    try {
+      // Esperar decodificación completa (más fiable que onload)
+      await im.decode();
+      resolve(im);
+    } catch {
+      resolve(im);
+    }
+  };
+  im.onerror = () => {
+    console.warn("Error cargando imagen", src);
+    resolve(null);
+  };
+  im.src = src + (src.includes("?") ? "&" : "?") + "v=" + Date.now(); // evitar caché
+});
+
 
   // Canvas de trabajo (escala para nitidez)
   const SCALE = 3;
@@ -1120,12 +1132,26 @@ async function exportarAmbosAlineaciones() {
         h: pc.offsetHeight || 50
       };
     });
-    const loadImage = (src)=>new Promise(res=>{
-      if(!src) return res(null);
-      const im = new Image(); im.crossOrigin='anonymous';
-      im.onload = ()=>res(im); im.onerror = ()=>res(null); im.src = src;
-    });
-    const images = await Promise.all(players.map(p=>loadImage(p.src)));
+   // Sustituye la función loadImage dentro del exportField y exportarAmbosAlineaciones por esta
+const loadImage = (src) => new Promise(async (resolve) => {
+  if (!src) return resolve(null);
+  const im = new Image();
+  im.crossOrigin = "anonymous";
+  im.onload = async () => {
+    try {
+      // Esperar decodificación completa (más fiable que onload)
+      await im.decode();
+      resolve(im);
+    } catch {
+      resolve(im);
+    }
+  };
+  im.onerror = () => {
+    console.warn("Error cargando imagen", src);
+    resolve(null);
+  };
+  im.src = src + (src.includes("?") ? "&" : "?") + "v=" + Date.now(); // evitar caché
+});
 
     const SCALE = 2;
     const canvas = document.createElement('canvas');

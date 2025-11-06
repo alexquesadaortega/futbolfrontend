@@ -781,29 +781,16 @@ function makeDraggable(el, field, positionsY){
    EXPORTAR CAMPO / AMBOS
    ========================= */
 
-/* Exporta un campo concreto (forzando fondo y alpha) */
 async function exportField(fieldId) {
   const field = document.getElementById(fieldId);
   if (!field) return alert("No se encontró el campo.");
 
   // Esperar dos frames para asegurar render completo
-  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)) );
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-  // Forzar estilos temporales que mejoran captura (se vuelven a pintar después)
-  const prev = { opacity: field.style.opacity, mixBlendMode: field.style.mixBlendMode, filter: field.style.filter, backgroundColor: field.style.backgroundColor };
-  field.style.opacity = "1";
-  field.style.mixBlendMode = "normal";
-  field.style.filter = "none";
-  field.style.backgroundColor = "#0f4720";
-
-  
-  // Forzar fondo opaco antes de la captura
-  const prevBackground = field.style.backgroundColor;
-  field.style.backgroundColor = '#0f4720'; // verde campo opaco
-
-  // Captura con html2canvas (config similar al original)
-  const canvas = await html2canvas(field, {
-    backgroundColor: "#0f4720",
+  // 1) Capturamos con html2canvas (dejamos backgroundColor null para obtener el canvas "tal cual")
+  const canvasCaptured = await html2canvas(field, {
+    backgroundColor: null, // dejar que capture tal cual; después rellenamos nosotros
     scale: 2,
     useCORS: true,
     logging: false,
@@ -812,27 +799,37 @@ async function exportField(fieldId) {
     willReadFrequently: true
   });
 
-  // Forzar canal alpha a 255 (evita transparencia)
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  for (let i = 3; i < imgData.data.length; i += 4) imgData.data[i] = 255;
-  ctx.putImageData(imgData, 0, 0);
+  // 2) Creamos un nuevo canvas con fondo opaco y dibujamos encima la captura
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = canvasCaptured.width;
+  finalCanvas.height = canvasCaptured.height;
+  const ctx = finalCanvas.getContext('2d', { willReadFrequently: true });
 
-  // Restaurar estilos
-  field.style.opacity = prev.opacity || '';
-  field.style.mixBlendMode = prev.mixBlendMode || '';
-  field.style.filter = prev.filter || '';
-  field.style.backgroundColor = prev.backgroundColor || '';
+  // Rellenar el fondo con el color que quieras (mismo verde del campo)
+  ctx.fillStyle = "#0f4720";
+  ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-  // Descargar imagen
-  const link = document.createElement("a");
+  // Dibujar la captura encima (esto elimina cualquier transparencia previa)
+  ctx.drawImage(canvasCaptured, 0, 0);
+
+  // (Opcional) Forzar canal alpha a 255 para evitar cualquier pixel semi-transparente
+  try {
+    const imgData = ctx.getImageData(0, 0, finalCanvas.width, finalCanvas.height);
+    for (let i = 3; i < imgData.data.length; i += 4) imgData.data[i] = 255;
+    ctx.putImageData(imgData, 0, 0);
+  } catch (err) {
+    // Si hay problemas de CORS al leer pixels, no bloqueamos la descarga; lo dejamos pasar.
+    console.warn('No se pudo forzar alpha (posible taint por CORS):', err);
+  }
+
+  // 3) (DEBUG) — Si quieres ver el canvas en la página antes de descargar, descomenta la línea:
+  // document.body.appendChild(finalCanvas);
+
+  // 4) Descargar la imagen
+  const link = document.createElement('a');
   link.download = `${fieldId}.png`;
-  link.href = canvas.toDataURL("image/png", 1.0);
+  link.href = finalCanvas.toDataURL("image/png", 1.0);
   link.click();
-
-  // Restaurar fondo original
-  field.style.backgroundColor = prevBackground;
-
 }
 
 /* Exporta ambos campos en una sola imagen (combinada) */

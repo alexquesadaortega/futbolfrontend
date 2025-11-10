@@ -92,6 +92,11 @@ button:active{ transform: scale(0.96); }
 /* ----------------- CAMPOS ----------------- */
 #fieldsContainer{ display:flex; justify-content:center; gap:20px; margin-top:25px; flex-wrap:wrap; animation: fadeIn 1s ease; }
 
+  /*Boton Enviar equipos*/
+  <div id="exportSection" style="text-align:center; margin-top:12px; display:none;">
+  <button id="exportTeamsBtn">Enviar equipos</button>
+</div>
+  
 .field{
   position: relative; width: 320px; height: 480px; background-color: #0f4720; border:2px solid #fff;
   border-radius:10px; display:none; box-shadow:0 0 20px rgba(0,255,100,0.15); overflow:hidden;
@@ -100,11 +105,6 @@ button:active{ transform: scale(0.96); }
   position:absolute; top:6px; width:100%; text-align:center; font-weight:600; color:#fff; font-size:13px; letter-spacing:0.5px;
   text-shadow:0 0 6px rgba(0,0,0,0.5);
 }
-
-  /*Boton Enviar equipos*/
-  <div id="exportSection" style="text-align:center; margin-top:12px; display:none;">
-  <button id="exportTeamsBtn">Enviar equipos</button>
-</div>
 
 /* Player cards para html2canvas — fondo sólido para evitar transparencia */
 .player-card{
@@ -611,6 +611,9 @@ function applyTeams(teams) {
   drawField(field1);
   drawField(field2);
 
+  // Mostrar botón de exportación
+  document.getElementById('exportSection').style.display = 'block';
+
   // Dibujar jugadores en cada campo como player-cards (color y comportamiento igual a original)
   drawTeamOnField(field1, teams[0], 'black');
   drawTeamOnField(field2, teams[1], 'white');
@@ -641,9 +644,6 @@ function drawField(field){
   `;
   field.appendChild(lines);
 }
-  // Mostrar botón de exportación
-document.getElementById('exportSection').style.display = 'block';
-
 
 /* =========================
    DIBUJAR JUGADORES EN EL CAMPO + DRAG & SNAP

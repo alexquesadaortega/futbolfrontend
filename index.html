@@ -101,6 +101,11 @@ button:active{ transform: scale(0.96); }
   text-shadow:0 0 6px rgba(0,0,0,0.5);
 }
 
+  /*Boton Enviar equipos*/
+  <div id="exportSection" style="text-align:center; margin-top:12px; display:none;">
+  <button id="exportTeamsBtn">Enviar equipos</button>
+</div>
+
 /* Player cards para html2canvas — fondo sólido para evitar transparencia */
 .player-card{
   position:absolute; width:45px; height:50px; text-align:center; font-weight:600; color:#fff; cursor:grab;
@@ -194,6 +199,9 @@ button:active{ transform: scale(0.96); }
     <div id="field2" class="field"><div class="field-title">Equipo Blanco</div></div>
   </div>
 </div>
+
+<!-- Librería html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 /* =========================
@@ -633,6 +641,9 @@ function drawField(field){
   `;
   field.appendChild(lines);
 }
+  // Mostrar botón de exportación
+document.getElementById('exportSection').style.display = 'block';
+
 
 /* =========================
    DIBUJAR JUGADORES EN EL CAMPO + DRAG & SNAP
@@ -762,6 +773,51 @@ function makeDraggable(el, field, positionsY){
   // Cursor por defecto
   el.style.cursor = 'grab';
 }
+// Función para capturar y crear imagen
+  document.getElementById('exportTeamsBtn').addEventListener('click', async () => {
+  const headerText = prompt('Introduce el encabezado para la imagen:', 'Mis Equipos');
+  if (!headerText) return;
+
+  const fieldsContainer = document.getElementById('fieldsContainer');
+
+  // Crear un contenedor temporal para incluir el encabezado
+  const tempContainer = document.createElement('div');
+  tempContainer.style.background = '#0f1724';
+  tempContainer.style.padding = '10px';
+  tempContainer.style.display = 'inline-block';
+  tempContainer.style.textAlign = 'center';
+  tempContainer.style.borderRadius = '12px';
+  
+  // Encabezado
+  const headerDiv = document.createElement('div');
+  headerDiv.textContent = headerText;
+  headerDiv.style.color = '#fff';
+  headerDiv.style.fontWeight = '600';
+  headerDiv.style.fontSize = '18px';
+  headerDiv.style.marginBottom = '10px';
+  tempContainer.appendChild(headerDiv);
+
+  // Clonar los campos para que no se altere la UI
+  const cloneFields = fieldsContainer.cloneNode(true);
+  cloneFields.style.display = 'flex';
+  cloneFields.style.gap = '20px';
+  tempContainer.appendChild(cloneFields);
+
+  document.body.appendChild(tempContainer);
+
+  // Capturar con html2canvas
+  html2canvas(tempContainer, { backgroundColor: null, scale: 2 }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'equipos.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    tempContainer.remove(); // eliminar contenedor temporal
+  }).catch(err => {
+    console.error('Error generando imagen:', err);
+    alert('Error generando imagen');
+    tempContainer.remove();
+  });
+});
 
 /* =========================
    FIN DE SCRIPT

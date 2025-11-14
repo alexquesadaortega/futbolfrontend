@@ -117,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnAddPlayer').addEventListener('click', onAddPlayerClicked);
   document.getElementById('btnGenerate').addEventListener('click', generateTeamsFromSupabase);
   document.getElementById('btnGenerateLocal').addEventListener('click', generateTeamsFromLocal);
+  
 
   // ------------------------
   // AUTH: registro y login
@@ -419,6 +420,43 @@ document.addEventListener('DOMContentLoaded', () => {
   window.loadPlayersDebug = loadPlayersDebug;
 
 }); // DOMContentLoaded end
+
+async function onAddPlayerClicked() {
+    const name = document.getElementById("playerName").value;
+    const position = document.getElementById("playerPosition").value;
+    const skill = parseFloat(document.getElementById("playerSkill").value);
+
+    if (!name || !position || isNaN(skill) || skill < 1 || skill > 10) {
+        alert("La media debe estar entre 1 y 10 (se permiten decimales).");
+        return;
+    }
+
+    // Guardar en supabase
+    const { data, error } = await supabase
+        .from("players")
+        .insert([
+            {
+                user_id: currentUser.id,
+                name: name,
+                position: position,
+                rating: skill
+            }
+        ]);
+
+    if (error) {
+        console.error(error);
+        alert("Error al guardar jugador");
+        return;
+    }
+
+    alert(`Jugador ${name} agregado correctamente`);
+
+    // Limpiar inputs
+    document.getElementById("playerName").value = "";
+    document.getElementById("playerPosition").value = "";
+    document.getElementById("playerSkill").value = "";
+}
+  
 </script>
 
 </body>

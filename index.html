@@ -104,6 +104,124 @@ window.onload = function() {
     alert("Login correcto.");
   }
 
+// ===============================
+// GUARDAR JUGADOR
+// ===============================
+async function savePlayer(name, position, rating) {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) {
+        alert("Debes iniciar sesión.");
+        return;
+    }
+
+    const { data, error } = await supabase
+        .from("players")
+        .insert({
+            user_id: user.data.user.id,
+            name,
+            position,
+            rating
+        });
+
+    if (error) {
+        console.error(error);
+        alert("Error guardando jugador.");
+    } else {
+        alert("Jugador guardado correctamente.");
+    }
+}
+// ===============================
+// CARGAR JUGADORES DEL USUARIO
+// ===============================
+async function loadPlayers() {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) return [];
+
+    const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("user_id", user.data.user.id);
+
+    if (error) {
+        console.error(error);
+        return [];
+    }
+
+    return data;
+}
+// ===============================
+// GENERAR EQUIPOS BALANCEADOS FUT7
+// ===============================
+async function generateBalancedTeams() {
+    const players = await loadPlayers();
+
+    if (players.length < 14) {
+        alert("Necesitas mínimo 14 jugadores (7 por equipo).");
+        return;
+    }
+
+    // Clasificar por posición
+    const POR = players.filter(p => p.position === "POR");
+    const DEF = players.filter(p => p.position === "DEF");
+    const DEL = players.filter(p => p.position === "DEL");
+    const MED = players.filter(p => p.position === "MED");
+
+    if (POR.length < 2) return alert("Se necesitan 2 porteros.");
+    if (DEF.length < 6) return alert("Se necesitan mínimo 6 defensas.");
+    if (DEL.length < 2) return alert("Se necesitan mínimo 2 delanteros.");
+
+    let teamA = [];
+    let teamB = [];
+
+    // 1 portero por equipo
+    teamA.push(POR.pop());
+    teamB.push(POR.pop());
+
+    // 3 defensas por equipo
+    for (let i = 0; i < 3; i++) {
+        teamA.push(DEF.pop());
+        teamB.push(DEF.pop());
+    }
+
+    // 1 delantero por equipo
+    teamA.push(DEL.pop());
+    teamB.push(DEL.pop());
+
+    // Resto → rellenar hasta 7 jugadores
+    let remaining = [...POR, ...DEF, ...DEL, ...MED];
+
+    while (teamA.length < 7) teamA.push(remaining.pop());
+    while (teamB.length < 7) teamB.push(remaining.pop());
+
+    // Ordenar por media
+    const avgA = teamA.reduce((a,b) => a + b.rating, 0) / 7;
+    const avgB = teamB.reduce((a,b) => a + b.rating, 0) / 7;
+
+    console.log("MEDIA A:", avgA);
+    console.log("MEDIA B:", avgB);
+
+    // guardar en Supabase
+    await saveTeams(teamA, teamB);
+
+    alert("Equipos generados y guardados.");
+
+    return { teamA, teamB };
+}
+// ===============================
+// GUARDAR EQUIPOS GENERADOS
+// ===============================
+async function saveTeams(teamA, teamB) {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) return;
+
+    await supabase
+        .from("teams")
+        .insert({
+            user_id: user.data.user.id,
+            team_a: teamA,
+            team_b: teamB
+        });
+}
 
   // -------------------------
   // 4. AÑADIR JUGADOR

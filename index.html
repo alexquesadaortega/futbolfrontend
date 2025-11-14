@@ -1,216 +1,144 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Generador de Equipos Futbol 7</title>
-
-<link rel="icon" href="icono.png" type="image/png">
-<link rel="apple-touch-icon" href="icono.png">
-<meta name="theme-color" content="#0f1724">
-<link rel="manifest" href="manifest.json">
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-:root{ --bg1:#0f1724; --bg2:#1a2238; --accent:#06b6d4; --card-bg: rgba(255,255,255,0.05); --text:#e6eef6; }
-body{ font-family: 'Poppins', sans-serif; background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%); color: var(--text); padding: 10px; text-align: center; margin: 0; min-height: 100vh; }
-h1{ margin-bottom:10px; font-weight:600; color:#0ff0fc; }
-.card{ background: var(--card-bg); padding: 14px; border-radius: 12px; margin: 10px auto; width: 95%; max-width: 600px; text-align: left; }
-.players-list { list-style:none; padding:0; max-height:200px; overflow:auto; }
-.players-list li{ padding:6px; margin:3px 0; background: rgba(255,255,255,0.08); border-radius:8px; display:flex; justify-content:space-between; }
-button{ background: linear-gradient(135deg,#06b6d4,#0ea5e9); color:#fff; cursor:pointer; margin:6px; padding:8px 14px; border-radius:8px; border:none; font-weight:600; font-size:14px; }
-.field{ position: relative; width: 320px; height: 480px; background-color: #0f4720; border:2px solid #fff; border-radius:10px; display:none; overflow:hidden; margin:10px auto; }
-.field-title{ position:absolute; top:6px; width:100%; text-align:center; font-weight:600; color:#fff; font-size:13px; }
-.player-card{ position:absolute; width:45px; height:50px; text-align:center; font-weight:600; color:#fff; cursor:grab; border-radius:5px; overflow:hidden; }
-.player-card img{ width:100%; height:100%; display:block; }
-.player-card span{ display:block; font-size:10px; margin-top:2px; word-wrap:break-word; background:#000; color:#fff; padding:1px 2px; border-radius:2px; }
-#fieldsContainer{ display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-top:20px; }
-</style>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const supabase = supabase.createClient(
-  "https://vayholflhqoyflbvuusa.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZlYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA"
-);
-
-let currentUser = null;
-let currentPlayers = [];
-let shirtImages = { black:"camiseta-negra.png", white:"camiseta-blanca.png" };
-
-async function loginUser() {
-  const username = document.getElementById('loginUser').value.trim();
-  const password = document.getElementById('loginPass').value.trim();
-  if(!username || !password){ alert('Introduce usuario y contraseña'); return; }
-  const { data, error } = await supabase.from('users').select('*').eq('username', username).eq('password', password);
-  if(error || !data.length){ alert('Usuario o contraseña incorrectos'); return; }
-  currentUser = username;
-  loadPlayers();
-  document.getElementById('loginCard').style.display='none';
-  document.getElementById('playersCard').style.display='block';
-  document.getElementById('addPlayerCard').style.display='block';
-}
-
-async function registerUser() {
-  const username = document.getElementById('regUser').value.trim();
-  const password = document.getElementById('regPass').value.trim();
-  if(!username || !password){ alert('Introduce usuario y contraseña'); return; }
-  const { error } = await supabase.from('users').insert([{username,password}]);
-  if(error){ alert('Error registrando usuario'); return; }
-  alert('Usuario registrado con éxito');
-}
-
-async function loadPlayers(){
-  const { data, error } = await supabase.from('players').select('*').eq('owner', currentUser);
-  currentPlayers = data || [];
-  renderPlayerList();
-}
-
-async function addPlayer(){
-  const name = document.getElementById('newName').value.trim();
-  const pos = document.getElementById('newPos').value;
-  const media = parseFloat(document.getElementById('newMedia').value);
-  if(!name || isNaN(media)){ alert('Datos incorrectos'); return; }
-  const { error } = await supabase.from('players').insert([{ owner: currentUser, name, pos, media }]);
-  if(error){ alert('Error al guardar jugador'); return; }
-  currentPlayers.push({ owner:currentUser, name, pos, media });
-  renderPlayerList();
-}
-
-function renderPlayerList(){
-  const container = document.getElementById('playersContainer');
-  container.innerHTML='';
-  currentPlayers.forEach((p,i)=>{
-    const li = document.createElement('li');
-    li.innerHTML=`<label><input type="checkbox" data-index="${i}">${p.name} (${p.pos}, ${p.media})</label>
-    <button onclick="deletePlayer(${i})">Eliminar</button>`;
-    container.appendChild(li);
-  });
-}
-
-async function deletePlayer(idx){
-  const p = currentPlayers[idx];
-  if(!confirm(`Eliminar a ${p.name}?`)) return;
-  await supabase.from('players').delete().eq('owner', currentUser).eq('name',p.name);
-  currentPlayers.splice(idx,1);
-  renderPlayerList();
-}
-
-// =================================
-// GENERAR EQUIPOS FUTBOL 7 BALANCEADOS
-// =================================
-function generateTeams() {
-  if(currentPlayers.length<14){ alert('Se necesitan al menos 14 jugadores'); return; }
-  const porteros = currentPlayers.filter(p=>p.pos==='Portero');
-  const defensas = currentPlayers.filter(p=>p.pos==='Defensa');
-  const delanteros = currentPlayers.filter(p=>p.pos==='Delantero');
-  const medios = currentPlayers.filter(p=>p.pos==='Mediocentro');
-  const otros = currentPlayers.filter(p=>!['Portero','Defensa','Delantero','Mediocentro'].includes(p.pos));
-
-  if(porteros.length<2 || defensas.length<6 || delanteros.length<2){ alert('No hay suficientes jugadores para cumplir la formación mínima'); return; }
-
-  function pickRandom(arr,count){ const copy=[...arr],picked=[]; for(let i=0;i<count;i++){ const idx=Math.floor(Math.random()*copy.length); picked.push(copy[idx]); copy.splice(idx,1);} return picked;}
-
-  let teamA=[], teamB=[];
-  const [pA,pB] = pickRandom(porteros,2); teamA.push(pA); teamB.push(pB);
-  const defs = pickRandom(defensas,6); teamA.push(...defs.slice(0,3)); teamB.push(...defs.slice(3,6));
-  const dels = pickRandom(delanteros,2); teamA.push(dels[0]); teamB.push(dels[1]);
-  const remaining = [...medios,...otros].filter(p=>!teamA.includes(p) && !teamB.includes(p));
-  const extra = pickRandom(remaining,4);
-  teamA.push(...extra.slice(0,2)); teamB.push(...extra.slice(2,4));
-
-  renderFieldTeams(teamA,teamB);
-}
-
-function renderFieldTeams(teamA,teamB){
-  const field1 = document.getElementById('field1');
-  const field2 = document.getElementById('field2');
-  field1.style.display='block'; field2.style.display='block';
-  field1.innerHTML='<div class="field-title">Equipo Negro</div>'; field2.innerHTML='<div class="field-title">Equipo Blanco</div>';
-  drawField(field1); drawField(field2);
-  drawTeamOnField(field1,teamA,'black'); drawTeamOnField(field2,teamB,'white');
-}
-
-function drawField(field){
-  const lines=document.createElement('div');
-  lines.style.position='absolute'; lines.style.left='0'; lines.style.top='0'; lines.style.width='100%'; lines.style.height='100%'; lines.style.pointerEvents='none';
-  lines.innerHTML=`<div style="position:absolute;top:50%;left:0;width:100%;height:2px;background:white;transform:translateY(-50%);"></div>
-  <div style="position:absolute;top:0;left:50%;width:30%;height:20%;border:2px solid white;transform:translateX(-50%);box-sizing:border-box;"></div>
-  <div style="position:absolute;bottom:0;left:50%;width:30%;height:20%;border:2px solid white;transform:translateX(-50%);box-sizing:border-box;"></div>
-  <div style="position:absolute;top:50%;left:50%;width:25%;height:25%;border:2px solid white;border-radius:50%;transform:translate(-50%,-50%);box-sizing:border-box;"></div>`;
-  field.appendChild(lines);
-}
-
-function drawTeamOnField(field,team,color){
-  field.querySelectorAll('.player-card').forEach(n=>n.remove());
-  const fw=field.clientWidth, fh=field.clientHeight;
-  const positionsY = { Portero: fh*0.85, Defensa: fh*0.62, Mediocentro: fh*0.45, Delantero: fh*0.28 };
-  team.forEach((p,i)=>{
-    const div=document.createElement('div'); div.className='player-card';
-    const img=document.createElement('img'); img.src=shirtImages[color]; img.alt=p.name;
-    const span=document.createElement('span'); span.textContent=p.name;
-    div.appendChild(img); div.appendChild(span);
-    const y=positionsY[p.pos]||positionsY.Defensa; div.style.top=`${Math.round(y)}px`; div.style.left=`${10+i*40}px`;
-    field.appendChild(div); makeDraggable(div,field,positionsY);
-  });
-}
-
-function makeDraggable(el,field,positionsY){
-  let offsetX=0, offsetY=0,dragging=false;
-  function startDrag(cx,cy){ const rect=el.getBoundingClientRect(); offsetX=cx-rect.left; offsetY=cy-rect.top; dragging=true; el.style.zIndex=9999;}
-  function onMove(cx,cy){ if(!dragging) return; const rectF=field.getBoundingClientRect(); let x=cx-rectF.left-offsetX; let y=cy-rectF.top-offsetY; x=Math.max(0,Math.min(field.clientWidth-el.clientWidth,x)); y=Math.max(0,Math.min(field.clientHeight-el.clientHeight,y)); el.style.left=`${Math.round(x)}px`; el.style.top=`${Math.round(y)}px`;}
-  function endDrag(){ if(!dragging) return; dragging=false; el.style.zIndex=''; const currentTop=parseFloat(el.style.top); const values=Object.values(positionsY); let closest=values[0]; let minDist=Math.abs(values[0]-currentTop); for(let v of values){const d=Math.abs(v-currentTop); if(d<minDist){minDist=d;closest=v;}} el.style.top=`${closest}px`; const linePlayers=Array.from(field.querySelectorAll('.player-card')).filter(p=>Math.abs(parseFloat(p.style.top)-closest)<1); linePlayers.sort((a,b)=>parseFloat(a.style.left)-parseFloat(b.style.left)); const spacing=field.clientWidth/(linePlayers.length+1); linePlayers.forEach((p,idx)=>{p.style.left=`${Math.round(spacing*(idx+1)-20)}px`;}); }
-  el.addEventListener('mousedown',e=>{e.preventDefault(); startDrag(e.clientX,e.clientY); document.addEventListener('mousemove',mouseMove); document.addEventListener('mouseup',mouseUp);});
-  function mouseMove(e){onMove(e.clientX,e.clientY);}
-  function mouseUp(){document.removeEventListener('mousemove',mouseMove);document.removeEventListener('mouseup',mouseUp);endDrag();}
-  el.addEventListener('touchstart',e=>{const t=e.touches[0]; startDrag(t.clientX,t.clientY);},{passive:true});
-  el.addEventListener('touchmove',e=>{e.preventDefault(); const t=e.touches[0]; onMove(t.clientX,t.clientY);},{passive:false});
-  el.addEventListener('touchend',e=>{endDrag();},{passive:true});
-  el.style.cursor='grab';
-}
-</script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fútbol 7 - Generador de Equipos</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { margin: 5px; padding: 5px; }
+    ul { padding-left: 20px; }
+  </style>
 </head>
 <body>
-<h1>GENERADOR DE EQUIPOS FUTBOL 7</h1>
-
-<div class="login-card" id="loginCard">
-  <input type="text" id="loginUser" placeholder="Usuario"><br>
-  <input type="password" id="loginPass" placeholder="Contraseña"><br>
-  <button onclick="loginUser()">Entrar</button>
-</div>
-
-<div id="registerCard">
-  <input type="text" id="regUser" placeholder="Usuario"><br>
-  <input type="password" id="regPass" placeholder="Contraseña"><br>
+  <h2>Registro / Login</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Contraseña">
   <button onclick="registerUser()">Registrar</button>
-</div>
+  <button onclick="loginUser()">Login</button>
 
-<div class="card" id="playersCard" style="display:none;">
-  <strong>Jugadores:</strong>
-  <ul id="playersContainer" class="players-list"></ul>
-  <button onclick="generateTeams()">Generar equipos</button>
-</div>
+  <hr>
 
-<div class="card" id="addPlayerCard" style="display:none;">
-  <input type="text" id="newName" placeholder="Nombre"><br>
-  <select id="newPos">
-    <option>Portero</option>
-    <option>Defensa</option>
-    <option>Mediocentro</option>
-    <option>Delantero</option>
-  </select><br>
-  <input type="number" id="newMedia" placeholder="Media 0-10" min="0" max="10"><br>
-  <button onclick="addPlayer()">Agregar jugador</button>
-</div>
+  <h2>Gestión de jugadores</h2>
+  <input id="playerName" placeholder="Nombre jugador">
+  <select id="playerPos">
+    <option value="Portero">Portero</option>
+    <option value="Defensa">Defensa</option>
+    <option value="Centrocampista">Centrocampista</option>
+    <option value="Delantero">Delantero</option>
+  </select>
+  <input id="playerMedia" type="number" placeholder="Media" min="0" max="10">
+  <button onclick="addPlayer()">Añadir jugador</button>
 
-<div id="fieldsContainer">
-  <div>
-    <div id="field1" class="field"></div>
-  </div>
-  <div>
-    <div id="field2" class="field"></div>
-  </div>
-</div>
+  <h3>Jugadores añadidos:</h3>
+  <ul id="playerList"></ul>
+
+  <hr>
+
+  <h2>Generar equipos balanceados</h2>
+  <button onclick="generateBalancedTeamsOptimized()">Generar Equipos</button>
+  <div id="teamsOutput"></div>
+
+  <script>
+    // Inicializa Supabase
+    const supabaseUrl = 'TU_SUPABASE_URL';
+    const supabaseKey = 'TU_SUPABASE_ANON_KEY';
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Login
+    async function loginUser() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if(error) alert('Error login: ' + error.message);
+      else alert('Login correcto: ' + email);
+    }
+
+    // Registro
+    async function registerUser() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if(error) alert('Error registro: ' + error.message);
+      else alert('Registro correcto: ' + email);
+    }
+
+    // Gestión de jugadores
+    let currentPlayers = [];
+
+    function addPlayer() {
+      const name = document.getElementById('playerName').value;
+      const pos = document.getElementById('playerPos').value;
+      const media = parseFloat(document.getElementById('playerMedia').value);
+      if(!name || isNaN(media)) return alert('Nombre y media obligatorios');
+      currentPlayers.push({name,pos,media});
+      renderPlayers();
+    }
+
+    function renderPlayers() {
+      const ul = document.getElementById('playerList');
+      ul.innerHTML = '';
+      currentPlayers.forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.name} - ${p.pos} - ${p.media}`;
+        ul.appendChild(li);
+      });
+    }
+
+    // Generar equipos balanceados Fútbol 7
+    function generateBalancedTeamsOptimized() {
+      if(currentPlayers.length < 14) { alert('Se necesitan al menos 14 jugadores'); return; }
+
+      const porteros = currentPlayers.filter(p => p.pos==='Portero');
+      const defensas = currentPlayers.filter(p => p.pos==='Defensa');
+      const delanteros = currentPlayers.filter(p => p.pos==='Delantero');
+      const otros = currentPlayers.filter(p => !['Portero','Defensa','Delantero'].includes(p.pos));
+
+      if(porteros.length<2 || defensas.length<6 || delanteros.length<2) {
+        alert('No hay suficientes jugadores para cumplir posiciones F7');
+        return;
+      }
+
+      const mediaTeam = team => team.reduce((acc,p)=>acc+p.media,0)/team.length;
+      const shuffle = arr => arr.sort(()=>Math.random()-0.5);
+
+      let bestDiff = Infinity, bestTeams = null;
+
+      for(let i=0;i<500;i++) {
+        const tPorteros = shuffle([...porteros]);
+        const tDefensas = shuffle([...defensas]);
+        const tDelanteros = shuffle([...delanteros]);
+        const tOtros = shuffle([...otros]);
+
+        let teamA = [], teamB = [];
+
+        teamA.push(tPorteros.shift());
+        teamB.push(tPorteros.shift());
+
+        for(let j=0;j<3;j++){ teamA.push(tDefensas.shift()); teamB.push(tDefensas.shift()); }
+        teamA.push(tDelanteros.shift()); teamB.push(tDelanteros.shift());
+
+        const remaining = shuffle([...tPorteros,...tDefensas,...tDelanteros,...tOtros]);
+        remaining.forEach(p=>{
+          if(teamA.length<7 && (teamA.length<=teamB.length || teamB.length===7)) teamA.push(p);
+          else if(teamB.length<7) teamB.push(p);
+        });
+
+        if(teamA.length!==7 || teamB.length!==7) continue;
+
+        const diff = Math.abs(mediaTeam(teamA)-mediaTeam(teamB));
+        if(diff<bestDiff){ bestDiff = diff; bestTeams={teamA,teamB}; if(diff===0) break; }
+      }
+
+      if(!bestTeams){ alert('No se pudo generar equipos equilibrados'); return; }
+
+      const output = document.getElementById('teamsOutput');
+      output.innerHTML = `<h4>Equipo A (Media: ${mediaTeam(bestTeams.teamA).toFixed(2)})</h4>
+                          <ul>${bestTeams.teamA.map(p=>`<li>${p.name} (${p.pos}, ${p.media})</li>`).join('')}</ul>
+                          <h4>Equipo B (Media: ${mediaTeam(bestTeams.teamB).toFixed(2)})</h4>
+                          <ul>${bestTeams.teamB.map(p=>`<li>${p.name} (${p.pos}, ${p.media})</li>`).join('')}</ul>`;
+    }
+  </script>
 </body>
 </html>

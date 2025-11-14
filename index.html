@@ -1,254 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generador de Equipos F7</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-<style>
-body{font-family:sans-serif;background:#0f1724;color:white;text-align:center;margin:0;padding:10px;}
-.card{background:rgba(255,255,255,0.05);padding:10px;margin:10px;border-radius:8px;}
-.field{position:relative;width:350px;height:200px;margin:10px auto;background:#1a2238;border:1px solid #06b6d4;border-radius:10px;}
-.player{position:absolute;width:50px;height:50px;background:#06b6d4;color:black;border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer;user-select:none;}
-.field-title{position:absolute;top:0;left:0;width:100%;text-align:center;font-weight:bold;color:#06b6d4;}
-</style>
+  <meta charset="UTF-8">
+  <title>Fútbol 7 - Generador de equipos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { margin: 5px; }
+    #equipos { margin-top: 20px; }
+    .equipo { margin-bottom: 10px; }
+  </style>
 </head>
 <body>
 
-<h1>Generador de Equipos Fútbol 7</h1>
+<h1>Fútbol 7 - Generador de Equipos</h1>
 
-<div class="card" id="loginCard">
-<strong>Login</strong><br>
-<input type="text" id="loginUser" placeholder="Usuario"><br>
-<input type="password" id="loginPass" placeholder="Contraseña"><br>
-<button id="loginBtn">Entrar</button>
-<div id="loginMsg" style="color:red"></div>
+<div id="auth">
+  <h2>Registro</h2>
+  <input type="email" id="registerEmail" placeholder="Email">
+  <input type="password" id="registerPassword" placeholder="Contraseña">
+  <button onclick="registerUser()">Registrar</button>
+
+  <h2>Login</h2>
+  <input type="email" id="loginEmail" placeholder="Email">
+  <input type="password" id="loginPassword" placeholder="Contraseña">
+  <button onclick="loginUser()">Iniciar sesión</button>
 </div>
 
-<div class="card" id="registerCard">
-<strong>Registro</strong><br>
-<input type="text" id="regUser" placeholder="Usuario"><br>
-<input type="password" id="regPass" placeholder="Contraseña"><br>
-<button id="registerBtn">Registrar</button>
-<div id="regMsg" style="color:red"></div>
+<div id="playerSection" style="display:none;">
+  <h2>Jugadores</h2>
+  <textarea id="playerList" placeholder="Nombre, posición (Portero/Defensa/Medio/Delantero), media, separados por coma" rows="10" cols="50"></textarea>
+  <br>
+  <button onclick="generateTeams()">Generar Equipos</button>
+
+  <div id="equipos"></div>
 </div>
 
-<div class="card" id="playersCard" style="display:none;">
-<strong>Selecciona jugadores:</strong>
-<ul id="playersContainer"></ul>
-<button id="generate">Generar equipos</button>
-</div>
-
-<div class="card" id="addPlayerCard" style="display:none;">
-<strong>Agregar jugador:</strong><br>
-<input type="text" id="newName" placeholder="Nombre"><br>
-<select id="newPos">
-<option value="Portero">Portero</option>
-<option value="Defensa">Defensa</option>
-<option value="Delantero">Delantero</option>
-<option value="Mediocentro">Mediocentro</option>
-</select><br>
-<input type="number" id="newMedia" placeholder="Media (0-10)" min="0" max="10"><br>
-<button id="addPlayerBtn">Agregar jugador</button>
-</div>
-
-<div id="proposalsCard" class="card" style="display:none;">
-<strong>Propuestas:</strong>
-<div id="proposalsContainer"></div>
-</div>
-
-<div id="fieldsContainer">
-<div id="field1" class="field" style="display:none;"><div class="field-title">Equipo Negro</div></div>
-<div id="field2" class="field" style="display:none;"><div class="field-title">Equipo Blanco</div></div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 <script>
-/* -------- Inicializar Supabase -------- */
-const supabaseUrl = 'https://vayholflhqoyflbvuusa.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
-const supabase = Supabase.createClient(supabaseUrl,supabaseKey);
+  // --- Inicialización de Supabase ---
+  const supabaseUrl = 'https://vayholflhqoyflbvuusa.supabase.co';
+  const supabaseKey = 'TU_SUPABASE_ANON_KEY'; // Pon aquí tu anon key
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-let currentUser = null;
-let currentPlayers = [];
-let currentProposals = [];
+  // --- Registro ---
+  async function registerUser() {
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
 
-/* -------- Login / Registro -------- */
-async function loginUser(){
-  const username=document.getElementById('loginUser').value;
-  const password=document.getElementById('loginPass').value;
-  const { data,error } = await supabase.auth.signInWithPassword({ email:username, password });
-  if(error){ document.getElementById('loginMsg').textContent=error.message; return; }
-  currentUser=username;
-  await loadPlayers();
-  document.getElementById('loginCard').style.display='none';
-  document.getElementById('registerCard').style.display='none';
-  document.getElementById('playersCard').style.display='block';
-  document.getElementById('addPlayerCard').style.display='block';
-}
-
-async function registerUser(){
-  const username=document.getElementById('regUser').value;
-  const password=document.getElementById('regPass').value;
-  const { data,error } = await supabase.auth.signUp({ email:username,password });
-  if(error){ document.getElementById('regMsg').textContent=error.message; return; }
-  document.getElementById('regMsg').textContent='Usuario registrado. Inicia sesión.';
-}
-
-/* -------- Gestión de jugadores -------- */
-async function loadPlayers(){
-  const { data } = await supabase.from('players').select('*').eq('username',currentUser);
-  currentPlayers = data || [];
-  renderPlayerList();
-}
-
-function renderPlayerList(){
-  const container=document.getElementById('playersContainer');
-  container.innerHTML='';
-  currentPlayers.forEach((p,i)=>{
-    const li=document.createElement('li');
-    li.innerHTML=`<label><input type="checkbox" data-index="${i}"> ${p.name} (${p.pos}) [${p.media}]</label>
-    <button onclick="deletePlayer(${i})">Eliminar</button>`;
-    container.appendChild(li);
-  });
-}
-
-async function addPlayer(){
-  const name=document.getElementById('newName').value;
-  const pos=document.getElementById('newPos').value;
-  const media=parseFloat(document.getElementById('newMedia').value);
-  if(!name||isNaN(media)) return alert('Datos incorrectos');
-  const { data,error } = await supabase.from('players').insert([{username:currentUser,name,pos,media}]);
-  if(error) return alert(error.message);
-  currentPlayers.push({username:currentUser,name,pos,media});
-  renderPlayerList();
-}
-
-async function deletePlayer(i){
-  const player=currentPlayers[i];
-  if(!player) return;
-  await supabase.from('players').delete().eq('username',currentUser).eq('name',player.name);
-  currentPlayers.splice(i,1);
-  renderPlayerList();
-}
-
-/* -------- Generación de equipos -------- */
-function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
-function averageMedia(team){ return team.reduce((s,p)=>s+(p.media||0),0)/team.length; }
-
-function generateTeams(players){
-  const maxPlayers=7;
-  const posGroups={Portero:[],Defensa:[],Delantero:[],Mediocentro:[],Otros:[]};
-  players.forEach(p=>{ if(posGroups[p.pos]) posGroups[p.pos].push(p); else posGroups.Otros.push(p); });
-  if(posGroups.Portero.length<2 || posGroups.Defensa.length<6 || posGroups.Delantero.length<2){
-    alert('No hay suficientes jugadores para equipos completos'); return null;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      alert('Error al registrar: ' + error.message);
+    } else {
+      alert('Registro exitoso. Confirma tu email si es necesario.');
+    }
   }
-  let bestTeams=null,smallestDiff=Infinity;
-  for(let it=0;it<500;it++){
-    let port=[...posGroups.Portero],defe=[...posGroups.Defensa],del=[...posGroups.Delantero],mid=[...posGroups.Mediocentro],oth=[...posGroups.Otros];
-    shuffle(port); shuffle(defe); shuffle(del); shuffle(mid); shuffle(oth);
-    let teamA=[],teamB=[];
-    teamA.push(port.shift()); teamB.push(port.shift());
-    teamA.push(...defe.splice(0,3)); teamB.push(...defe.splice(0,3));
-    teamA.push(del.shift()); teamB.push(del.shift());
-    if(mid.length>0){ teamA.push(mid.shift()); if(mid.length>0) teamB.push(mid.shift()); }
-    let remaining=[...port,...defe,...del,...mid,...oth];
-    while(teamA.length<maxPlayers && remaining.length>0) teamA.push(remaining.shift());
-    while(teamB.length<maxPlayers && remaining.length>0) teamB.push(remaining.shift());
-    if(teamA.length!==maxPlayers || teamB.length!==maxPlayers) continue;
-    const diff=Math.abs(averageMedia(teamA)-averageMedia(teamB));
-    if(diff<smallestDiff){ smallestDiff=diff; bestTeams=[teamA,teamB]; }
+
+  // --- Login ---
+  async function loginUser() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      alert('Error al iniciar sesión: ' + error.message);
+    } else {
+      alert('Login exitoso');
+      document.getElementById('auth').style.display = 'none';
+      document.getElementById('playerSection').style.display = 'block';
+    }
   }
-  return bestTeams;
-}
 
-function generateProposals(selected){
-  currentProposals=[];
-  let attempts=0;
-  while(currentProposals.length<5 && attempts<50){
-    const teams=generateTeams(selected);
-    if(!teams){ attempts++; continue; }
-    currentProposals.push(teams);
-    attempts++;
-  }
-  renderProposals();
-}
+  // --- Generación de equipos balanceados ---
+  function generateTeams() {
+    const raw = document.getElementById('playerList').value.trim();
+    if (!raw) return alert('Introduce jugadores');
 
-function renderProposals(){
-  const container=document.getElementById('proposalsContainer');
-  container.innerHTML='';
-  currentProposals.forEach((teams,i)=>{
-    const div=document.createElement('div');
-    div.innerHTML=`Propuesta ${i+1} (Dif Media: ${Math.abs(averageMedia(teams[0])-averageMedia(teams[1])).toFixed(2)})`;
-    div.style.cursor='pointer';
-    div.onclick=()=>applyTeams(teams);
-    container.appendChild(div);
-  });
-  document.getElementById('proposalsCard').style.display='block';
-}
-
-/* -------- Dibujar jugadores en el campo con SNAP -------- */
-function applyTeams(teams){
-  const field1=document.getElementById('field1');
-  const field2=document.getElementById('field2');
-  field1.innerHTML='<div class="field-title">Equipo Negro</div>';
-  field2.innerHTML='<div class="field-title">Equipo Blanco</div>';
-  const positions=[
-    {x:150,y:10},{x:50,y:80},{x:150,y:80},{x:250,y:80},{x:50,y:150},{x:150,y:150},{x:250,y:150}
-  ]; // 7 posiciones fijas para F7
-
-  [field1,field2].forEach((field,idx)=>{
-    teams[idx].forEach((p,posIdx)=>{
-      const div=document.createElement('div');
-      div.className='player';
-      div.textContent=p.name.split(' ')[0];
-      div.style.left=positions[posIdx].x+'px';
-      div.style.top=positions[posIdx].y+'px';
-      makeDraggable(div,field,positions);
-      field.appendChild(div);
+    const lines = raw.split('\n');
+    const players = lines.map(line => {
+      const [name, pos, rating] = line.split(',').map(s => s.trim());
+      return { name, pos, rating: parseFloat(rating) };
     });
-  });
-}
 
-/* -------- Drag & Snap -------- */
-function makeDraggable(el,container,snapPoints){
-  let offsetX=0,offsetY=0,dragging=false;
-  el.onmousedown=(e)=>{
-    dragging=true;
-    offsetX=e.clientX-el.offsetLeft;
-    offsetY=e.clientY-el.offsetTop;
-    el.style.zIndex=1000;
-  };
-  document.onmousemove=(e)=>{
-    if(!dragging) return;
-    let x=e.clientX-offsetX;
-    let y=e.clientY-offsetY;
-    el.style.left=x+'px';
-    el.style.top=y+'px';
-  };
-  document.onmouseup=(e)=>{
-    if(!dragging) return;
-    dragging=false;
-    // Snap al punto más cercano
-    let nearest=snapPoints[0];
-    let dist=Math.hypot(parseInt(el.style.left)-nearest.x,parseInt(el.style.top)-nearest.y);
-    snapPoints.forEach(p=>{
-      const d=Math.hypot(parseInt(el.style.left)-p.x,parseInt(el.style.top)-p.y);
-      if(d<dist){ dist=d; nearest=p; }
-    });
-    el.style.left=nearest.x+'px';
-    el.style.top=nearest.y+'px';
-  };
-}
+    if (players.length < 14) return alert('Se necesitan al menos 14 jugadores');
 
-/* -------- Botones -------- */
-document.getElementById('loginBtn').onclick=loginUser;
-document.getElementById('registerBtn').onclick=registerUser;
-document.getElementById('addPlayerBtn').onclick=addPlayer;
-document.getElementById('generate').onclick=()=>{
-  const selectedIndexes=[...document.querySelectorAll('#playersContainer input:checked')].map(chk=>Number(chk.dataset.index));
-  if(selectedIndexes.length<5) return alert('Selecciona al menos 5 jugadores');
-  generateProposals(selectedIndexes.map(i=>currentPlayers[i]));
-};
+    // Separar jugadores por posición
+    const porteros = players.filter(p => p.pos.toLowerCase() === 'portero');
+    const defensas = players.filter(p => p.pos.toLowerCase() === 'defensa');
+    const delanteros = players.filter(p => p.pos.toLowerCase() === 'delantero');
+    const medios = players.filter(p => p.pos.toLowerCase() === 'medio');
+
+    if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) {
+      return alert('No hay suficientes jugadores para cumplir los mínimos por equipo');
+    }
+
+    // Ordenar por media descendente
+    const sortByRating = arr => arr.sort((a,b) => b.rating - a.rating);
+
+    sortByRating(porteros);
+    sortByRating(defensas);
+    sortByRating(delanteros);
+    sortByRating(medios);
+
+    const equipoA = [];
+    const equipoB = [];
+
+    // Añadir mínimos obligatorios
+    equipoA.push(porteros[0]);
+    equipoB.push(porteros[1]);
+
+    equipoA.push(...defensas.slice(0,3));
+    equipoB.push(...defensas.slice(3,6));
+
+    equipoA.push(delanteros[0]);
+    equipoB.push(delanteros[1]);
+
+    // Rellenar el resto con medios y defensas extra si quedan
+    const remaining = players.filter(p => !equipoA.includes(p) && !equipoB.includes(p));
+    sortByRating(remaining);
+
+    while (equipoA.length < 7) equipoA.push(remaining.shift());
+    while (equipoB.length < 7) equipoB.push(remaining.shift());
+
+    // Mostrar equipos
+    const div = document.getElementById('equipos');
+    div.innerHTML = `<div class="equipo"><h3>Equipo A</h3>${equipoA.map(p => `${p.name} (${p.pos}) - ${p.rating}`).join('<br>')}</div>
+                     <div class="equipo"><h3>Equipo B</h3>${equipoB.map(p => `${p.name} (${p.pos}) - ${p.rating}`).join('<br>')}</div>`;
+  }
 </script>
+
 </body>
 </html>

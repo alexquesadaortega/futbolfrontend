@@ -2,135 +2,195 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fútbol 7 Manager</title>
+<title>Fútbol 7 Generator</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  input, button { margin: 5px; }
-  .team { margin-top: 10px; }
+  body { font-family: Arial; padding: 20px; background: #eee; }
+  input, select { padding: 6px; margin: 4px; }
+  .box { background: white; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
 </style>
 </head>
+
 <body>
 
-<h1>Fútbol 7 Manager</h1>
+<h1>Generador de Equipos Fútbol 7</h1>
 
-<!-- Registro/Login -->
-<div>
+<!-- LOGIN / REGISTER -->
+<div class="box">
   <h2>Registro</h2>
-  <input type="email" id="registerEmail" placeholder="Email">
-  <input type="password" id="registerPassword" placeholder="Contraseña">
+  <input id="registerEmail" placeholder="Email"><br>
+  <input id="registerPassword" type="password" placeholder="Contraseña"><br>
   <button onclick="registerUser()">Registrar</button>
 
+  <hr>
+
   <h2>Login</h2>
-  <input type="email" id="loginEmail" placeholder="Email">
-  <input type="password" id="loginPassword" placeholder="Contraseña">
+  <input id="loginEmail" placeholder="Email"><br>
+  <input id="loginPassword" type="password" placeholder="Contraseña"><br>
   <button onclick="loginUser()">Login</button>
 </div>
 
-<hr>
-
-<!-- Añadir jugadores -->
-<div>
-  <h2>Agregar jugador</h2>
-  <input type="text" id="playerName" placeholder="Nombre">
+<!-- ADD PLAYERS -->
+<div class="box">
+  <h2>Añadir jugador</h2>
+  <input id="playerName" placeholder="Nombre">
   <select id="playerPosition">
     <option value="portero">Portero</option>
     <option value="defensa">Defensa</option>
-    <option value="centrocampista">Centrocampista</option>
+    <option value="medio">Medio</option>
     <option value="delantero">Delantero</option>
   </select>
-  <input type="number" id="playerSkill" placeholder="Media (1-10)" min="1" max="10">
+  <input id="playerSkill" type="number" placeholder="Media (1-100)">
   <button onclick="addPlayer()">Agregar</button>
 </div>
 
-<hr>
+<!-- GENERATE TEAMS -->
+<div class="box">
+  <h2>Generar Equipos</h2>
+  <button onclick="generateTeams()">Generar 2 Equipos Balanceados</button>
 
-<!-- Generar equipos -->
-<div>
-  <h2>Generar equipos</h2>
-  <button onclick="generateTeams()">Generar 2 equipos balanceados</button>
-  <div class="team">
-    <h3>Equipo A</h3>
-    <ul id="teamA"></ul>
-  </div>
-  <div class="team">
-    <h3>Equipo B</h3>
-    <ul id="teamB"></ul>
-  </div>
+  <h3>Equipo A</h3>
+  <ul id="teamA"></ul>
+
+  <h3>Equipo B</h3>
+  <ul id="teamB"></ul>
 </div>
 
-<!-- Supabase CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-<script>
-  // Inicializar Supabase
-  const supabaseUrl = 'https://vayholflhqoyflbvuusa.supabase.co';
-  const supabaseKey = 'TU_ANON_KEY'; // reemplaza con tu clave anónima
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // Lista de jugadores en memoria
+<!-- SUPABASE + APP LOGIC -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+window.onload = function() {
+
+  // -------------------------
+  // 1. INICIALIZAR SUPABASE
+  // -------------------------
+  const supabaseUrl = "https://vayholflhqoyflbvuusa.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA";
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+  // Memoria local de jugadores del usuario
   let players = [];
 
+
+  // -------------------------
+  // 2. REGISTRO
+  // -------------------------
   async function registerUser() {
-    const email = document.getElementById('registerEmail').value;
-    const password = document.getElementById('registerPassword').value;
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) alert(error.message);
-    else alert('Usuario registrado correctamente');
+    const email = document.getElementById("registerEmail").value;
+    const password = document.getElementById("registerPassword").value;
+
+    const { error } = await supabase.auth.signUp({ email, password });
+
+    if (error) return alert(error.message);
+    alert("Usuario registrado.");
   }
 
+
+  // -------------------------
+  // 3. LOGIN
+  // -------------------------
   async function loginUser() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert(error.message);
-    else alert('Login correcto');
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) return alert(error.message);
+
+    alert("Login correcto.");
   }
 
-  function addPlayer() {
-    const name = document.getElementById('playerName').value;
-    const position = document.getElementById('playerPosition').value;
-    const skill = parseInt(document.getElementById('playerSkill').value);
-    if (!name || !position || !skill) return alert('Completa todos los campos');
+
+  // -------------------------
+  // 4. AÑADIR JUGADOR
+  // -------------------------
+  window.addPlayer = function () {
+    const name = document.getElementById("playerName").value;
+    const position = document.getElementById("playerPosition").value;
+    const skill = parseInt(document.getElementById("playerSkill").value);
+
+    if (!name || !position || !skill)
+      return alert("Completa todos los campos");
+
     players.push({ name, position, skill });
+
     alert(`Jugador ${name} agregado`);
-  }
+  };
 
-  function generateTeams() {
-    if (players.length < 14) return alert('Necesitas al menos 14 jugadores para 2 equipos');
 
-    // Clonar y ordenar por skill descendente
+  // -------------------------
+  // 5. GENERAR EQUIPOS 7vs7
+  // -------------------------
+  window.generateTeams = function () {
+
+    if (players.length < 14)
+      return alert("Necesitas al menos 14 jugadores para 2 equipos de 7.");
+
+    // Ordenar por media (mayor primero)
     let sorted = [...players].sort((a,b) => b.skill - a.skill);
-    let teamA = [], teamB = [];
 
-    function pickPosition(pos, count) {
+    let teamA = [];
+    let teamB = [];
+
+    // Seleccionar posiciones críticas
+    function pickPosition(pos, totalNeeded) {
+
       const pool = sorted.filter(p => p.position === pos);
-      for (let i=0; i<count; i++) {
-        if (i%2===0) {
-          teamA.push(pool[i]);
-        } else {
-          teamB.push(pool[i]);
-        }
-        sorted = sorted.filter(p => p !== pool[i]);
+
+      if (pool.length < totalNeeded)
+        return alert(`Faltan jugadores en posición ${pos}`);
+
+      for (let i = 0; i < totalNeeded; i++) {
+        if (i % 2 === 0) teamA.push(pool[i]);
+        else teamB.push(pool[i]);
       }
+
+      sorted = sorted.filter(p => !pool.includes(p));
     }
 
-    pickPosition('portero', 2);       // 1 por equipo
-    pickPosition('defensa', 6);       // 3 por equipo
-    pickPosition('delantero', 2);     // 1 por equipo
+    // Requisitos Fútbol 7
+    pickPosition("portero", 2);
+    pickPosition("defensa", 6);
+    pickPosition("delantero", 2);
 
-    // Rellenar con el resto de jugadores (centrocampistas u otros)
-    for (let i=0; i<sorted.length; i++) {
-      if (teamA.length < 7) teamA.push(sorted[i]);
-      else teamB.push(sorted[i]);
+    // Rellenar con medios o sobrantes
+    for (let p of sorted) {
+      if (teamA.length < 7) teamA.push(p);
+      else if (teamB.length < 7) teamB.push(p);
     }
 
     // Mostrar equipos
-    const ulA = document.getElementById('teamA');
-    const ulB = document.getElementById('teamB');
-    ulA.innerHTML = ''; ulB.innerHTML = '';
-    teamA.forEach(p => { let li = document.createElement('li'); li.textContent = `${p.name} (${p.position}, ${p.skill})`; ulA.appendChild(li); });
-    teamB.forEach(p => { let li = document.createElement('li'); li.textContent = `${p.name} (${p.position}, ${p.skill})`; ulB.appendChild(li); });
-  }
+    const ulA = document.getElementById("teamA");
+    const ulB = document.getElementById("teamB");
+    ulA.innerHTML = "";
+    ulB.innerHTML = "";
+
+    teamA.forEach(p => {
+      let li = document.createElement("li");
+      li.textContent = `${p.name} (${p.position}, ${p.skill})`;
+      ulA.appendChild(li);
+    });
+
+    teamB.forEach(p => {
+      let li = document.createElement("li");
+      li.textContent = `${p.name} (${p.position}, ${p.skill})`;
+      ulB.appendChild(li);
+    });
+
+  };
+
+
+  // Hacer accesibles funciones de auth
+  window.registerUser = registerUser;
+  window.loginUser = loginUser;
+
+}; // FIN window.onload
+
 </script>
+
 </body>
 </html>

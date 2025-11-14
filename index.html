@@ -1,20 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Fútbol 7 - Generador de equipos</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input, button { margin: 5px; }
-    #equipos { margin-top: 20px; }
-    .equipo { margin-bottom: 10px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fútbol 7 Manager</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  input, button { margin: 5px; }
+  .team { margin-top: 10px; }
+</style>
 </head>
 <body>
 
-<h1>Fútbol 7 - Generador de Equipos</h1>
+<h1>Fútbol 7 Manager</h1>
 
-<div id="auth">
+<!-- Registro/Login -->
+<div>
   <h2>Registro</h2>
   <input type="email" id="registerEmail" placeholder="Email">
   <input type="password" id="registerPassword" placeholder="Contraseña">
@@ -23,110 +24,113 @@
   <h2>Login</h2>
   <input type="email" id="loginEmail" placeholder="Email">
   <input type="password" id="loginPassword" placeholder="Contraseña">
-  <button onclick="loginUser()">Iniciar sesión</button>
+  <button onclick="loginUser()">Login</button>
 </div>
 
-<div id="playerSection" style="display:none;">
-  <h2>Jugadores</h2>
-  <textarea id="playerList" placeholder="Nombre, posición (Portero/Defensa/Medio/Delantero), media, separados por coma" rows="10" cols="50"></textarea>
-  <br>
-  <button onclick="generateTeams()">Generar Equipos</button>
+<hr>
 
-  <div id="equipos"></div>
+<!-- Añadir jugadores -->
+<div>
+  <h2>Agregar jugador</h2>
+  <input type="text" id="playerName" placeholder="Nombre">
+  <select id="playerPosition">
+    <option value="portero">Portero</option>
+    <option value="defensa">Defensa</option>
+    <option value="centrocampista">Centrocampista</option>
+    <option value="delantero">Delantero</option>
+  </select>
+  <input type="number" id="playerSkill" placeholder="Media (1-10)" min="1" max="10">
+  <button onclick="addPlayer()">Agregar</button>
 </div>
 
+<hr>
+
+<!-- Generar equipos -->
+<div>
+  <h2>Generar equipos</h2>
+  <button onclick="generateTeams()">Generar 2 equipos balanceados</button>
+  <div class="team">
+    <h3>Equipo A</h3>
+    <ul id="teamA"></ul>
+  </div>
+  <div class="team">
+    <h3>Equipo B</h3>
+    <ul id="teamB"></ul>
+  </div>
+</div>
+
+<!-- Supabase CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 <script>
-  // --- Inicialización de Supabase ---
+  // Inicializar Supabase
   const supabaseUrl = 'https://vayholflhqoyflbvuusa.supabase.co';
-  const supabaseKey = 'TU_SUPABASE_ANON_KEY'; // Pon aquí tu anon key
+  const supabaseKey = 'TU_ANON_KEY'; // reemplaza con tu clave anónima
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // --- Registro ---
+  // Lista de jugadores en memoria
+  let players = [];
+
   async function registerUser() {
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
-
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      alert('Error al registrar: ' + error.message);
-    } else {
-      alert('Registro exitoso. Confirma tu email si es necesario.');
-    }
+    if (error) alert(error.message);
+    else alert('Usuario registrado correctamente');
   }
 
-  // --- Login ---
   async function loginUser() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
-
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert('Error al iniciar sesión: ' + error.message);
-    } else {
-      alert('Login exitoso');
-      document.getElementById('auth').style.display = 'none';
-      document.getElementById('playerSection').style.display = 'block';
-    }
+    if (error) alert(error.message);
+    else alert('Login correcto');
   }
 
-  // --- Generación de equipos balanceados ---
+  function addPlayer() {
+    const name = document.getElementById('playerName').value;
+    const position = document.getElementById('playerPosition').value;
+    const skill = parseInt(document.getElementById('playerSkill').value);
+    if (!name || !position || !skill) return alert('Completa todos los campos');
+    players.push({ name, position, skill });
+    alert(`Jugador ${name} agregado`);
+  }
+
   function generateTeams() {
-    const raw = document.getElementById('playerList').value.trim();
-    if (!raw) return alert('Introduce jugadores');
+    if (players.length < 14) return alert('Necesitas al menos 14 jugadores para 2 equipos');
 
-    const lines = raw.split('\n');
-    const players = lines.map(line => {
-      const [name, pos, rating] = line.split(',').map(s => s.trim());
-      return { name, pos, rating: parseFloat(rating) };
-    });
+    // Clonar y ordenar por skill descendente
+    let sorted = [...players].sort((a,b) => b.skill - a.skill);
+    let teamA = [], teamB = [];
 
-    if (players.length < 14) return alert('Se necesitan al menos 14 jugadores');
-
-    // Separar jugadores por posición
-    const porteros = players.filter(p => p.pos.toLowerCase() === 'portero');
-    const defensas = players.filter(p => p.pos.toLowerCase() === 'defensa');
-    const delanteros = players.filter(p => p.pos.toLowerCase() === 'delantero');
-    const medios = players.filter(p => p.pos.toLowerCase() === 'medio');
-
-    if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) {
-      return alert('No hay suficientes jugadores para cumplir los mínimos por equipo');
+    function pickPosition(pos, count) {
+      const pool = sorted.filter(p => p.position === pos);
+      for (let i=0; i<count; i++) {
+        if (i%2===0) {
+          teamA.push(pool[i]);
+        } else {
+          teamB.push(pool[i]);
+        }
+        sorted = sorted.filter(p => p !== pool[i]);
+      }
     }
 
-    // Ordenar por media descendente
-    const sortByRating = arr => arr.sort((a,b) => b.rating - a.rating);
+    pickPosition('portero', 2);       // 1 por equipo
+    pickPosition('defensa', 6);       // 3 por equipo
+    pickPosition('delantero', 2);     // 1 por equipo
 
-    sortByRating(porteros);
-    sortByRating(defensas);
-    sortByRating(delanteros);
-    sortByRating(medios);
-
-    const equipoA = [];
-    const equipoB = [];
-
-    // Añadir mínimos obligatorios
-    equipoA.push(porteros[0]);
-    equipoB.push(porteros[1]);
-
-    equipoA.push(...defensas.slice(0,3));
-    equipoB.push(...defensas.slice(3,6));
-
-    equipoA.push(delanteros[0]);
-    equipoB.push(delanteros[1]);
-
-    // Rellenar el resto con medios y defensas extra si quedan
-    const remaining = players.filter(p => !equipoA.includes(p) && !equipoB.includes(p));
-    sortByRating(remaining);
-
-    while (equipoA.length < 7) equipoA.push(remaining.shift());
-    while (equipoB.length < 7) equipoB.push(remaining.shift());
+    // Rellenar con el resto de jugadores (centrocampistas u otros)
+    for (let i=0; i<sorted.length; i++) {
+      if (teamA.length < 7) teamA.push(sorted[i]);
+      else teamB.push(sorted[i]);
+    }
 
     // Mostrar equipos
-    const div = document.getElementById('equipos');
-    div.innerHTML = `<div class="equipo"><h3>Equipo A</h3>${equipoA.map(p => `${p.name} (${p.pos}) - ${p.rating}`).join('<br>')}</div>
-                     <div class="equipo"><h3>Equipo B</h3>${equipoB.map(p => `${p.name} (${p.pos}) - ${p.rating}`).join('<br>')}</div>`;
+    const ulA = document.getElementById('teamA');
+    const ulB = document.getElementById('teamB');
+    ulA.innerHTML = ''; ulB.innerHTML = '';
+    teamA.forEach(p => { let li = document.createElement('li'); li.textContent = `${p.name} (${p.position}, ${p.skill})`; ulA.appendChild(li); });
+    teamB.forEach(p => { let li = document.createElement('li'); li.textContent = `${p.name} (${p.position}, ${p.skill})`; ulB.appendChild(li); });
   }
 </script>
-
 </body>
 </html>

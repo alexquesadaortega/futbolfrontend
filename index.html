@@ -66,7 +66,7 @@ body{font-family:sans-serif;background:#0f1724;color:white;text-align:center;mar
 /* -------- Inicializar Supabase -------- */
 const supabaseUrl = 'https://vayholflhqoyflbvuusa.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
-const supabase = supabase.createClient(supabaseUrl,supabaseKey);
+const supabase = Supabase.createClient(supabaseUrl,supabaseKey);
 
 let currentUser = null;
 let currentPlayers = [];

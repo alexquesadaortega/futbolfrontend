@@ -54,7 +54,7 @@
       <option value="medio">Medio</option>
       <option value="delantero">Delantero</option>
     </select>
-    <input id="playerSkill" type="number" placeholder="Media (1-100)" style="width:100px">
+    <input id="playerSkill" type="number" placeholder="Media (1-10)" min="1" max="10" step="0.1">
     <button id="btnAddPlayer" class="secondary">Agregar</button>
   </div>
 
@@ -217,11 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
   async function onAddPlayerClicked() {
     const name = document.getElementById('playerName').value.trim();
     const position = document.getElementById('playerPosition').value;
-    const rating = parseInt(document.getElementById('playerSkill').value, 10);
+    const rating = parseFloat(document.getElementById('playerSkill').value, 10);
 
-    if (!name || !position || Number.isNaN(rating) || rating < 1 || rating > 100) {
-      return alert('Rellena nombre, posición y una media entre 1 y 100.');
-    }
+    if (!name || !position || isNaN(skill) || skill < 1 || skill > 10) {
+    return alert("La media debe estar entre 1 y 10 (permite decimales).");
+}
 
     // Si el usuario está logueado, guardamos en Supabase; si no, lo guardamos localmente
     const user = await getCurrentUser();

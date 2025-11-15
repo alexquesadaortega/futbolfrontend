@@ -385,12 +385,13 @@ function displayTeams({ teamA, teamB }) {
     if (!user) return [];
     const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
     if (error) { console.error(error); return []; }
-   return data.map(row => ({
-    id: Number(row.id), // <-- importante
-    name: row.name,
-    position: row.position,
-    rating: row.rating
-}));
+    return data.map(row => ({
+        id: Number(row.id), // <-- importante
+        name: row.name,
+        position: row.position,
+        rating: row.rating
+    }));
+}
 
 
   // --------------------------

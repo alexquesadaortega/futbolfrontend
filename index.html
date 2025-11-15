@@ -74,12 +74,12 @@
 
   <div style="display:flex;gap:20px;margin-top:12px">
     <div style="flex:1">
-      <h3>Equipo A</h3>
+      <h3>Negro</h3>
       <ul id="teamA"></ul>
       <div id="avgA" class="small"></div>
     </div>
     <div style="flex:1">
-      <h3>Equipo B</h3>
+      <h3>Blanco</h3>
       <ul id="teamB"></ul>
       <div id="avgB" class="small"></div>
     </div>
@@ -261,119 +261,142 @@ function getSelectedPlayers(){
  // -----------------------------
 // GENERAR EQUIPOS BALANCEADOS
 // -----------------------------
+// ------------------------
+// GENERAR EQUIPOS BALANCEADOS
+// ------------------------
+document.getElementById('btnGenerateTeams').addEventListener('click', generateBalancedTeams);
+
 function generateBalancedTeams() {
-  // Tomamos solo los jugadores seleccionados
-  const selected = Array.from(document.querySelectorAll('.player-select:checked'))
-                        .map(cb => remotePlayers.find(p => p.id == cb.dataset.playerId));
+  const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))
+                           .map(cb => parseInt(cb.dataset.playerId));
+  const selectedPlayers = remotePlayers.filter(p => selectedIds.includes(p.id));
 
-  if (selected.length < 14) return alert('Selecciona al menos 14 jugadores');
-
-  // Separar por posición
-  const porteros = selected.filter(p => p.position === 'portero');
-  const defensas  = selected.filter(p => p.position === 'defensa');
-  const delanteros = selected.filter(p => p.position === 'delantero');
-
-  if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2)
-    return alert('No hay suficientes jugadores por posición para formar dos equipos de 7');
-
-  // Función para ordenar jugadores por media
-  const byRatingDesc = arr => arr.slice().sort((a,b) => b.rating - a.rating);
-
-  const maxOptions = 5;
-  const teamOptions = [];
-
-  // Generamos combinaciones aleatorias para intentar equilibrar
-  let attempts = 0;
-  while (teamOptions.length < maxOptions && attempts < 5000) {
-    attempts++;
-
-    // Mezclamos y dividimos
-    const shuffledPorteros = shuffleArray(porteros);
-    const shuffledDefensas = shuffleArray(defensas);
-    const shuffledDelanteros = shuffleArray(delanteros);
-
-    const negro = [
-      shuffledPorteros[0],
-      ...shuffledDefensas.slice(0,3),
-      shuffledDelanteros[0],
-      ...shuffleArray(defensas.slice(3)).slice(0,2) // relleno con defensas restantes
-    ];
-
-    const blanco = [
-      shuffledPorteros[1],
-      ...shuffledDefensas.slice(3,6),
-      shuffledDelanteros[1],
-      ...shuffleArray(defensas.slice(0,3)).slice(0,2)
-    ];
-
-    // Ordenamos por posición
-    negro.sort((a,b) => positionOrder(a.position) - positionOrder(b.position));
-    blanco.sort((a,b) => positionOrder(a.position) - positionOrder(b.position));
-
-    const avgNegro = avgRating(negro);
-    const avgBlanco = avgRating(blanco);
-    const diff = Math.abs(avgNegro - avgBlanco);
-
-    // Comprobamos si esta opción ya existe
-    if (!teamOptions.some(opt => arraysEqual(opt[0], negro) && arraysEqual(opt[1], blanco))) {
-      teamOptions.push({negro, blanco, diff});
-    }
+  if (selectedPlayers.length < 14) {
+    alert('Debes seleccionar al menos 14 jugadores para generar equipos 7 vs 7.');
+    return;
   }
 
-  // Ordenamos por menor diferencia
-  teamOptions.sort((a,b) => a.diff - b.diff);
+  // Separar por posiciones
+  const porteros = selectedPlayers.filter(p => p.position === 'portero');
+  const defensas = selectedPlayers.filter(p => p.position === 'defensa');
+  const delanteros = selectedPlayers.filter(p => p.position === 'delantero');
 
-  // Mostramos en HTML
-  displayTeamsOptions(teamOptions.slice(0, maxOptions));
-}
-
-// -----------------------------
-// FUNCIONES AUXILIARES
-// -----------------------------
-function shuffleArray(arr) {
-  return arr.slice().sort(() => Math.random() - 0.5);
-}
-
-function positionOrder(pos) {
-  if (pos === 'portero') return 0;
-  if (pos === 'defensa') return 1;
-  return 2; // delantero
-}
-
-function avgRating(team) {
-  return team.reduce((sum,p) => sum + p.rating, 0)/team.length;
-}
-
-function arraysEqual(blanco, negro) {
-  if (!Array.isArray(blanco) || !Array.isArray(negro)) return false; // <-- protección
-  if (blanco.length !== negro.length) return false;
-  for (let i = 0; i < blanco.length; i++) {
-    if (blanco[i] !== negro[i]) return false;
+  if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) {
+    alert('No hay suficientes jugadores por posición para formar equipos balanceados.');
+    return;
   }
-  return true;
+
+  const media = team => team.reduce((sum, p) => sum + p.rating, 0) / team.length;
+  const opciones = [];
+
+  // Intentos para generar combinaciones diferentes
+  for (let i = 0; i < 20; i++) {
+    const port = [...porteros].sort(() => Math.random() - 0.5);
+    const def = [...defensas].sort(() => Math.random() - 0.5);
+    const del = [...delanteros].sort(() => Math.random() - 0.5);
+
+    const equipoNegro = [
+      port[0],
+      ...def.slice(0,3),
+      del[0],
+      ...def.slice(3,5)
+    ].slice(0,7);
+
+    const equipoBlanco = [
+      port[1],
+      ...def.slice(5),
+      del[1],
+      ...def.slice(3,5).filter(p => !equipoNegro.includes(p))
+    ].slice(0,7);
+
+    // Comprobar duplicados
+    const allIds = [...equipoNegro, ...equipoBlanco].map(p => p.id);
+    if (new Set(allIds).size !== 14) continue;
+
+    opciones.push({
+      negro: equipoNegro,
+      blanco: equipoBlanco,
+      diff: Math.abs(media(equipoNegro) - media(equipoBlanco))
+    });
+  }
+
+  // Ordenar por menor diferencia de media
+  opciones.sort((a,b) => a.diff - b.diff);
+
+  // Mostrar hasta 5 combinaciones
+  mostrarOpciones(opciones.slice(0,5));
 }
 
-
-function displayTeamsOptions(options) {
+function mostrarOpciones(opciones) {
   const container = document.getElementById('teamsResult');
   container.innerHTML = '';
-  options.forEach((opt, index) => {
+
+  opciones.forEach((opt, idx) => {
     const div = document.createElement('div');
-    div.className = 'box';
-    div.innerHTML = `<h3>Opción ${index+1}</h3>
-      <div style="display:flex;gap:20px">
-        <div style="flex:1">
-          <h4>Negro (Media: ${avgRating(opt.negro).toFixed(1)})</h4>
-          <ul>${opt.negro.map(p => `<li>${p.name} (${p.position}) - ${p.rating}</li>`).join('')}</ul>
-        </div>
-        <div style="flex:1">
-          <h4>Blanco (Media: ${avgRating(opt.blanco).toFixed(1)})</h4>
-          <ul>${opt.blanco.map(p => `<li>${p.name} (${p.position}) - ${p.rating}</li>`).join('')}</ul>
-        </div>
-      </div>`;
+    div.className = 'team-option';
+    div.style.borderTop = '1px solid #ddd';
+    div.style.marginTop = '10px';
+    div.style.paddingTop = '10px';
+
+    const title = document.createElement('h3');
+    title.textContent = `Opción ${idx+1}`;
+    div.appendChild(title);
+
+    // Equipo Negro
+    const negroTitle = document.createElement('h4');
+    negroTitle.textContent = 'Equipo Negro';
+    div.appendChild(negroTitle);
+
+    const ulNegro = document.createElement('ul');
+    ordenarPorPosicion(opt.negro).forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+      ulNegro.appendChild(li);
+    });
+    div.appendChild(ulNegro);
+
+    const mediaNegro = document.createElement('div');
+    mediaNegro.className = 'small';
+    mediaNegro.textContent = `Media: ${calcularMedia(opt.negro).toFixed(2)}`;
+    div.appendChild(mediaNegro);
+
+    // Equipo Blanco
+    const blancoTitle = document.createElement('h4');
+    blancoTitle.textContent = 'Equipo Blanco';
+    div.appendChild(blancoTitle);
+
+    const ulBlanco = document.createElement('ul');
+    ordenarPorPosicion(opt.blanco).forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+      ulBlanco.appendChild(li);
+    });
+    div.appendChild(ulBlanco);
+
+    const mediaBlanco = document.createElement('div');
+    mediaBlanco.className = 'small';
+    mediaBlanco.textContent = `Media: ${calcularMedia(opt.blanco).toFixed(2)}`;
+    div.appendChild(mediaBlanco);
+
+    // Diferencia de medias
+    const diffDiv = document.createElement('div');
+    diffDiv.className = 'small';
+    diffDiv.textContent = `Diferencia de media: ${Math.abs(calcularMedia(opt.negro) - calcularMedia(opt.blanco)).toFixed(2)}`;
+    div.appendChild(diffDiv);
+
     container.appendChild(div);
   });
 }
+
+function calcularMedia(team) {
+  return team.reduce((sum, p) => sum + p.rating, 0) / team.length;
+}
+
+function ordenarPorPosicion(players) {
+  const posiciones = ['portero','defensa','delantero'];
+  return players.slice().sort((a,b) => posiciones.indexOf(a.position) - posiciones.indexOf(b.position));
+}
+
 
   // ------------------------
   // GUARDAR EQUIPOS EN SUPABASE

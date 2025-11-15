@@ -84,80 +84,24 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  let players = [];         // <-- UNIFICADO: todos los jugadores aquí
-  let localIdCounter = 100000;
+  const players = [];
+  let nextId = 1000;
 
   const playersListEl = document.getElementById('playersList');
-  const addPlayerBox = document.getElementById('addPlayerBox');
-  const generateBox = document.getElementById('generateBox');
-  const authMsg = document.getElementById('authMsg');
 
-  // --------------------------
-  // Añadir jugador
-  // --------------------------
-  async function onAddPlayerClicked() {
-    const name = document.getElementById('playerName').value.trim();
-    const position = document.getElementById('playerPosition').value;
-    const rating = parseFloat(document.getElementById('playerSkill').value);
-
-    if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
-      return alert("La media debe estar entre 1 y 10 (se permiten decimales).");
-    }
-
-    const user = await getCurrentUser();
-
-    const newPlayer = {
-      id: user ? undefined : localIdCounter++, // si hay usuario, lo asignará Supabase
-      name,
-      position,
-      rating
-    };
-
-    if (user) {
-      // Guardamos en Supabase
-      const { data, error } = await supabase.from('players')
-        .insert([{ user_id: user.id, name, position, rating }])
-        .select();
-      if (error) { console.error(error); alert('Error guardando en la nube'); return; }
-      newPlayer.id = Number(data[0].id);
-    }
-
-    players.push(newPlayer);
-    renderPlayersList();
-    document.getElementById('playerName').value = '';
-    document.getElementById('playerSkill').value = '';
-    alert(user ? 'Jugador guardado en Supabase.' : 'Jugador añadido localmente.');
-  }
-
-  // --------------------------
-  // Renderizar lista de jugadores
-  // --------------------------
   function renderPlayersList() {
     playersListEl.innerHTML = '';
-    if (players.length === 0) {
-      playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
-      return;
-    }
-
-    // Ordenar por posición
-    const positionOrder = { portero: 0, defensa: 1, delantero: 2 };
-    const sorted = [...players].sort((a, b) => positionOrder[a.position] - positionOrder[b.position]);
-
-    sorted.forEach(p => {
+    players.forEach(player => {
       const div = document.createElement('div');
       div.className = 'player-row';
-
+      
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.className = 'player-select';
-      cb.dataset.playerId = p.id; // ✅ ahora siempre es un número válido
+      cb.dataset.playerId = player.id;
 
       const span = document.createElement('span');
-      span.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+      span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
 
       div.appendChild(cb);
       div.appendChild(span);
@@ -165,29 +109,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --------------------------
-  // Generar equipos balanceados
-  // --------------------------
+  document.getElementById('btnAddPlayer').addEventListener('click', () => {
+    const name = document.getElementById('playerName').value.trim();
+    const position = document.getElementById('playerPosition').value;
+    const rating = parseFloat(document.getElementById('playerSkill').value);
+
+    if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
+      return alert("La media debe estar entre 1 y 10.");
+    }
+
+    players.push({ id: nextId++, name, position, rating });
+    renderPlayersList();
+
+    document.getElementById('playerName').value = '';
+    document.getElementById('playerSkill').value = '';
+  });
+
   function generateBalancedTeams(selectedPlayers) {
     const teamSize = 7;
-    const positions = { portero: [], defensa: [], delantero: [] };
-    selectedPlayers.forEach(p => positions[p.position].push(p));
+    const porteros = selectedPlayers.filter(p => p.position === 'portero');
+    const defensas = selectedPlayers.filter(p => p.position === 'defensa');
+    const delanteros = selectedPlayers.filter(p => p.position === 'delantero');
 
-    if (positions.portero.length < 2 || positions.defensa.length < 6 || positions.delantero.length < 2) return null;
+    if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) return null;
 
-    const teamA = [], teamB = [];
+    const teamA = [];
+    const teamB = [];
 
     function assignAlternating(arr) {
       const shuffled = [...arr].sort(() => Math.random() - 0.5);
-      shuffled.forEach((p, i) => i % 2 === 0 ? teamA.push(p) : teamB.push(p));
+      shuffled.forEach((p,i) => {
+        if (i % 2 === 0) teamA.push(p);
+        else teamB.push(p);
+      });
     }
 
-    assignAlternating(positions.portero);
-    assignAlternating(positions.defensa);
-    assignAlternating(positions.delantero);
+    assignAlternating(porteros);
+    assignAlternating(defensas);
+    assignAlternating(delanteros);
 
     const leftovers = selectedPlayers.filter(p => !teamA.includes(p) && !teamB.includes(p));
-    leftovers.forEach(p => teamA.length < teamSize ? teamA.push(p) : teamB.push(p));
+    leftovers.forEach(p => {
+      if (teamA.length < teamSize) teamA.push(p);
+      else if (teamB.length < teamSize) teamB.push(p);
+    });
 
     if (teamA.length !== teamSize || teamB.length !== teamSize) return null;
 
@@ -200,101 +165,62 @@ document.addEventListener('DOMContentLoaded', () => {
     teamAEl.innerHTML = '';
     teamBEl.innerHTML = '';
 
-    teamA.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position}) - ${p.rating}`; teamAEl.appendChild(li); });
-    teamB.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position}) - ${p.rating}`; teamBEl.appendChild(li); });
+    teamA.forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+      teamAEl.appendChild(li);
+    });
+    teamB.forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+      teamBEl.appendChild(li);
+    });
 
-    const avg = arr => (arr.reduce((sum, p) => sum + p.rating, 0) / arr.length).toFixed(2);
+    const avg = arr => (arr.reduce((sum,p)=>sum+p.rating,0)/arr.length).toFixed(2);
     document.getElementById('avgA').textContent = `Media: ${avg(teamA)}`;
     document.getElementById('avgB').textContent = `Media: ${avg(teamB)}`;
   }
 
-  async function onGenerateTeamsClicked() {
+  function generateMultipleBalancedTeams(selectedPlayers, maxOptions = 5, maxAttempts = 50) {
+    const options = [];
+    for (let i=0; i<maxAttempts; i++) {
+      const teams = generateBalancedTeams(selectedPlayers);
+      if (!teams) continue;
+      const avgA = teams.teamA.reduce((s,p)=>s+p.rating,0)/teams.teamA.length;
+      const avgB = teams.teamB.reduce((s,p)=>s+p.rating,0)/teams.teamB.length;
+      if (Math.abs(avgA - avgB) <= 0.6) {
+        // Evitar duplicados
+        const exists = options.some(opt => {
+          const aNames = opt.teamA.map(p=>p.id).sort().join(',');
+          const bNames = opt.teamB.map(p=>p.id).sort().join(',');
+          const newA = teams.teamA.map(p=>p.id).sort().join(',');
+          const newB = teams.teamB.map(p=>p.id).sort().join(',');
+          return (aNames===newA && bNames===newB) || (aNames===newB && bNames===newA);
+        });
+        if (!exists) options.push(teams);
+        if (options.length >= maxOptions) break;
+      }
+    }
+    return options;
+  }
+
+  document.getElementById('btnGenerateTeams').addEventListener('click', () => {
     const checkboxes = Array.from(document.querySelectorAll('.player-select'));
     const selectedPlayers = checkboxes
       .filter(cb => cb.checked)
-      .map(cb => players.find(p => p.id === Number(cb.dataset.playerId)));
+      .map(cb => players.find(p => p.id === Number(cb.dataset.playerId)))
+      .filter(p => p !== undefined);
 
     if (selectedPlayers.length < 14) return alert('Debes seleccionar al menos 14 jugadores.');
 
-    // Intentamos generar un equipo balanceado
-    const teams = generateBalancedTeams(selectedPlayers);
-    if (!teams) return alert('No se pudieron generar equipos balanceados con esta selección.');
+    const options = generateMultipleBalancedTeams(selectedPlayers);
+    if (options.length === 0) return alert('No se pudieron generar equipos equilibrados.');
 
-    displayTeams(teams);
-  }
-
-  // --------------------------
-  // Autenticación Supabase
-  // --------------------------
-  async function getCurrentUser() {
-    const res = await supabase.auth.getUser();
-    return res?.data?.user || null;
-  }
-
-  async function loadRemotePlayers() {
-    const user = await getCurrentUser();
-    if (!user) return;
-    const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
-    if (error) { console.error(error); return; }
-    const remote = data.map(row => ({ id: Number(row.id), name: row.name, position: row.position, rating: row.rating }));
-    players.push(...remote);
-  }
-
-  // --------------------------
-  // Supabase & listeners
-  // --------------------------
-  async function getCurrentUser() {
-    const res = await supabase.auth.getUser();
-    return res?.data?.user || null;
-  }
-
-  async function loadRemotePlayers() {
-    const user = await getCurrentUser();
-    if (!user) return [];
-    const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
-    if (error) { console.error(error); return []; }
-    return data.map(row => ({ id: Number(row.id), name: row.name, position: row.position, rating: row.rating }));
-  }
-
-  async function loadRemotePlayersAndShowUI() {
-    const user = await getCurrentUser();
-    if (!user) return;
-    const remote = await loadRemotePlayers();
-    players.push(...remote);
-    renderPlayersList();
-    addPlayerBox.style.display = 'block';
-    generateBox.style.display = 'block';
-    document.getElementById('authBox').style.display = 'none';
-    authMsg.textContent = `Conectado como ${user.email}`;
-  }
-
-  async function registerUser() {
-    const email = document.getElementById('registerEmail').value.trim();
-    const pass  = document.getElementById('registerPassword').value;
-    if (!email || !pass) return alert('Introduce email y contraseña.');
-    authMsg.textContent = 'Registrando...';
-    const { data, error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) { authMsg.textContent = error.message; console.error(error); return; }
-    authMsg.textContent = 'Registro enviado. Confirma tu email si es necesario.';
-  }
-
-  async function loginUser() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const pass  = document.getElementById('loginPassword').value;
-    if (!email || !pass) return alert('Introduce email y contraseña.');
-    authMsg.textContent = 'Iniciando sesión...';
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) { authMsg.textContent = error.message; console.error(error); return; }
-    await loadRemotePlayersAndShowUI();
-  }
-
-  document.getElementById('btnRegister').addEventListener('click', registerUser);
-  document.getElementById('btnLogin').addEventListener('click', loginUser);
-  document.getElementById('btnAddPlayer').addEventListener('click', onAddPlayerClicked);
-  document.getElementById('btnGenerateTeams').addEventListener('click', onGenerateTeamsClicked);
-  loadRemotePlayers().then(() => renderPlayersList());
+    // Mostramos la primera opción
+    displayTeams(options[0]);
+    console.log('Opciones generadas:', options);
+  });
 });
-
 </script>
 
 </body>

@@ -64,8 +64,6 @@
   <p class="small">Se respetan mínimos: 1 portero / equipo, 3 defensas / equipo, 1 delantero / equipo. Rellena con otros hasta 7.</p>
   <button id="btnGenerateTeams" class="primary" style="margin:10px 0;">Generar equipos balanceados</button>
 
-  <div id="teamsResult" style="margin-top:15px;"></div>
-
   <div style="display:flex;gap:20px;margin-top:12px">
     <div style="flex:1">
       <h3>Negro</h3>
@@ -82,8 +80,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const SUPABASE_URL = 'TU_SUPABASE_URL';
-  const SUPABASE_KEY = 'TU_SUPABASE_KEY';
+  const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let localPlayers = [];
@@ -200,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       Portero: [],
       Defensa: [],
       Delantero: [],
-      Medio: [] // solo para rellenar
+      Medio: []
     };
 
     selectedPlayers.forEach(p => {
@@ -236,6 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return { teamA, teamB };
   }
 
+  function calcAverage(team) {
+    if (!team || team.length === 0) return 0;
+    const total = team.reduce((sum, p) => sum + p.rating, 0);
+    return (total / team.length).toFixed(2);
+  }
+
   function onGenerateTeamsClicked() {
     const checkboxes = document.querySelectorAll('.player-select:checked');
     const selectedPlayers = Array.from(checkboxes).map(cb => {
@@ -255,6 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const { teamA, teamB } = teams;
     document.getElementById('teamA').innerHTML = teamA.map(p => `<li>${p.name} (${p.position}) - ${p.rating}</li>`).join('');
     document.getElementById('teamB').innerHTML = teamB.map(p => `<li>${p.name} (${p.position}) - ${p.rating}</li>`).join('');
+
+    document.getElementById('avgA').textContent = 'Media: ' + calcAverage(teamA);
+    document.getElementById('avgB').textContent = 'Media: ' + calcAverage(teamB);
   }
 
   window._supabase = supabase;

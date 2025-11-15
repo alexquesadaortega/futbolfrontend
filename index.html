@@ -227,7 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // IDs de los marcados
     const selectedIDs = checkboxes
         .filter(cb => cb.checked)
-        .map(cb => parseInt(cb.dataset.playerId));
+        .map(cb => parseInt(cb.dataset.playerId))
+        .filter(id => !isNaN(id)); // <-- elimina los NaN
+
 
     console.log("IDs seleccionados:", selectedIDs);
 

@@ -267,8 +267,9 @@ function getSelectedPlayers(){
 document.getElementById('btnGenerateTeams').addEventListener('click', generateBalancedTeams);
 
 function generateBalancedTeams() {
-  const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))
-                           .map(cb => parseInt(cb.dataset.playerId));
+  const selectedIds = Array.from(document.querySelectorAll('.select-player:checked'))
+                         .map(cb => parseInt(cb.dataset.id));
+  
   const selectedPlayers = remotePlayers.filter(p => selectedIds.includes(p.id));
 
   if (selectedPlayers.length < 14) {

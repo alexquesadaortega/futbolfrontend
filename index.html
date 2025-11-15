@@ -279,7 +279,6 @@ function getSelectedPlayers(){
   // Separar por posiciones
   const gk = selectedPlayers.filter(p => p.position === 'portero');
   const def = selectedPlayers.filter(p => p.position === 'defensa');
-  const mid = selectedPlayers.filter(p => p.position === 'medio');
   const fwd = selectedPlayers.filter(p => p.position === 'delantero');
 
   if (gk.length < 2 || def.length < 6 || fwd.length < 2) {
@@ -300,26 +299,33 @@ function getSelectedPlayers(){
 
   const gkComb = combinations(gk,1);
   const defComb = combinations(def,3);
-  const midComb = combinations(mid,2);
   const fwdComb = combinations(fwd,1);
 
   for (const gkA of gkComb) {
     const gkB = gk.filter(p => !gkA.includes(p));
     for (const defA of defComb) {
       const defB = def.filter(p => !defA.includes(p));
-      for (const midA of midComb) {
-        const midB = mid.filter(p => !midA.includes(p));
-        for (const fwdA of fwdComb) {
-          const fwdB = fwd.filter(p => !fwdA.includes(p));
+      for (const fwdA of fwdComb) {
+        const fwdB = fwd.filter(p => !fwdA.includes(p));
 
-          const teamA = [...gkA, ...defA, ...midA, ...fwdA];
-          const teamB = [...gkB, ...defB, ...midB, ...fwdB];
+        // Completamos 2 jugadores restantes (pueden ser defensa o delantero)
+        const usedA = new Set([...gkA, ...defA, ...fwdA].map(p=>p.id));
+        const remainingPlayers = selectedPlayers.filter(p => !usedA.has(p.id));
+
+        // Combinaciones de 2 para completar equipo A
+        const extraComb = combinations(remainingPlayers, 2);
+
+        extraComb.forEach(extraA => {
+          const teamA = [...gkA, ...defA, ...fwdA, ...extraA];
+
+          // Equipo B es el resto de jugadores
+          const teamB = selectedPlayers.filter(p => !teamA.includes(p));
 
           const avg = arr => arr.reduce((sum,p)=>sum+p.rating,0)/arr.length;
           const diff = Math.abs(avg(teamA) - avg(teamB));
 
           allOptions.push({ teamA, teamB, diff });
-        }
+        });
       }
     }
   }

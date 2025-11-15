@@ -218,11 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
   async function onAddPlayerClicked() {
     const name = document.getElementById('playerName').value.trim();
     const position = document.getElementById('playerPosition').value;
-    const rating = parseFloat(document.getElementById('playerSkill').value, 10);
+    const rating = parseFloat(document.getElementById('playerSkill').value);
 
-    if (!name || !position || isNaN(skill) || skill < 1 || skill > 10) {
-    return alert("La media debe estar entre 1 y 10 (permite decimales).");
-}
+    if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
+        return alert("La media debe estar entre 1 y 10 (se permiten decimales).");
+    }
+
 
     // Si el usuario está logueado, guardamos en Supabase; si no, lo guardamos localmente
     const user = await getCurrentUser();
@@ -420,43 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.loadPlayersDebug = loadPlayersDebug;
 
 }); // DOMContentLoaded end
-
-async function onAddPlayerClicked() {
-    const name = document.getElementById("playerName").value;
-    const position = document.getElementById("playerPosition").value;
-    const skill = parseFloat(document.getElementById("playerSkill").value);
-
-    if (!name || !position || isNaN(skill) || skill < 1 || skill > 10) {
-        alert("La media debe estar entre 1 y 10 (se permiten decimales).");
-        return;
-    }
-
-    // Guardar en supabase
-    const { data, error } = await supabase
-        .from("players")
-        .insert([
-            {
-                user_id: currentUser.id,
-                name: name,
-                position: position,
-                rating: skill
-            }
-        ]);
-
-    if (error) {
-        console.error(error);
-        alert("Error al guardar jugador");
-        return;
-    }
-
-    alert(`Jugador ${name} agregado correctamente`);
-
-    // Limpiar inputs
-    document.getElementById("playerName").value = "";
-    document.getElementById("playerPosition").value = "";
-    document.getElementById("playerSkill").value = "";
-}
-  
 </script>
 
 </body>

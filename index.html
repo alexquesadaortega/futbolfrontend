@@ -282,7 +282,7 @@ function getSelectedPlayers(){
   const mid = selectedPlayers.filter(p => p.position === 'medio');
   const fwd = selectedPlayers.filter(p => p.position === 'delantero');
 
-  if (gk.length < 2 || def.length < 6 || mid.length < 2 || fwd.length < 2) {
+  if (gk.length < 2 || def.length < 6 || fwd.length < 2) {
     return alert('No hay suficientes jugadores para cumplir los mínimos por posición.');
   }
 

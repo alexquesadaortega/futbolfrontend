@@ -218,10 +218,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedPlayers = checkboxes
         .filter(cb => cb.checked)
         .map(cb => {
-            const id = parseInt(cb.dataset.playerId);
-            return [...localPlayers, ...remotePlayers].find(p => p.id === id);
-        })
-        .filter(p => p !== undefined);
+    const id = parseInt(cb.dataset.playerId);
+    // Busca directamente en el DOM donde ya están cargados
+    const row = cb.closest('.player-row');
+    return {
+        id,
+        name: row.querySelector('.player-name').textContent,
+        position: row.querySelector('.player-position').textContent,
+        rating: parseFloat(row.querySelector('.player-rating').textContent)
+    };
+});
 
     if (selectedPlayers.length < 14) return alert('Debes seleccionar al menos 14 jugadores.');
 

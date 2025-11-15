@@ -263,10 +263,15 @@ function getSelectedPlayers(){
 // ------------------------
 
 function generateBalancedTeams() {
+  // Tomamos todos los jugadores (remotos + locales)
+  const allPlayers = [...remotePlayers, ...localPlayers];
+
+  // IDs de jugadores seleccionados
   const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))
-                         .map(cb => parseInt(cb.dataset.playerId));
-  
-  const selectedPlayers = remotePlayers.filter(p => selectedIds.includes(p.id));
+    .map(cb => parseInt(cb.dataset.playerId));
+
+  // Filtramos los seleccionados
+  const selectedPlayers = allPlayers.filter(p => selectedIds.includes(p.id));
 
   if (selectedPlayers.length < 14) {
     alert('Debes seleccionar al menos 14 jugadores para generar equipos 7 vs 7.');
@@ -286,30 +291,38 @@ function generateBalancedTeams() {
   const media = team => team.reduce((sum, p) => sum + p.rating, 0) / team.length;
   const opciones = [];
 
-  // Intentos para generar combinaciones diferentes
-  for (let i = 0; i < 20; i++) {
-    const port = [...porteros].sort(() => Math.random() - 0.5);
-    const def = [...defensas].sort(() => Math.random() - 0.5);
-    const del = [...delanteros].sort(() => Math.random() - 0.5);
+  // Generamos combinaciones aleatorias
+  const MAX_INTENTOS = 50;
+  let intentos = 0;
 
+  while (opciones.length < 5 && intentos < MAX_INTENTOS) {
+    intentos++;
+
+    // Mezclar arrays
+    const shuffledPort = [...porteros].sort(() => Math.random() - 0.5);
+    const shuffledDef = [...defensas].sort(() => Math.random() - 0.5);
+    const shuffledDel = [...delanteros].sort(() => Math.random() - 0.5);
+
+    // Formamos equipos
     const equipoNegro = [
-      port[0],
-      ...def.slice(0,3),
-      del[0],
-      ...def.slice(3,5)
-    ].slice(0,7);
+      shuffledPort[0],
+      ...shuffledDef.slice(0, 3),
+      shuffledDel[0],
+      ...shuffledDef.slice(3, 5) // completamos hasta 7
+    ].slice(0, 7);
 
     const equipoBlanco = [
-      port[1],
-      ...def.slice(5),
-      del[1],
-      ...def.slice(3,5).filter(p => !equipoNegro.includes(p))
-    ].slice(0,7);
+      shuffledPort[1],
+      ...shuffledDef.slice(5),
+      shuffledDel[1],
+      ...shuffledDef.slice(3,5).filter(p => !equipoNegro.includes(p))
+    ].slice(0, 7);
 
-    // Comprobar duplicados
+    // Evitar duplicados
     const allIds = [...equipoNegro, ...equipoBlanco].map(p => p.id);
     if (new Set(allIds).size !== 14) continue;
 
+    // Guardamos la opción
     opciones.push({
       negro: equipoNegro,
       blanco: equipoBlanco,
@@ -317,11 +330,16 @@ function generateBalancedTeams() {
     });
   }
 
-  // Ordenar por menor diferencia de media
-  opciones.sort((a,b) => a.diff - b.diff);
+  if (opciones.length === 0) {
+    alert('No se pudieron generar equipos balanceados con los jugadores seleccionados.');
+    return;
+  }
 
-  // Mostrar hasta 5 combinaciones
-  mostrarOpciones(opciones.slice(0,5));
+  // Ordenamos por menor diferencia de media
+  opciones.sort((a, b) => a.diff - b.diff);
+
+  // Mostramos hasta 5 opciones
+  mostrarOpciones(opciones.slice(0, 5));
 }
 
 function mostrarOpciones(opciones) {
@@ -336,12 +354,18 @@ function mostrarOpciones(opciones) {
     div.style.paddingTop = '10px';
 
     const title = document.createElement('h3');
-    title.textContent = `Opción ${idx+1}`;
+    title.textContent = `Opción ${idx + 1}`;
     div.appendChild(title);
+
+    // Función auxiliar para ordenar jugadores por posición
+    const ordenarPorPosicion = players => {
+      const posiciones = ['portero', 'defensa', 'delantero'];
+      return players.slice().sort((a, b) => posiciones.indexOf(a.position) - posiciones.indexOf(b.position));
+    };
 
     // Equipo Negro
     const negroTitle = document.createElement('h4');
-    negroTitle.textContent = 'Equipo Negro';
+    negroTitle.textContent = 'Negro';
     div.appendChild(negroTitle);
 
     const ulNegro = document.createElement('ul');
@@ -359,7 +383,7 @@ function mostrarOpciones(opciones) {
 
     // Equipo Blanco
     const blancoTitle = document.createElement('h4');
-    blancoTitle.textContent = 'Equipo Blanco';
+    blancoTitle.textContent = 'Blanco';
     div.appendChild(blancoTitle);
 
     const ulBlanco = document.createElement('ul');
@@ -387,11 +411,6 @@ function mostrarOpciones(opciones) {
 
 function calcularMedia(team) {
   return team.reduce((sum, p) => sum + p.rating, 0) / team.length;
-}
-
-function ordenarPorPosicion(players) {
-  const posiciones = ['portero','defensa','delantero'];
-  return players.slice().sort((a,b) => posiciones.indexOf(a.position) - posiciones.indexOf(b.position));
 }
 
 

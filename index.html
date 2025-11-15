@@ -225,141 +225,78 @@ document.addEventListener('DOMContentLoaded', () => {
   // --------------------------
   // Generar equipos balanceados
   // --------------------------
-  function generateBalancedTeams() {
-    const allPlayers = [...remotePlayers, ...localPlayers];
+function generateBalancedTeams(selectedPlayers) {
 
-    const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))
-    .map(cb => Number(cb.dataset.playerId));
+    const porteros = selectedPlayers.filter(p => p.position === "portero");
+    const defensas = selectedPlayers.filter(p => p.position === "defensa");
+    const delanteros = selectedPlayers.filter(p => p.position === "delantero");
 
-    const selectedPlayers = allPlayers.filter(p => selectedIds.includes(Number(p.id)));
+    if (porteros.length < 2) return null;
+    if (defensas.length < 6) return null;
+    if (delanteros.length < 2) return null;
 
-    if (selectedPlayers.length < 14) {
-      alert('Debes seleccionar al menos 14 jugadores para generar equipos 7 vs 7.');
-      return;
-    }
-
-    const porteros = selectedPlayers.filter(p => p.position === 'portero');
-    const defensas = selectedPlayers.filter(p => p.position === 'defensa');
-    const delanteros = selectedPlayers.filter(p => p.position === 'delantero');
-
-    if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) {
-      alert('No hay suficientes jugadores por posición para formar equipos balanceados.');
-      return;
-    }
-
-    const media = team => team.reduce((sum, p) => sum + p.rating, 0) / team.length;
     const opciones = [];
-    const MAX_INTENTOS = 50;
-    let intentos = 0;
 
-    while (opciones.length < 5 && intentos < MAX_INTENTOS) {
-      intentos++;
-
-      const shuffledPort = [...porteros].sort(() => Math.random() - 0.5);
-      const shuffledDef = [...defensas].sort(() => Math.random() - 0.5);
-      const shuffledDel = [...delanteros].sort(() => Math.random() - 0.5);
-
-      const equipoNegro = [
-        shuffledPort[0],
-        ...shuffledDef.slice(0, 3),
-        shuffledDel[0],
-        ...shuffledDef.slice(3, 5)
-      ].slice(0, 7);
-
-      const equipoBlanco = [
-        shuffledPort[1],
-        ...shuffledDef.slice(5),
-        shuffledDel[1],
-        ...shuffledDef.slice(3,5).filter(p => !equipoNegro.includes(p))
-      ].slice(0, 7);
-
-      const allIds = [...equipoNegro, ...equipoBlanco].map(p => p.id);
-      if (new Set(allIds).size !== 14) continue;
-
-      opciones.push({
-        negro: equipoNegro,
-        blanco: equipoBlanco,
-        diff: Math.abs(media(equipoNegro) - media(equipoBlanco))
-      });
+    function mezclar(arr) {
+        return [...arr].sort(() => Math.random() - 0.5);
     }
 
-    if (opciones.length === 0) {
-      alert('No se pudieron generar equipos balanceados con los jugadores seleccionados.');
-      return;
+    let intentos = 1000;
+
+    while (opciones.length < 5 && intentos > 0) {
+        intentos--;
+
+        const sp = mezclar(selectedPlayers);
+
+        const equipoNegro = [];
+        const equipoBlanco = [];
+
+        // Mínimos obligatorios
+        equipoNegro.push(porteros[0]);
+        equipoBlanco.push(porteros[1]);
+
+        equipoNegro.push(defensas[0], defensas[1], defensas[2]);
+        equipoBlanco.push(defensas[3], defensas[4], defensas[5]);
+
+        equipoNegro.push(delanteros[0]);
+        equipoBlanco.push(delanteros[1]);
+
+        // Ahora rellenamos hasta 7 jugadores por equipo SIN repetir
+        const usados = new Set([
+            ...equipoNegro.map(p => p.id),
+            ...equipoBlanco.map(p => p.id)
+        ]);
+
+        const restantes = sp.filter(p => !usados.has(p.id));
+
+        while (equipoNegro.length < 7 && restantes.length > 0) {
+            equipoNegro.push(restantes.shift());
+        }
+        while (equipoBlanco.length < 7 && restantes.length > 0) {
+            equipoBlanco.push(restantes.shift());
+        }
+
+        if (equipoNegro.length !== 7 || equipoBlanco.length !== 7) continue;
+
+        // Calcular medias
+        const avgN = equipoNegro.reduce((a, b) => a + b.rating, 0) / 7;
+        const avgB = equipoBlanco.reduce((a, b) => a + b.rating, 0) / 7;
+        const diff = Math.abs(avgN - avgB);
+
+        opciones.push({
+            negro: equipoNegro,
+            blanco: equipoBlanco,
+            diff
+        });
     }
 
+    if (opciones.length === 0) return null;
+
+    // Ordenar por la menor diferencia (más igualados)
     opciones.sort((a, b) => a.diff - b.diff);
-    mostrarOpciones(opciones.slice(0, 5));
-  }
 
-  function mostrarOpciones(opciones) {
-    const container = document.getElementById('teamsResult');
-    container.innerHTML = '';
-
-    opciones.forEach((opt, idx) => {
-      const div = document.createElement('div');
-      div.className = 'team-option';
-      div.style.borderTop = '1px solid #ddd';
-      div.style.marginTop = '10px';
-      div.style.paddingTop = '10px';
-
-      const title = document.createElement('h3');
-      title.textContent = `Opción ${idx + 1}`;
-      div.appendChild(title);
-
-      const ordenarPorPosicion = players => {
-        const posiciones = ['portero', 'defensa', 'delantero'];
-        return players.slice().sort((a, b) => posiciones.indexOf(a.position) - posiciones.indexOf(b.position));
-      };
-
-      // Equipo Negro
-      const negroTitle = document.createElement('h4');
-      negroTitle.textContent = 'Negro';
-      div.appendChild(negroTitle);
-
-      const ulNegro = document.createElement('ul');
-      ordenarPorPosicion(opt.negro).forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-        ulNegro.appendChild(li);
-      });
-      div.appendChild(ulNegro);
-
-      const mediaNegro = document.createElement('div');
-      mediaNegro.className = 'small';
-      mediaNegro.textContent = `Media: ${calcularMedia(opt.negro).toFixed(2)}`;
-      div.appendChild(mediaNegro);
-
-      // Equipo Blanco
-      const blancoTitle = document.createElement('h4');
-      blancoTitle.textContent = 'Blanco';
-      div.appendChild(blancoTitle);
-
-      const ulBlanco = document.createElement('ul');
-      ordenarPorPosicion(opt.blanco).forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-        ulBlanco.appendChild(li);
-      });
-      div.appendChild(ulBlanco);
-
-      const mediaBlanco = document.createElement('div');
-      mediaBlanco.className = 'small';
-      mediaBlanco.textContent = `Media: ${calcularMedia(opt.blanco).toFixed(2)}`;
-      div.appendChild(mediaBlanco);
-
-      const diffDiv = document.createElement('div');
-      diffDiv.className = 'small';
-      diffDiv.textContent = `Diferencia de media: ${Math.abs(calcularMedia(opt.negro) - calcularMedia(opt.blanco)).toFixed(2)}`;
-      div.appendChild(diffDiv);
-
-      container.appendChild(div);
-    });
-  }
-
-  function calcularMedia(team) {
-    return team.reduce((sum, p) => sum + p.rating, 0) / team.length;
-  }
+    return opciones;
+}
 
   async function saveTeamsToSupabase(teamA, teamB) {
     const user = await getCurrentUser();

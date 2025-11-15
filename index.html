@@ -92,22 +92,22 @@ document.addEventListener('DOMContentLoaded', () => {
   async function registerUser() {
     const email = document.getElementById('registerEmail').value.trim();
     const pass  = document.getElementById('registerPassword').value;
-    if (!email || !pass) return alert('Introduce email y contraseña.');
+    (!email || !pass) return alert('Introduce email y contraseña.');
 
     authMsg.textContent = 'Registrando...';
     const { data, error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) { authMsg.textContent = error.message; console.error(error); return; }
+    (error) { authMsg.textContent = error.message; console.error(error); return; }
     authMsg.textContent = 'Registro enviado. Confirma tu email si es necesario.';
   }
 
   async function loginUser() {
     const email = document.getElementById('loginEmail').value.trim();
     const pass  = document.getElementById('loginPassword').value;
-    if (!email || !pass) return alert('Introduce email y contraseña.');
+    (!email || !pass) return alert('Introduce email y contraseña.');
 
     authMsg.textContent = 'Iniciando sesión...';
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) { authMsg.textContent = error.message; console.error(error); return; }
+    (error) { authMsg.textContent = error.message; console.error(error); return; }
 
     authMsg.textContent = 'Login correcto. Cargando datos...';
     await loadRemotePlayersAndShowUI();
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadRemotePlayersAndShowUI() {
     const user = await getCurrentUser();
-    if (!user) { authMsg.textContent = 'No hay usuario'; return; }
+    (!user) { authMsg.textContent = 'No hay usuario'; return; }
 
     addPlayerBox.style.display = 'block';
     generateBox.style.display = 'block';
@@ -133,16 +133,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadPlayersFromSupabase(){
     const user = await getCurrentUser();
-    if (!user) return [];
+    (!user) return [];
     const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
-    if (error) { console.error(error); return []; }
+    (error) { console.error(error); return []; }
     return data.map(row => ({ id: row.id, name: row.name, position: row.position, rating: row.rating }));
   }
 
   function renderPlayersList() {
     playersListEl.innerHTML = '';
     const list = [...remotePlayers, ...localPlayers];
-    if (list.length === 0) {
+    (list.length === 0) {
       playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
       return;
     }
@@ -173,14 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const position = document.getElementById('playerPosition').value;
     const rating = parseFloat(document.getElementById('playerSkill').value);
 
-    if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
+    (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
         return alert("La media debe estar entre 1 y 10.");
     }
 
     const user = await getCurrentUser();
-    if (user) {
+    (user) {
         const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
-        if (error) { console.error(error); alert('Error guardando en la nube'); return; }
+        (error) { console.error(error); alert('Error guardando en la nube'); return; }
         remotePlayers.push({ id: data[0].id, name, position, rating });
     } else {
         localIdCounter++;
@@ -200,15 +200,15 @@ document.addEventListener('DOMContentLoaded', () => {
         rating: parseFloat(cb.dataset.rating)
     }));
 
-    if (selectedPlayers.length < 2) {
+    (selectedPlayers.length < 2) {
         alert("Selecciona al menos 2 jugadores.");
         return;
     }
 
-    const minPerPos = { portero:1, defensa:2, medio:2, delantero:1 };
+    const minPerPos = { portero:1, defensa:3, delantero:1 };
     for (const pos in minPerPos) {
         const count = selectedPlayers.filter(p => p.position === pos).length;
-        if (count < minPerPos[pos]) {
+        (count < minPerPos[pos]) {
             alert(`Faltan ${minPerPos[pos]-count} jugadores en la posición: ${pos}`);
             return;
         }
@@ -223,8 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     for (const player of shuffled) {
         const pos = player.position;
-        if (teamCount.A[pos] > 0) { teamA.push(player); teamCount.A[pos]--; }
-        else if (teamCount.B[pos] > 0) { teamB.push(player); teamCount.B[pos]--; }
+        (teamCount.A[pos] > 0) { teamA.push(player); teamCount.A[pos]--; }
+        else (teamCount.B[pos] > 0) { teamB.push(player); teamCount.B[pos]--; }
         else { (teamA.length <= teamB.length ? teamA : teamB).push(player); }
     }
 

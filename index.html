@@ -268,69 +268,81 @@ function getSelectedPlayers(){
   // ------------------------
   // GENERACIÓN EQUIPOS (LÓGICA FUT7)
   // ------------------------
-  function generateBalancedTeams() {
-  // 1️⃣ Tomar jugadores seleccionados
+  function generateOptimalTeams() {
   const selectedPlayers = Array.from(document.querySelectorAll('.player-select:checked'))
     .map(cb => remotePlayers.find(p => p.id == cb.dataset.playerId));
 
-  if (selectedPlayers.length < 14) {
-    return alert('Selecciona al menos 14 jugadores para generar los equipos.');
+  if (selectedPlayers.length !== 14) {
+    return alert('Selecciona exactamente 14 jugadores.');
   }
 
-  // 2️⃣ Separar por posiciones
-  const goalkeepers = selectedPlayers.filter(p => p.position === 'portero');
-  const defenders   = selectedPlayers.filter(p => p.position === 'defensa');
-  const midfielders = selectedPlayers.filter(p => p.position === 'medio');
-  const forwards    = selectedPlayers.filter(p => p.position === 'delantero');
+  // Separar por posiciones
+  const gk = selectedPlayers.filter(p => p.position === 'portero');
+  const def = selectedPlayers.filter(p => p.position === 'defensa');
+  const mid = selectedPlayers.filter(p => p.position === 'medio');
+  const fwd = selectedPlayers.filter(p => p.position === 'delantero');
 
-  // Validar mínimos
-  if (goalkeepers.length < 2 || defenders.length < 6 || forwards.length < 2) {
+  if (gk.length < 2 || def.length < 6 || mid.length < 2 || fwd.length < 2) {
     return alert('No hay suficientes jugadores para cumplir los mínimos por posición.');
   }
 
-  // 3️⃣ Ordenar jugadores por rating (de mayor a menor)
-  function sortDesc(arr) { return [...arr].sort((a,b) => b.rating - a.rating); }
-  const gkSorted = sortDesc(goalkeepers);
-  const defSorted = sortDesc(defenders);
-  const midSorted = sortDesc(midfielders);
-  const fwdSorted = sortDesc(forwards);
+  // Función auxiliar para combinaciones
+  function combinations(arr, k) {
+    if (k === 0) return [[]];
+    if (arr.length < k) return [];
+    const [first, ...rest] = arr;
+    const withFirst = combinations(rest, k-1).map(c => [first, ...c]);
+    const withoutFirst = combinations(rest, k);
+    return withFirst.concat(withoutFirst);
+  }
 
-  // 4️⃣ Reparto inteligente: alternar mayor y menor rating
-  const teamA = [], teamB = [];
+  let bestDiff = Infinity;
+  let bestTeamA = [];
+  let bestTeamB = [];
 
-  function assignPair(array, count) {
-    for (let i = 0; i < count; i++) {
-      // Alternar mejor y peor para balancear
-      if (i % 2 === 0) teamA.push(array[i]);
-      else teamB.push(array[i]);
+  // Generar todas las combinaciones posibles por posición
+  const gkComb = combinations(gk,1);
+  const defComb = combinations(def,3);
+  const midComb = combinations(mid,2);
+  const fwdComb = combinations(fwd,1);
+
+  for (const gkA of gkComb) {
+    const gkB = gk.filter(p => !gkA.includes(p));
+    for (const defA of defComb) {
+      const defB = def.filter(p => !defA.includes(p));
+      for (const midA of midComb) {
+        const midB = mid.filter(p => !midA.includes(p));
+        for (const fwdA of fwdComb) {
+          const fwdB = fwd.filter(p => !fwdA.includes(p));
+
+          const teamA = [...gkA, ...defA, ...midA, ...fwdA];
+          const teamB = [...gkB, ...defB, ...midB, ...fwdB];
+
+          const avg = arr => arr.reduce((sum,p)=>sum+p.rating,0)/arr.length;
+          const diff = Math.abs(avg(teamA) - avg(teamB));
+
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestTeamA = teamA;
+            bestTeamB = teamB;
+          }
+        }
+      }
     }
   }
 
-  // Porteros
-  assignPair(gkSorted, 2);
-  // Defensas
-  assignPair(defSorted, 6);
-  // Delanteros
-  assignPair(fwdSorted, 2);
-
-  // Rellenar hasta 7 jugadores con mediocampistas u otros
-  let remaining = selectedPlayers.filter(p => !teamA.includes(p) && !teamB.includes(p));
-  while (teamA.length < 7) teamA.push(remaining.shift());
-  while (teamB.length < 7) teamB.push(remaining.shift());
-
-  // 5️⃣ Mostrar resultados
+  // Mostrar equipos
   const teamAEl = document.getElementById('teamA');
   const teamBEl = document.getElementById('teamB');
   teamAEl.innerHTML = '';
   teamBEl.innerHTML = '';
 
-  teamA.forEach(p => teamAEl.innerHTML += `<li>${p.name} (${p.position}) - ${p.rating}</li>`);
-  teamB.forEach(p => teamBEl.innerHTML += `<li>${p.name} (${p.position}) - ${p.rating}</li>`);
+  bestTeamA.forEach(p => teamAEl.innerHTML += `<li>${p.name} (${p.position}) - ${p.rating}</li>`);
+  bestTeamB.forEach(p => teamBEl.innerHTML += `<li>${p.name} (${p.position}) - ${p.rating}</li>`);
 
-  // Media de rating
   const avg = arr => (arr.reduce((sum,p)=>sum+p.rating,0)/arr.length).toFixed(2);
-  document.getElementById('avgA').textContent = `Media: ${avg(teamA)}`;
-  document.getElementById('avgB').textContent = `Media: ${avg(teamB)}`;
+  document.getElementById('avgA').textContent = `Media: ${avg(bestTeamA)}`;
+  document.getElementById('avgB').textContent = `Media: ${avg(bestTeamB)}`;
 }
 
   // ------------------------

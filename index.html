@@ -100,7 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // --------------------------
   // Añadir jugador
   // --------------------------
-  async function onAddPlayerClicked() {
+  let localIdCounter = 100000; // IDs locales empiezan en 100000
+
+async function onAddPlayerClicked() {
     const name = document.getElementById('playerName').value.trim();
     const position = document.getElementById('playerPosition').value;
     const rating = parseFloat(document.getElementById('playerSkill').value);
@@ -110,8 +112,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const user = await getCurrentUser();
+
     if (user) {
-        const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
+        // Guardamos en Supabase
+        const { data, error } = await supabase
+            .from('players')
+            .insert([{ user_id: user.id, name, position, rating }])
+            .select();
         if (error) { console.error(error); alert('Error guardando en la nube'); return; }
 
         remotePlayers.push({ id: data[0].id, name, position, rating });
@@ -120,48 +127,53 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('playerSkill').value = '';
         alert('Jugador guardado en Supabase.');
     } else {
+        // Jugador local
         localIdCounter++;
         const localPlayer = { id: localIdCounter, name, position, rating };
         localPlayers.push(localPlayer);
+
         renderPlayersList();
         document.getElementById('playerName').value = '';
         document.getElementById('playerSkill').value = '';
         alert('Jugador añadido localmente (inicia sesión para guardarlo en la nube).');
     }
-  }
+}
 
-  // --------------------------
-  // Renderizamos jugadores
-  // --------------------------
-  function renderPlayersList() {
+// ----------------------------
+// Render de jugadores
+// ----------------------------
+function renderPlayersList() {
     playersListEl.innerHTML = '';
-    const list = [...remotePlayers, ...localPlayers];
 
-    if (list.length === 0) {
-      playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
-      return;
+    const allPlayers = [...remotePlayers, ...localPlayers];
+
+    if (allPlayers.length === 0) {
+        playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
+        return;
     }
 
+    // Orden por posición
     const positionOrderMap = { portero: 0, defensa: 1, delantero: 2 };
-    list.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
+    allPlayers.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
 
-    list.forEach(player => {
-      const div = document.createElement('div');
-      div.className = 'player-row';
+    allPlayers.forEach(player => {
+        const div = document.createElement('div');
+        div.className = 'player-row';
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'player-select';
-      cb.dataset.playerId = player.id;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'player-select';
+        cb.dataset.playerId = player.id; // ✅ ID siempre definido
 
-      const span = document.createElement('span');
-      span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
+        const span = document.createElement('span');
+        span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
 
-      div.appendChild(cb);
-      div.appendChild(span);
-      playersListEl.appendChild(div);
+        div.appendChild(cb);
+        div.appendChild(span);
+        playersListEl.appendChild(div);
     });
-  }
+}
+
 
   // --------------------------
   // Generar equipos balanceados

@@ -128,8 +128,13 @@ async function onAddPlayerClicked() {
     } else {
         // Jugador local
         localIdCounter++;
-        const localPlayer = { id: localIdCounter, name, position, rating };
-        localPlayers.push(localPlayer);
+       const localPlayer = {
+    id: localIdCounter,
+    name,
+    position,
+    rating
+};
+
 
         renderPlayersList();
         document.getElementById('playerName').value = '';
@@ -244,9 +249,9 @@ function renderPlayersList() {
     const selectedPlayers = checkboxes
         .filter(cb => cb.checked)
         .map(cb => {
-            const id = Number(cb.dataset.playerId);
-            if (isNaN(id)) return null;
-            return [...localPlayers, ...remotePlayers].find(p => p.id === id);
+            const id = Number(cb.dataset.playerId); // <-- asegura que sea Number
+            return [...localPlayers, ...remotePlayers].find(p => Number(p.id) === id);
+
         })
         .filter(p => p !== null && p !== undefined);
 
@@ -345,8 +350,13 @@ function renderPlayersList() {
     if (!user) return [];
     const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
     if (error) { console.error(error); return []; }
-    return data.map(row => ({ id: row.id, name: row.name, position: row.position, rating: row.rating }));
-  }
+   return data.map(row => ({
+    id: Number(row.id), // <-- importante
+    name: row.name,
+    position: row.position,
+    rating: row.rating
+}));
+
 
   // --------------------------
   // LISTENERS

@@ -215,14 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 }
 
-function getSelectedPlayers(){
-  const selected = [];
-  document.querySelectorAll('.player-select:checked').forEach(cb => {
-    const id = Number(cb.dataset.playerId);
-    const p = remotePlayers.find(pl => pl.id === id);
-    if (p) selected.push(p);
-  });
-  return selected;
+function getSelectedPlayers() {
+    const selectedPlayers = getSelectedPlayers();
+
+    return selectedPlayers;
 }
 
   // ------------------------

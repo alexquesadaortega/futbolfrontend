@@ -253,10 +253,13 @@ function renderPlayersList() {
     console.log("Jugadores totales cargados:", allPlayers);
 
     // 4. Filtrar jugadores seleccionados
-    const selectedPlayers = allPlayers.filter(p => selectedIDs.includes(p.id));
-
-    console.log("Jugadores seleccionados:", selectedPlayers);
-    console.log("Total seleccionados:", selectedPlayers.length);
+    const selectedPlayers = checkboxes
+  .filter(cb => cb.checked)
+  .map(cb => {
+      const id = cb.dataset.playerId;
+      return [...localPlayers, ...remotePlayers].find(p => p.id == id); // ⚡ usar == en lugar de ===
+  })
+  .filter(p => p !== undefined);
 
     // 5. Comprobación mínima
     if (selectedPlayers.length < 14) {

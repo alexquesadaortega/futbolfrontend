@@ -268,8 +268,13 @@ function getSelectedPlayers(){
   // ------------------------
   // GENERACIÓN EQUIPOS (LÓGICA FUT7)
   // ------------------------
-  function generateTopTeams() {
-  const selectedPlayers = Array.from(document.querySelectorAll('.player-select:checked'))
+ function generateTopTeams() {
+    console.log("¡Botón pulsado!");
+    const selectedPlayers = Array.from(document.querySelectorAll('.player-select:checked'));
+    console.log("Jugadores seleccionados:", selectedPlayers.length);
+    // resto del código...
+}
+
     .map(cb => remotePlayers.find(p => p.id == cb.dataset.playerId));
 
   if (selectedPlayers.length !== 14) {

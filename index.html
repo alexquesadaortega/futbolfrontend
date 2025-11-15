@@ -344,11 +344,15 @@ function avgRating(team) {
   return team.reduce((sum,p) => sum + p.rating, 0)/team.length;
 }
 
-function arraysEqual(a,b) {
-  if (a.length !== b.length) return false;
-  for (let i=0;i<a.length;i++) if (a[i].id !== b[i].id) return false;
+function arraysEqual(blanco, negro) {
+  if (!Array.isArray(blanco) || !Array.isArray(negro)) return false; // <-- protección
+  if (blanco.length !== negro.length) return false;
+  for (let i = 0; i < blanco.length; i++) {
+    if (blanco[i] !== negro[i]) return false;
+  }
   return true;
 }
+
 
 function displayTeamsOptions(options) {
   const container = document.getElementById('teamsResult');

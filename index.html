@@ -229,9 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const allPlayers = [...remotePlayers, ...localPlayers];
 
     const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))
-      .map(cb => parseInt(cb.dataset.playerId));
+    .map(cb => Number(cb.dataset.playerId));
 
-    const selectedPlayers = allPlayers.filter(p => selectedIds.includes(p.id));
+    const selectedPlayers = allPlayers.filter(p => selectedIds.includes(Number(p.id)));
 
     if (selectedPlayers.length < 14) {
       alert('Debes seleccionar al menos 14 jugadores para generar equipos 7 vs 7.');

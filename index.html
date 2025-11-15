@@ -183,70 +183,47 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderPlayersList(){
-    playersListEl.innerHTML = '';
-    const list = remotePlayers.length ? remotePlayers : localPlayers;
-    if (list.length === 0) {
-      playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
-      return;
-    }
-        list.forEach(p => {
-      const div = document.createElement('div');
-      div.className = 'player-row';
+  playersListEl.innerHTML = '';
+  const list = remotePlayers.length ? remotePlayers : localPlayers;
+  if (list.length === 0) {
+    playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
+    return;
+  }
 
-      // PASO 1: Checkbox para seleccionar jugadores
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'player-select';
-      cb.dataset.playerId = p.id;
+  list.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'player-row';
 
-      // Nombre + posición
-      const label = document.createElement('span');
-      label.textContent = `${p.name} (${p.position})`;
+    // Checkbox para seleccionar jugadores
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'player-select';
+    cb.dataset.playerId = p.id;
 
-      div.appendChild(cb);
-      div.appendChild(label);
-      playersListEl.appendChild(div);
-    });
+    // Nombre + posición
+    const label = document.createElement('span');
+    label.textContent = `${p.name} (${p.position})`;
+
+    // Botones
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Editar';
+    editBtn.className = 'editPlayerBtn';
+    editBtn.dataset.id = p.id;
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Eliminar';
+    deleteBtn.className = 'deletePlayerBtn';
+    deleteBtn.dataset.id = p.id;
+
+    div.appendChild(cb);
+    div.appendChild(label);
+    div.appendChild(editBtn);
+    div.appendChild(deleteBtn);
+
+    playersListEl.appendChild(div);
+  });
 }
 
-        list.forEach(player => {
-      playersListEl.innerHTML += `
-        <div class="player-item">
-          <input type="checkbox" class="select-player" data-id="${player.id}">
-          <span>${player.name} (${player.position}) - ${player.rating}</span>
-
-          <button class="editPlayerBtn" data-id="${player.id}">Editar</button>
-          <button class="deletePlayerBtn" data-id="${player.id}">Eliminar</button>
-        </div>
-      `;
-    });
-
-
-    // Mostrar con botón eliminar (si es remoto, eliminará en Supabase)
-    list.forEach(p => {
-      const div = document.createElement('div');
-      div.className = 'player-row';
-      div.innerHTML = `<div style="flex:1">${p.name} — ${p.position} — ${p.rating}</div>`;
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Eliminar';
-      delBtn.addEventListener('click', async () => {
-        if (remotePlayers.length) {
-          // eliminar del servidor
-          if (!confirm(`Eliminar ${p.name} permanentemente?`)) return;
-          const { error } = await supabase.from('players').delete().eq('id', p.id);
-          if (error) { alert('Error al eliminar'); console.error(error); return; }
-          remotePlayers = remotePlayers.filter(x => x.id !== p.id);
-          renderPlayersList();
-        } else {
-          // eliminar local
-          localPlayers = localPlayers.filter(x => x !== p);
-          renderPlayersList();
-        }
-      });
-      div.appendChild(delBtn);
-      playersListEl.appendChild(div);
-    });
-  }
 function getSelectedPlayers(){
   const selected = [];
   document.querySelectorAll('.player-select:checked').forEach(cb => {

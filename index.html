@@ -239,89 +239,65 @@ function renderPlayersList() {
 
  async function onGenerateTeamsClicked() {
     const checkboxes = Array.from(document.querySelectorAll('.player-select'));
+
+    // Filtramos jugadores seleccionados de forma segura
     const selectedPlayers = checkboxes
         .filter(cb => cb.checked)
         .map(cb => {
-            const id = parseInt(cb.dataset.playerId);
+            const id = Number(cb.dataset.playerId);
+            if (isNaN(id)) return null;
             return [...localPlayers, ...remotePlayers].find(p => p.id === id);
         })
-        .filter(p => p !== undefined);
+        .filter(p => p !== null && p !== undefined);
 
     if (selectedPlayers.length < 14) return alert('Debes seleccionar al menos 14 jugadores.');
 
-    const teamOptions = generateBalancedTeamsOptions(selectedPlayers, 5);
+    // Generamos 5 combinaciones de equipos balanceados
+    const teamOptions = [];
+    for (let i = 0; i < 50; i++) {  // probamos 50 veces para encontrar combinaciones decentes
+        const teams = generateBalancedTeams(selectedPlayers);
+        if (!teams) continue;
 
-    const teamsResultEl = document.getElementById('teamsResult');
-    teamsResultEl.innerHTML = '';
+        const diff = Math.abs(
+            teams.teamA.reduce((sum, p) => sum + p.rating, 0)/teams.teamA.length -
+            teams.teamB.reduce((sum, p) => sum + p.rating, 0)/teams.teamB.length
+        );
 
-    if (teamOptions.length === 0) return; // alerta ya en la función
+        if (diff <= 0.6) {  // solo aceptamos diferencias ≤ 0.6
+            teamOptions.push({ ...teams, diff });
+            if (teamOptions.length >= 5) break;
+        }
+    }
+
+    if (teamOptions.length === 0) return alert('No se pudieron generar equipos balanceados con la diferencia ≤0.6.');
+
+    console.log('Opciones de equipos balanceados:', teamOptions);
+
+    // Mostramos la primera opción en pantalla (puedes añadir lógica para elegir otra)
+    const { teamA, teamB } = teamOptions[0];
+    const teamAEl = document.getElementById('teamA');
+    const teamBEl = document.getElementById('teamB');
+    teamAEl.innerHTML = ''; teamBEl.innerHTML = '';
+
+    teamA.forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+        teamAEl.appendChild(li);
+    });
+
+    teamB.forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+        teamBEl.appendChild(li);
+    });
 
     const avg = arr => (arr.reduce((sum,p)=>sum+p.rating,0)/arr.length).toFixed(2);
+    document.getElementById('avgA').textContent = `Media: ${avg(teamA)}`;
+    document.getElementById('avgB').textContent = `Media: ${avg(teamB)}`;
 
-    teamOptions.forEach((opt, idx) => {
-        const div = document.createElement('div');
-        div.style.border = '1px solid #ccc';
-        div.style.padding = '10px';
-        div.style.marginBottom = '10px';
-        div.style.borderRadius = '6px';
-        div.style.background = '#f9f9f9';
-
-        const title = document.createElement('h4');
-        title.textContent = `Opción ${idx+1} - Dif media: ${(Math.abs(avg(opt.teamA)-avg(opt.teamB))).toFixed(2)}`;
-        div.appendChild(title);
-
-        const container = document.createElement('div');
-        container.style.display = 'flex';
-        container.style.gap = '20px';
-
-        // Team A
-        const teamADiv = document.createElement('div');
-        const ulA = document.createElement('ul');
-        opt.teamA.forEach(p => {
-            const li = document.createElement('li');
-            li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-            ulA.appendChild(li);
-        });
-        const avgA = document.createElement('div');
-        avgA.textContent = `Media: ${avg(opt.teamA)}`;
-        avgA.className = 'small';
-        teamADiv.appendChild(ulA);
-        teamADiv.appendChild(avgA);
-
-        // Team B
-        const teamBDiv = document.createElement('div');
-        const ulB = document.createElement('ul');
-        opt.teamB.forEach(p => {
-            const li = document.createElement('li');
-            li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-            ulB.appendChild(li);
-        });
-        const avgB = document.createElement('div');
-        avgB.textContent = `Media: ${avg(opt.teamB)}`;
-        avgB.className = 'small';
-        teamBDiv.appendChild(ulB);
-        teamBDiv.appendChild(avgB);
-
-        container.appendChild(teamADiv);
-        container.appendChild(teamBDiv);
-        div.appendChild(container);
-
-        // Botón para seleccionar esta opción
-        const btnSelect = document.createElement('button');
-        btnSelect.textContent = 'Seleccionar esta opción';
-        btnSelect.style.marginTop = '8px';
-        btnSelect.addEventListener('click', () => {
-            document.getElementById('teamA').innerHTML = ulA.innerHTML;
-            document.getElementById('teamB').innerHTML = ulB.innerHTML;
-            document.getElementById('avgA').textContent = avgA.textContent;
-            document.getElementById('avgB').textContent = avgB.textContent;
-            teamsResultEl.innerHTML = `<div class="small">Opción ${idx+1} seleccionada</div>`; // limpiar opciones
-        });
-        div.appendChild(btnSelect);
-
-        teamsResultEl.appendChild(div);
-    });
+    alert(`Se generaron ${teamOptions.length} opciones de equipos balanceados.`);
 }
+
 
 
   // --------------------------

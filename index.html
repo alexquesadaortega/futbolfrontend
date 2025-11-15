@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnRegister').addEventListener('click', registerUser);
   document.getElementById('btnLogin').addEventListener('click', loginUser);
   document.getElementById('btnAddPlayer').addEventListener('click', onAddPlayerClicked);
-  document.getElementById('btnGenerateTeams').addEventListener('click', generateBalancedTeams);
+  document.getElementById('btnGenerateTeams').addEventListener('click', generateTopTeams);
   
   // ------------------------
   // AUTH: registro y login
@@ -268,7 +268,7 @@ function getSelectedPlayers(){
   // ------------------------
   // GENERACIÓN EQUIPOS (LÓGICA FUT7)
   // ------------------------
-  function generateOptimalTeams() {
+  function generateTopTeams() {
   const selectedPlayers = Array.from(document.querySelectorAll('.player-select:checked'))
     .map(cb => remotePlayers.find(p => p.id == cb.dataset.playerId));
 
@@ -286,7 +286,7 @@ function getSelectedPlayers(){
     return alert('No hay suficientes jugadores para cumplir los mínimos por posición.');
   }
 
-  // Función auxiliar para combinaciones
+  // Función combinaciones
   function combinations(arr, k) {
     if (k === 0) return [[]];
     if (arr.length < k) return [];
@@ -296,11 +296,8 @@ function getSelectedPlayers(){
     return withFirst.concat(withoutFirst);
   }
 
-  let bestDiff = Infinity;
-  let bestTeamA = [];
-  let bestTeamB = [];
+  let allOptions = [];
 
-  // Generar todas las combinaciones posibles por posición
   const gkComb = combinations(gk,1);
   const defComb = combinations(def,3);
   const midComb = combinations(mid,2);
@@ -321,28 +318,38 @@ function getSelectedPlayers(){
           const avg = arr => arr.reduce((sum,p)=>sum+p.rating,0)/arr.length;
           const diff = Math.abs(avg(teamA) - avg(teamB));
 
-          if (diff < bestDiff) {
-            bestDiff = diff;
-            bestTeamA = teamA;
-            bestTeamB = teamB;
-          }
+          allOptions.push({ teamA, teamB, diff });
         }
       }
     }
   }
 
-  // Mostrar equipos
-  const teamAEl = document.getElementById('teamA');
-  const teamBEl = document.getElementById('teamB');
-  teamAEl.innerHTML = '';
-  teamBEl.innerHTML = '';
+  // Ordenar por menor diferencia de media
+  allOptions.sort((a,b) => a.diff - b.diff);
 
-  bestTeamA.forEach(p => teamAEl.innerHTML += `<li>${p.name} (${p.position}) - ${p.rating}</li>`);
-  bestTeamB.forEach(p => teamBEl.innerHTML += `<li>${p.name} (${p.position}) - ${p.rating}</li>`);
+  // Tomar hasta 5 mejores opciones
+  const topOptions = allOptions.slice(0,5);
 
-  const avg = arr => (arr.reduce((sum,p)=>sum+p.rating,0)/arr.length).toFixed(2);
-  document.getElementById('avgA').textContent = `Media: ${avg(bestTeamA)}`;
-  document.getElementById('avgB').textContent = `Media: ${avg(bestTeamB)}`;
+  // Mostrar en UI
+  const teamsResult = document.getElementById('teamsResult');
+  teamsResult.innerHTML = '';
+  topOptions.forEach((opt, idx) => {
+    const avg = arr => (arr.reduce((sum,p)=>sum+p.rating,0)/arr.length).toFixed(2);
+    let html = `<h3>Opción ${idx+1}</h3>
+                <div style="display:flex;gap:20px;margin-bottom:15px">
+                  <div style="flex:1">
+                    <strong>Equipo A</strong>
+                    <ul>${opt.teamA.map(p=>`<li>${p.name} (${p.position}) - ${p.rating}</li>`).join('')}</ul>
+                    <div class="small">Media: ${avg(opt.teamA)}</div>
+                  </div>
+                  <div style="flex:1">
+                    <strong>Equipo B</strong>
+                    <ul>${opt.teamB.map(p=>`<li>${p.name} (${p.position}) - ${p.rating}</li>`).join('')}</ul>
+                    <div class="small">Media: ${avg(opt.teamB)}</div>
+                  </div>
+                </div>`;
+    teamsResult.innerHTML += html;
+  });
 }
 
   // ------------------------

@@ -225,77 +225,58 @@ document.addEventListener('DOMContentLoaded', () => {
   // --------------------------
   // Generar equipos balanceados
   // --------------------------
-function generateBalancedTeams {
+function generateBalancedTeams(selectedPlayers) {
+    const teamSize = 7;
 
-    const porteros = selectedPlayers.filter(p => p.position === "portero");
-    const defensas = selectedPlayers.filter(p => p.position === "defensa");
-    const delanteros = selectedPlayers.filter(p => p.position === "delantero");
+    // Separar jugadores por posición
+    const positions = {
+        Portero: [],
+        Defensa: [],
+        Medio: [],
+        Delantero: []
+    };
 
-    if (porteros.length < 2) return null;
-    if (defensas.length < 6) return null;
-    if (delanteros.length < 2) return null;
-
-    const opciones = [];
-
-    function mezclar(arr) {
-        return [...arr].sort(() => Math.random() - 0.5);
-    }
-
-    let intentos = 1000;
-
-    while (opciones.length < 5 && intentos > 0) {
-        intentos--;
-
-        const sp = mezclar(selectedPlayers);
-
-        const equipoNegro = [];
-        const equipoBlanco = [];
-
-        // Mínimos obligatorios
-        equipoNegro.push(porteros[0]);
-        equipoBlanco.push(porteros[1]);
-
-        equipoNegro.push(defensas[0], defensas[1], defensas[2]);
-        equipoBlanco.push(defensas[3], defensas[4], defensas[5]);
-
-        equipoNegro.push(delanteros[0]);
-        equipoBlanco.push(delanteros[1]);
-
-        // Ahora rellenamos hasta 7 jugadores por equipo SIN repetir
-        const usados = new Set([
-            ...equipoNegro.map(p => p.id),
-            ...equipoBlanco.map(p => p.id)
-        ]);
-
-        const restantes = sp.filter(p => !usados.has(p.id));
-
-        while (equipoNegro.length < 7 && restantes.length > 0) {
-            equipoNegro.push(restantes.shift());
+    selectedPlayers.forEach(p => {
+        if (positions[p.posicion]) {
+            positions[p.posicion].push(p);
         }
-        while (equipoBlanco.length < 7 && restantes.length > 0) {
-            equipoBlanco.push(restantes.shift());
-        }
+    });
 
-        if (equipoNegro.length !== 7 || equipoBlanco.length !== 7) continue;
+    // Comprobación de mínimos
+    if (positions.Portero.length < 2) return null;
+    if (positions.Defensa.length < 2) return null;
+    if (positions.Medio.length < 2) return null;
+    if (positions.Delantero.length < 2) return null;
 
-        // Calcular medias
-        const avgN = equipoNegro.reduce((a, b) => a + b.rating, 0) / 7;
-        const avgB = equipoBlanco.reduce((a, b) => a + b.rating, 0) / 7;
-        const diff = Math.abs(avgN - avgB);
+    const teamA = [];
+    const teamB = [];
 
-        opciones.push({
-            negro: equipoNegro,
-            blanco: equipoBlanco,
-            diff
+    function assignAlternating(arr) {
+        arr.sort(() => Math.random() - 0.5);
+        arr.forEach((player, i) => {
+            if (teamA.length < teamSize && teamB.length < teamSize) {
+                if (i % 2 === 0) teamA.push(player);
+                else teamB.push(player);
+            } else if (teamA.length < teamSize) {
+                teamA.push(player);
+            } else {
+                teamB.push(player);
+            }
         });
     }
 
-    if (opciones.length === 0) return null;
+    // Asignar posición por posición
+    assignAlternating(positions.Portero);
+    assignAlternating(positions.Defensa);
+    assignAlternating(positions.Medio);
+    assignAlternating(positions.Delantero);
 
-    // Ordenar por la menor diferencia (más igualados)
-    opciones.sort((a, b) => a.diff - b.diff);
+    // Si por cualquier motivo final hay descuadre
+    if (teamA.length !== 7 || teamB.length !== 7) {
+        return null;
+    }
 
-    return opciones;
+    return { teamA, teamB };
 }
 
   async function saveTeamsToSupabase(teamA, teamB) {

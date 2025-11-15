@@ -56,7 +56,7 @@
     <button id="btnAddPlayer" class="secondary">Agregar</button>
   </div>
 
-  <div id="playersListTitle" class="small" style="margin-top:8px">Jugadores guardados (tu cuenta):</div>
+  <div id="playersListTitle" class="small" style="margin-top:8px">Jugadores guardados:</div>
   <div id="playersList" style="margin-top:8px"></div>
 </div>
 
@@ -84,265 +84,182 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
+  const SUPABASE_URL = 'TU_SUPABASE_URL';
+  const SUPABASE_KEY = 'TU_SUPABASE_KEY';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  let localPlayers = [];
-  let remotePlayers = [];
+  let players = [];
   let localIdCounter = 100000;
 
-  const authMsg = document.getElementById('authMsg');
+  const playersListEl = document.getElementById('playersList');
   const addPlayerBox = document.getElementById('addPlayerBox');
   const generateBox = document.getElementById('generateBox');
-  const playersListEl = document.getElementById('playersList');
+  const authMsg = document.getElementById('authMsg');
 
   // --------------------------
   // Añadir jugador
   // --------------------------
-
-async function onAddPlayerClicked() {
+  async function onAddPlayerClicked() {
     const name = document.getElementById('playerName').value.trim();
     const position = document.getElementById('playerPosition').value;
     const rating = parseFloat(document.getElementById('playerSkill').value);
 
     if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
-        return alert("La media debe estar entre 1 y 10 (se permiten decimales).");
+      return alert("La media debe estar entre 1 y 10.");
     }
 
     const user = await getCurrentUser();
-
+    let id;
     if (user) {
-        // Guardamos en Supabase
-        const { data, error } = await supabase
-            .from('players')
-            .insert([{ user_id: user.id, name, position, rating }])
-            .select();
-        if (error) { console.error(error); alert('Error guardando en la nube'); return; }
-
-        remotePlayers.push({ id: data[0].id, name, position, rating });
-        renderPlayersList();
-        document.getElementById('playerName').value = '';
-        document.getElementById('playerSkill').value = '';
-        alert('Jugador guardado en Supabase.');
+      const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
+      if (error) { console.error(error); alert('Error guardando en Supabase'); return; }
+      id = Number(data[0].id);
     } else {
-        // Jugador local
-        localIdCounter++;
-       const localPlayer = {
-    id: localIdCounter,
-    name,
-    position,
-    rating
-};
-
-
-        renderPlayersList();
-        document.getElementById('playerName').value = '';
-        document.getElementById('playerSkill').value = '';
-        alert('Jugador añadido localmente (inicia sesión para guardarlo en la nube).');
+      localIdCounter++;
+      id = localIdCounter;
+      alert('Jugador añadido localmente (inicia sesión para guardarlo en la nube).');
     }
-}
 
-// ----------------------------
-// Render de jugadores
-// ----------------------------
-function renderPlayersList() {
+    players.push({ id, name, position, rating });
+    renderPlayersList();
+    document.getElementById('playerName').value = '';
+    document.getElementById('playerSkill').value = '';
+  }
+
+  // --------------------------
+  // Render de jugadores
+  // --------------------------
+  function renderPlayersList() {
     playersListEl.innerHTML = '';
-
-    const allPlayers = [...remotePlayers, ...localPlayers];
-
-    if (allPlayers.length === 0) {
-        playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
-        return;
+    if (players.length === 0) {
+      playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
+      return;
     }
 
-    // Orden por posición
     const positionOrderMap = { portero: 0, defensa: 1, delantero: 2 };
-    allPlayers.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
+    players.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
 
-    allPlayers.forEach(player => {
-        const div = document.createElement('div');
-        div.className = 'player-row';
+    players.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'player-row';
 
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.className = 'player-select';
-        cb.dataset.playerId = player.id; // ✅ ID siempre definido
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'player-select';
+      cb.dataset.playerId = p.id;
 
-        const span = document.createElement('span');
-        span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
+      const span = document.createElement('span');
+      span.textContent = `${p.name} (${p.position}) - ${p.rating}`;
 
-        div.appendChild(cb);
-        div.appendChild(span);
-        playersListEl.appendChild(div);
+      div.appendChild(cb);
+      div.appendChild(span);
+      playersListEl.appendChild(div);
     });
-}
-
+  }
 
   // --------------------------
-  // Generar equipos balanceados
+  // Generar equipos
   // --------------------------
+  async function onGenerateTeamsClicked() {
+    const selectedPlayers = Array.from(document.querySelectorAll('.player-select'))
+      .filter(cb => cb.checked)
+      .map(cb => players.find(p => Number(p.id) === Number(cb.dataset.playerId)))
+      .filter(p => p !== undefined);
+
+    if (selectedPlayers.length < 14) return alert('Debes seleccionar al menos 14 jugadores.');
+
+    const options = generateBalancedTeamsOptions(selectedPlayers, 5);
+    if (options.length === 0) return alert('No se pudieron generar equipos equilibrados.');
+
+    displayTeams(options[0]);
+  }
+
   function generateBalancedTeamsOptions(selectedPlayers, maxOptions = 5) {
     const teamSize = 7;
     const porteros = selectedPlayers.filter(p => p.position === 'portero');
     const defensas = selectedPlayers.filter(p => p.position === 'defensa');
     const delanteros = selectedPlayers.filter(p => p.position === 'delantero');
 
-    if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) {
-        alert('No hay suficientes jugadores para generar equipos completos.');
-        return [];
-    }
+    if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) return [];
 
     const options = [];
+    for (let attempt = 0; attempt < 100; attempt++) {
+      let teamA = [], teamB = [];
 
-    for (let attempt = 0; attempt < 100; attempt++) { // 100 intentos max para encontrar combinaciones
-        let teamA = [];
-        let teamB = [];
+      function assignRandom(arr) {
+        const shuffled = [...arr].sort(() => Math.random() - 0.5);
+        shuffled.forEach((player, i) => { if (i%2===0) teamA.push(player); else teamB.push(player); });
+      }
 
-        function assignRandom(arr) {
-            const shuffled = arr.sort(() => Math.random() - 0.5);
-            shuffled.forEach((player, i) => {
-                if (i % 2 === 0) teamA.push(player);
-                else teamB.push(player);
-            });
-        }
+      assignRandom(porteros);
+      assignRandom(defensas);
+      assignRandom(delanteros);
 
-        assignRandom(porteros);
-        assignRandom(defensas);
-        assignRandom(delanteros);
+      const leftovers = selectedPlayers.filter(p => !teamA.includes(p) && !teamB.includes(p));
+      leftovers.forEach(p => { if (teamA.length < teamSize) teamA.push(p); else if (teamB.length < teamSize) teamB.push(p); });
 
-        // Rellenar si queda menos de 7
-        const leftovers = selectedPlayers.filter(p => !teamA.includes(p) && !teamB.includes(p));
-        leftovers.forEach(player => {
-            if (teamA.length < teamSize) teamA.push(player);
-            else if (teamB.length < teamSize) teamB.push(player);
-        });
-
-        if (teamA.length === teamSize && teamB.length === teamSize) {
-            const avg = arr => arr.reduce((sum,p)=>sum+p.rating,0)/arr.length;
-            const diff = Math.abs(avg(teamA) - avg(teamB));
-            if (diff <= 0.6) {
-                // evitar duplicados
-                const exists = options.some(opt => {
-                    const aNames = opt.teamA.map(p=>p.name).sort().join(',');
-                    const bNames = opt.teamB.map(p=>p.name).sort().join(',');
-                    const newA = teamA.map(p=>p.name).sort().join(',');
-                    const newB = teamB.map(p=>p.name).sort().join(',');
-                    return (aNames===newA && bNames===newB) || (aNames===newB && bNames===newA);
-                });
-                if (!exists) options.push({ teamA, teamB });
-            }
-        }
-
-        if (options.length >= maxOptions) break;
-    }
-
-    if (options.length === 0) alert('No se encontraron combinaciones balanceadas con diferencia ≤ 0.6.');
-    return options;
-}
-
-
- async function onGenerateTeamsClicked() {
-    const checkboxes = Array.from(document.querySelectorAll('.player-select'));
-    const selectedPlayers = checkboxes
-        .filter(cb => cb.checked)
-        .map(cb => {
-            const id = Number(cb.dataset.playerId);
-            return [...localPlayers, ...remotePlayers].find(p => Number(p.id) === id);
-        })
-        .filter(p => p !== undefined);
-
-    if (selectedPlayers.length < 14) {
-        return alert('Debes seleccionar al menos 14 jugadores.');
-    }
-
-    // Intentamos generar hasta 5 equipos balanceados
-    const options = [];
-    for (let i = 0; i < 20; i++) { // probamos 20 veces para encontrar combinaciones buenas
-        const teams = generateBalancedTeams(selectedPlayers);
-        if (!teams) continue;
-
-        const avgA = teams.teamA.reduce((sum, p) => sum + p.rating, 0) / teams.teamA.length;
-        const avgB = teams.teamB.reduce((sum, p) => sum + p.rating, 0) / teams.teamB.length;
+      if (teamA.length === teamSize && teamB.length === teamSize) {
+        const avgA = teamA.reduce((sum, p) => sum + p.rating, 0) / teamA.length;
+        const avgB = teamB.reduce((sum, p) => sum + p.rating, 0) / teamB.length;
         if (Math.abs(avgA - avgB) <= 0.6) {
-            options.push(teams);
-            if (options.length >= 5) break;
+          const exists = options.some(opt => {
+            const aNames = opt.teamA.map(p=>p.name).sort().join(',');
+            const bNames = opt.teamB.map(p=>p.name).sort().join(',');
+            const newA = teamA.map(p=>p.name).sort().join(',');
+            const newB = teamB.map(p=>p.name).sort().join(',');
+            return (aNames===newA && bNames===newB) || (aNames===newB && bNames===newA);
+          });
+          if (!exists) options.push({ teamA, teamB });
         }
+      }
+      if (options.length >= maxOptions) break;
     }
 
-    if (options.length === 0) return alert('No se pudieron generar equipos equilibrados. Intenta otra selección.');
+    return options;
+  }
 
-    // Mostramos la primera opción por defecto
-    displayTeams(options[0]);
-}
-
-function generateBalancedTeams(selectedPlayers) {
-    const teamSize = 7;
-    const positions = { portero: [], defensa: [], delantero: [] };
-
-    selectedPlayers.forEach(p => {
-        if (positions[p.position]) positions[p.position].push(p);
-    });
-
-    if (positions.portero.length < 2) return null;
-    if (positions.defensa.length < 6) return null;
-    if (positions.delantero.length < 2) return null;
-
-    const teamA = [];
-    const teamB = [];
-
-    function assignAlternating(arr) {
-        const copy = [...arr].sort(() => Math.random() - 0.5);
-        copy.forEach((player, i) => {
-            if (teamA.length < teamSize && teamB.length < teamSize) {
-                if (i % 2 === 0) teamA.push(player);
-                else teamB.push(player);
-            } else if (teamA.length < teamSize) teamA.push(player);
-            else teamB.push(player);
-        });
-    }
-
-    assignAlternating(positions.portero);
-    assignAlternating(positions.defensa);
-    assignAlternating(positions.delantero);
-
-    const leftovers = selectedPlayers.filter(p => !teamA.includes(p) && !teamB.includes(p));
-    leftovers.forEach(player => {
-        if (teamA.length < teamSize) teamA.push(player);
-        else if (teamB.length < teamSize) teamB.push(player);
-    });
-
-    if (teamA.length !== 7 || teamB.length !== 7) return null;
-
-    return { teamA, teamB };
-}
-
-function displayTeams({ teamA, teamB }) {
+  function displayTeams({ teamA, teamB }) {
     const teamAEl = document.getElementById('teamA');
     const teamBEl = document.getElementById('teamB');
     teamAEl.innerHTML = '';
     teamBEl.innerHTML = '';
 
-    teamA.forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-        teamAEl.appendChild(li);
-    });
-    teamB.forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-        teamBEl.appendChild(li);
-    });
+    teamA.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position}) - ${p.rating}`; teamAEl.appendChild(li); });
+    teamB.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position}) - ${p.rating}`; teamBEl.appendChild(li); });
 
-    const avg = arr => (arr.reduce((sum, p) => sum + p.rating, 0) / arr.length).toFixed(2);
+    const avg = arr => (arr.reduce((sum,p)=>sum+p.rating,0)/arr.length).toFixed(2);
     document.getElementById('avgA').textContent = `Media: ${avg(teamA)}`;
     document.getElementById('avgB').textContent = `Media: ${avg(teamB)}`;
-}
-
+  }
 
   // --------------------------
-  // Autenticación Supabase
+  // Supabase & listeners
   // --------------------------
+  async function getCurrentUser() {
+    const res = await supabase.auth.getUser();
+    return res?.data?.user || null;
+  }
+
+  async function loadRemotePlayers() {
+    const user = await getCurrentUser();
+    if (!user) return [];
+    const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
+    if (error) { console.error(error); return []; }
+    return data.map(row => ({ id: Number(row.id), name: row.name, position: row.position, rating: row.rating }));
+  }
+
+  async function loadRemotePlayersAndShowUI() {
+    const user = await getCurrentUser();
+    if (!user) return;
+    const remote = await loadRemotePlayers();
+    players.push(...remote);
+    renderPlayersList();
+    addPlayerBox.style.display = 'block';
+    generateBox.style.display = 'block';
+    document.getElementById('authBox').style.display = 'none';
+    authMsg.textContent = `Conectado como ${user.email}`;
+  }
+
   async function registerUser() {
     const email = document.getElementById('registerEmail').value.trim();
     const pass  = document.getElementById('registerPassword').value;
@@ -360,51 +277,14 @@ function displayTeams({ teamA, teamB }) {
     authMsg.textContent = 'Iniciando sesión...';
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
     if (error) { authMsg.textContent = error.message; console.error(error); return; }
-    authMsg.textContent = 'Login correcto. Cargando datos...';
     await loadRemotePlayersAndShowUI();
   }
 
-  async function getCurrentUser(){
-    const res = await supabase.auth.getUser();
-    return res?.data?.user || null;
-  }
-
-  async function loadRemotePlayersAndShowUI() {
-    const user = await getCurrentUser();
-    if (!user) { authMsg.textContent = 'No hay usuario'; return; }
-    addPlayerBox.style.display = 'block';
-    generateBox.style.display = 'block';
-    document.getElementById('authBox').style.display = 'none';
-    remotePlayers = await loadPlayersFromSupabase();
-    renderPlayersList();
-    authMsg.textContent = `Conectado como ${user.email}`;
-  }
-
-  async function loadPlayersFromSupabase(){
-    const user = await getCurrentUser();
-    if (!user) return [];
-    const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
-    if (error) { console.error(error); return []; }
-    return data.map(row => ({
-        id: Number(row.id), // <-- importante
-        name: row.name,
-        position: row.position,
-        rating: row.rating
-    }));
-}
-
-
-  // --------------------------
-  // LISTENERS
-  // --------------------------
   document.getElementById('btnRegister').addEventListener('click', registerUser);
   document.getElementById('btnLogin').addEventListener('click', loginUser);
   document.getElementById('btnAddPlayer').addEventListener('click', onAddPlayerClicked);
   document.getElementById('btnGenerateTeams').addEventListener('click', onGenerateTeamsClicked);
 
-  window._supabase = supabase;
-  window._localPlayers = localPlayers;
-  window._remotePlayers = remotePlayers;
 });
 </script>
 

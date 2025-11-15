@@ -18,7 +18,7 @@
   .player-row button { background:#ef4444; padding:6px 8px; }
 </style>
 
-<!-- Supabase CDN (v2) - carga antes de usar -->
+<!-- Supabase CDN (v2) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -66,10 +66,8 @@
 <div class="box" id="generateBox" style="display:none;">
   <h2>Generar Equipos 7 vs 7</h2>
   <p class="small">Se respetan mínimos: 1 portero / equipo, 3 defensas / equipo, 1 delantero / equipo. Rellena con otros hasta 7.</p>
-    <!-- BOTÓN PARA GENERAR -->
   <button id="btnGenerateTeams" class="primary" style="margin:10px 0;">Generar equipos balanceados</button>
 
-  <!-- DONDE SE VAN A MOSTRAR LOS EQUIPOS -->
   <div id="teamsResult" style="margin-top:15px;"></div>
 
   <div style="display:flex;gap:20px;margin-top:12px">
@@ -87,43 +85,24 @@
 </div>
 
 <script>
-/*
-  index.html con Supabase integrado.
-  Requisitos Previos en Supabase:
-  - Tabla "players": id (auto), user_id (uuid), name (text), position (text), rating (int)
-  - Tabla "teams": id (auto), user_id (uuid), team_a (jsonb), team_b (jsonb), created_at (timestamp default now())
-*/
-
 document.addEventListener('DOMContentLoaded', () => {
-  // ----------------------------
-  // CONFIGURA TUS CREDENCIALES
-  // ----------------------------
-  const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co'; // tu URL
+  const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
-
-  // Crear cliente Supabase (YA se puede usar porque el CDN ya se cargó)
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Estado local
-  let localPlayers = []; // se usa para añadir sin guardar / pruebas
-  let remotePlayers = []; // jugadores cargados desde Supabase para el usuario
+  let localPlayers = [];
+  let remotePlayers = [];
 
-  // Elementos UI
   const authMsg = document.getElementById('authMsg');
   const addPlayerBox = document.getElementById('addPlayerBox');
   const generateBox = document.getElementById('generateBox');
   const playersListEl = document.getElementById('playersList');
-  const playersListTitle = document.getElementById('playersListTitle');
 
-  // Botones
   document.getElementById('btnRegister').addEventListener('click', registerUser);
   document.getElementById('btnLogin').addEventListener('click', loginUser);
   document.getElementById('btnAddPlayer').addEventListener('click', onAddPlayerClicked);
   document.getElementById('btnGenerateTeams').addEventListener('click', generateBalancedTeams);
-  
-  // ------------------------
-  // AUTH: registro y login
-  // ------------------------
+
   async function registerUser() {
     const email = document.getElementById('registerEmail').value.trim();
     const pass  = document.getElementById('registerPassword').value;
@@ -145,31 +124,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (error) { authMsg.textContent = error.message; console.error(error); return; }
 
     authMsg.textContent = 'Login correcto. Cargando datos...';
-    // Después de login, cargar jugadores remotos y revelar secciones
     await loadRemotePlayersAndShowUI();
-  }
-
-  // ------------------------
-  // CARGAR / MOSTRAR JUGADORES
-  // ------------------------
-  async function loadRemotePlayersAndShowUI() {
-    const user = await getCurrentUser();
-    if (!user) { authMsg.textContent = 'No hay usuario'; return; }
-
-    // Mostrar secciones
-    addPlayerBox.style.display = 'block';
-    generateBox.style.display = 'block';
-    document.getElementById('authBox').style.display = 'none';
-
-    // Cargar jugadores del usuario
-    remotePlayers = await loadPlayersFromSupabase();
-    renderPlayersList();
-    authMsg.textContent = `Conectado como ${user.email}`;
   }
 
   async function getCurrentUser(){
     const res = await supabase.auth.getUser();
     return res?.data?.user || null;
+  }
+
+  async function loadRemotePlayersAndShowUI() {
+    const user = await getCurrentUser();
+    if (!user) { authMsg.textContent = 'No hay usuario'; return; }
+
+    addPlayerBox.style.display = 'block';
+    generateBox.style.display = 'block';
+    document.getElementById('authBox').style.display = 'none';
+
+    remotePlayers = await loadPlayersFromSupabase();
+    renderPlayersList();
+    authMsg.textContent = `Conectado como ${user.email}`;
   }
 
   async function loadPlayersFromSupabase(){
@@ -180,54 +153,46 @@ document.addEventListener('DOMContentLoaded', () => {
     return data.map(row => ({ id: row.id, name: row.name, position: row.position, rating: row.rating }));
   }
 
+  // --------------------------
+  // Renderizamos TODOS los jugadores
+  // --------------------------
   function renderPlayersList() {
-  playersListEl.innerHTML = '';
+    playersListEl.innerHTML = '';
 
-  const list = remotePlayers.length ? remotePlayers : localPlayers;
+    const list = [...remotePlayers, ...localPlayers]; // <-- todos
 
-  if (list.length === 0) {
-    playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
-    return;
+    if (list.length === 0) {
+      playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
+      return;
+    }
+
+    const positionOrderMap = { portero: 0, defensa: 1, delantero: 2 };
+    list.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
+
+    list.forEach(player => {
+      const div = document.createElement('div');
+      div.className = 'player-row';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'player-select';
+      cb.dataset.playerId = player.id;
+
+      const span = document.createElement('span');
+      span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
+
+      div.appendChild(cb);
+      div.appendChild(span);
+      playersListEl.appendChild(div);
+    });
   }
 
-  // Ordenamos por posición
-  const positionOrderMap = { portero: 0, defensa: 1, delantero: 2 };
-  list.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
+  // --------------------------
+  // Añadir jugador
+  // --------------------------
+  let localIdCounter = 100000;
 
-  // Creamos los elementos
-  list.forEach(player => {
-    const div = document.createElement('div');
-    div.className = 'player-row';
-
-    // Checkbox
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.className = 'player-select';
-    cb.dataset.playerId = player.id;
-
-    // Nombre y posición
-    const span = document.createElement('span');
-    span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
-
-    div.appendChild(cb);
-    div.appendChild(span);
-    playersListEl.appendChild(div);
-  });
-}
-
-function getSelectedPlayers() {
-    const selectedPlayers = getSelectedPlayers();
-
-    return selectedPlayers;
-}
-
-  // ------------------------
-  // AÑADIR JUGADOR (local y / o remoto)
-  // ------------------------
-// Creamos un contador global para IDs de jugadores locales
-let localIdCounter = 100000; // empieza en un número alto para no chocar con IDs remotos
-
-async function onAddPlayerClicked() {
+  async function onAddPlayerClicked() {
     const name = document.getElementById('playerName').value.trim();
     const position = document.getElementById('playerPosition').value;
     const rating = parseFloat(document.getElementById('playerSkill').value);
@@ -236,21 +201,18 @@ async function onAddPlayerClicked() {
         return alert("La media debe estar entre 1 y 10 (se permiten decimales).");
     }
 
-    // Si el usuario está logueado, guardamos en Supabase
     const user = await getCurrentUser();
     if (user) {
         const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
         if (error) { console.error(error); alert('Error guardando en la nube'); return; }
 
-        // data es array con row insertada
         remotePlayers.push({ id: data[0].id, name, position, rating });
         renderPlayersList();
         document.getElementById('playerName').value = '';
         document.getElementById('playerSkill').value = '';
         alert('Jugador guardado en Supabase.');
     } else {
-        // Si no hay usuario logueado, guardamos localmente con un ID único
-        localIdCounter++; // incrementamos el contador
+        localIdCounter++;
         const localPlayer = { id: localIdCounter, name, position, rating };
         localPlayers.push(localPlayer);
         renderPlayersList();
@@ -258,168 +220,147 @@ async function onAddPlayerClicked() {
         document.getElementById('playerSkill').value = '';
         alert('Jugador añadido localmente (inicia sesión para guardarlo en la nube).');
     }
-}
-
-  
-// ------------------------
-// GENERAR EQUIPOS BALANCEADOS
-// ------------------------
-
-function generateBalancedTeams() {
-  // Tomamos todos los jugadores (remotos + locales)
-  const allPlayers = [...remotePlayers, ...localPlayers];
-
-  // IDs de jugadores seleccionados
-  const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))
-    .map(cb => parseInt(cb.dataset.playerId));
-
-  // Filtramos los seleccionados
-  const selectedPlayers = allPlayers.filter(p => selectedIds.includes(p.id));
-
-  if (selectedPlayers.length < 14) {
-    alert('Debes seleccionar al menos 14 jugadores para generar equipos 7 vs 7.');
-    return;
   }
 
-  // Separar por posiciones
-  const porteros = selectedPlayers.filter(p => p.position === 'portero');
-  const defensas = selectedPlayers.filter(p => p.position === 'defensa');
-  const delanteros = selectedPlayers.filter(p => p.position === 'delantero');
+  // --------------------------
+  // Generar equipos balanceados
+  // --------------------------
+  function generateBalancedTeams() {
+    const allPlayers = [...remotePlayers, ...localPlayers];
 
-  if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) {
-    alert('No hay suficientes jugadores por posición para formar equipos balanceados.');
-    return;
+    const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))
+      .map(cb => parseInt(cb.dataset.playerId));
+
+    const selectedPlayers = allPlayers.filter(p => selectedIds.includes(p.id));
+
+    if (selectedPlayers.length < 14) {
+      alert('Debes seleccionar al menos 14 jugadores para generar equipos 7 vs 7.');
+      return;
+    }
+
+    const porteros = selectedPlayers.filter(p => p.position === 'portero');
+    const defensas = selectedPlayers.filter(p => p.position === 'defensa');
+    const delanteros = selectedPlayers.filter(p => p.position === 'delantero');
+
+    if (porteros.length < 2 || defensas.length < 6 || delanteros.length < 2) {
+      alert('No hay suficientes jugadores por posición para formar equipos balanceados.');
+      return;
+    }
+
+    const media = team => team.reduce((sum, p) => sum + p.rating, 0) / team.length;
+    const opciones = [];
+    const MAX_INTENTOS = 50;
+    let intentos = 0;
+
+    while (opciones.length < 5 && intentos < MAX_INTENTOS) {
+      intentos++;
+
+      const shuffledPort = [...porteros].sort(() => Math.random() - 0.5);
+      const shuffledDef = [...defensas].sort(() => Math.random() - 0.5);
+      const shuffledDel = [...delanteros].sort(() => Math.random() - 0.5);
+
+      const equipoNegro = [
+        shuffledPort[0],
+        ...shuffledDef.slice(0, 3),
+        shuffledDel[0],
+        ...shuffledDef.slice(3, 5)
+      ].slice(0, 7);
+
+      const equipoBlanco = [
+        shuffledPort[1],
+        ...shuffledDef.slice(5),
+        shuffledDel[1],
+        ...shuffledDef.slice(3,5).filter(p => !equipoNegro.includes(p))
+      ].slice(0, 7);
+
+      const allIds = [...equipoNegro, ...equipoBlanco].map(p => p.id);
+      if (new Set(allIds).size !== 14) continue;
+
+      opciones.push({
+        negro: equipoNegro,
+        blanco: equipoBlanco,
+        diff: Math.abs(media(equipoNegro) - media(equipoBlanco))
+      });
+    }
+
+    if (opciones.length === 0) {
+      alert('No se pudieron generar equipos balanceados con los jugadores seleccionados.');
+      return;
+    }
+
+    opciones.sort((a, b) => a.diff - b.diff);
+    mostrarOpciones(opciones.slice(0, 5));
   }
 
-  const media = team => team.reduce((sum, p) => sum + p.rating, 0) / team.length;
-  const opciones = [];
+  function mostrarOpciones(opciones) {
+    const container = document.getElementById('teamsResult');
+    container.innerHTML = '';
 
-  // Generamos combinaciones aleatorias
-  const MAX_INTENTOS = 50;
-  let intentos = 0;
+    opciones.forEach((opt, idx) => {
+      const div = document.createElement('div');
+      div.className = 'team-option';
+      div.style.borderTop = '1px solid #ddd';
+      div.style.marginTop = '10px';
+      div.style.paddingTop = '10px';
 
-  while (opciones.length < 5 && intentos < MAX_INTENTOS) {
-    intentos++;
+      const title = document.createElement('h3');
+      title.textContent = `Opción ${idx + 1}`;
+      div.appendChild(title);
 
-    // Mezclar arrays
-    const shuffledPort = [...porteros].sort(() => Math.random() - 0.5);
-    const shuffledDef = [...defensas].sort(() => Math.random() - 0.5);
-    const shuffledDel = [...delanteros].sort(() => Math.random() - 0.5);
+      const ordenarPorPosicion = players => {
+        const posiciones = ['portero', 'defensa', 'delantero'];
+        return players.slice().sort((a, b) => posiciones.indexOf(a.position) - posiciones.indexOf(b.position));
+      };
 
-    // Formamos equipos
-    const equipoNegro = [
-      shuffledPort[0],
-      ...shuffledDef.slice(0, 3),
-      shuffledDel[0],
-      ...shuffledDef.slice(3, 5) // completamos hasta 7
-    ].slice(0, 7);
+      // Equipo Negro
+      const negroTitle = document.createElement('h4');
+      negroTitle.textContent = 'Negro';
+      div.appendChild(negroTitle);
 
-    const equipoBlanco = [
-      shuffledPort[1],
-      ...shuffledDef.slice(5),
-      shuffledDel[1],
-      ...shuffledDef.slice(3,5).filter(p => !equipoNegro.includes(p))
-    ].slice(0, 7);
+      const ulNegro = document.createElement('ul');
+      ordenarPorPosicion(opt.negro).forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+        ulNegro.appendChild(li);
+      });
+      div.appendChild(ulNegro);
 
-    // Evitar duplicados
-    const allIds = [...equipoNegro, ...equipoBlanco].map(p => p.id);
-    if (new Set(allIds).size !== 14) continue;
+      const mediaNegro = document.createElement('div');
+      mediaNegro.className = 'small';
+      mediaNegro.textContent = `Media: ${calcularMedia(opt.negro).toFixed(2)}`;
+      div.appendChild(mediaNegro);
 
-    // Guardamos la opción
-    opciones.push({
-      negro: equipoNegro,
-      blanco: equipoBlanco,
-      diff: Math.abs(media(equipoNegro) - media(equipoBlanco))
+      // Equipo Blanco
+      const blancoTitle = document.createElement('h4');
+      blancoTitle.textContent = 'Blanco';
+      div.appendChild(blancoTitle);
+
+      const ulBlanco = document.createElement('ul');
+      ordenarPorPosicion(opt.blanco).forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+        ulBlanco.appendChild(li);
+      });
+      div.appendChild(ulBlanco);
+
+      const mediaBlanco = document.createElement('div');
+      mediaBlanco.className = 'small';
+      mediaBlanco.textContent = `Media: ${calcularMedia(opt.blanco).toFixed(2)}`;
+      div.appendChild(mediaBlanco);
+
+      const diffDiv = document.createElement('div');
+      diffDiv.className = 'small';
+      diffDiv.textContent = `Diferencia de media: ${Math.abs(calcularMedia(opt.negro) - calcularMedia(opt.blanco)).toFixed(2)}`;
+      div.appendChild(diffDiv);
+
+      container.appendChild(div);
     });
   }
 
-  if (opciones.length === 0) {
-    alert('No se pudieron generar equipos balanceados con los jugadores seleccionados.');
-    return;
+  function calcularMedia(team) {
+    return team.reduce((sum, p) => sum + p.rating, 0) / team.length;
   }
 
-  // Ordenamos por menor diferencia de media
-  opciones.sort((a, b) => a.diff - b.diff);
-
-  // Mostramos hasta 5 opciones
-  mostrarOpciones(opciones.slice(0, 5));
-}
-
-function mostrarOpciones(opciones) {
-  const container = document.getElementById('teamsResult');
-  container.innerHTML = '';
-
-  opciones.forEach((opt, idx) => {
-    const div = document.createElement('div');
-    div.className = 'team-option';
-    div.style.borderTop = '1px solid #ddd';
-    div.style.marginTop = '10px';
-    div.style.paddingTop = '10px';
-
-    const title = document.createElement('h3');
-    title.textContent = `Opción ${idx + 1}`;
-    div.appendChild(title);
-
-    // Función auxiliar para ordenar jugadores por posición
-    const ordenarPorPosicion = players => {
-      const posiciones = ['portero', 'defensa', 'delantero'];
-      return players.slice().sort((a, b) => posiciones.indexOf(a.position) - posiciones.indexOf(b.position));
-    };
-
-    // Equipo Negro
-    const negroTitle = document.createElement('h4');
-    negroTitle.textContent = 'Negro';
-    div.appendChild(negroTitle);
-
-    const ulNegro = document.createElement('ul');
-    ordenarPorPosicion(opt.negro).forEach(p => {
-      const li = document.createElement('li');
-      li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-      ulNegro.appendChild(li);
-    });
-    div.appendChild(ulNegro);
-
-    const mediaNegro = document.createElement('div');
-    mediaNegro.className = 'small';
-    mediaNegro.textContent = `Media: ${calcularMedia(opt.negro).toFixed(2)}`;
-    div.appendChild(mediaNegro);
-
-    // Equipo Blanco
-    const blancoTitle = document.createElement('h4');
-    blancoTitle.textContent = 'Blanco';
-    div.appendChild(blancoTitle);
-
-    const ulBlanco = document.createElement('ul');
-    ordenarPorPosicion(opt.blanco).forEach(p => {
-      const li = document.createElement('li');
-      li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-      ulBlanco.appendChild(li);
-    });
-    div.appendChild(ulBlanco);
-
-    const mediaBlanco = document.createElement('div');
-    mediaBlanco.className = 'small';
-    mediaBlanco.textContent = `Media: ${calcularMedia(opt.blanco).toFixed(2)}`;
-    div.appendChild(mediaBlanco);
-
-    // Diferencia de medias
-    const diffDiv = document.createElement('div');
-    diffDiv.className = 'small';
-    diffDiv.textContent = `Diferencia de media: ${Math.abs(calcularMedia(opt.negro) - calcularMedia(opt.blanco)).toFixed(2)}`;
-    div.appendChild(diffDiv);
-
-    container.appendChild(div);
-  });
-}
-
-function calcularMedia(team) {
-  return team.reduce((sum, p) => sum + p.rating, 0) / team.length;
-}
-
-
-  // ------------------------
-  // GUARDAR EQUIPOS EN SUPABASE
-  // ------------------------
   async function saveTeamsToSupabase(teamA, teamB) {
     const user = await getCurrentUser();
     if (!user) return;
@@ -433,23 +374,10 @@ function calcularMedia(team) {
     return data;
   }
 
-  // ------------------------
-  // Util: cargar jugadores (expuesto para debugging)
-  // ------------------------
-  async function loadPlayersDebug() {
-    const rows = await loadPlayersFromSupabase();
-    console.log('remotePlayers', rows);
-  }
-
-  // ------------------------
-  // Exponer en window para debugging rápido (opcional)
-  // ------------------------
   window._supabase = supabase;
   window._localPlayers = localPlayers;
   window._remotePlayers = remotePlayers;
-  window.loadPlayersDebug = loadPlayersDebug;
-
-}); // DOMContentLoaded end
+});
 </script>
 
 </body>

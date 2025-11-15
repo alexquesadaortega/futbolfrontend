@@ -6,16 +6,16 @@
 <title>Fútbol 7 Generator (Supabase)</title>
 
 <style>
-  body { font-family: Arial, Helvetica, sans-serif; padding: 20px; background: #f3f4f6; color:#0f1724; }
-  h1 { margin-bottom: 6px; }
-  .box { background: #fff; padding: 14px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-  input, select, button { padding: 8px; margin:6px 4px 4px 0; border-radius:6px; border:1px solid #ddd; }
-  button { cursor:pointer; background:#06b6d4; color:#fff; border:none; }
-  button.secondary { background:#10b981; }
-  ul { padding-left: 18px; }
-  .small { font-size: 13px; color:#374151; }
-  .player-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
-  .player-row button { background:#ef4444; padding:6px 8px; }
+body { font-family: Arial, Helvetica, sans-serif; padding: 20px; background: #f3f4f6; color:#0f1724; }
+h1 { margin-bottom: 6px; }
+.box { background: #fff; padding: 14px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+input, select, button { padding: 8px; margin:6px 4px 4px 0; border-radius:6px; border:1px solid #ddd; }
+button { cursor:pointer; background:#06b6d4; color:#fff; border:none; }
+button.secondary { background:#10b981; }
+ul { padding-left: 18px; }
+.small { font-size: 13px; color:#374151; }
+.player-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+.player-row button { background:#ef4444; padding:6px 8px; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -23,7 +23,7 @@
 <body>
 
 <h1>Generador de Equipos Fútbol 7</h1>
-<p class="small">Conexión Supabase integrada.</p>
+<p class="small">Conexión Supabase integrada. Regístrate / inicia sesión y guarda tus jugadores en la nube.</p>
 
 <!-- AUTH -->
 <div class="box" id="authBox">
@@ -57,39 +57,27 @@
     <button id="btnAddPlayer" class="secondary">Agregar</button>
   </div>
 
-  <div id="playersListTitle" class="small" style="margin-top:8px">Jugadores guardados:</div>
+  <div id="playersListTitle" class="small" style="margin-top:8px">Jugadores guardados (tu cuenta):</div>
   <div id="playersList" style="margin-top:8px"></div>
 </div>
 
 <!-- GENERATE TEAMS -->
 <div class="box" id="generateBox" style="display:none;">
   <h2>Generar Equipos 7 vs 7</h2>
+  <p class="small">Se respetan mínimos: 1 portero / equipo, 3 defensas / equipo, 1 delantero / equipo. Rellena con otros hasta 7.</p>
   <button id="btnGenerateTeams" class="primary" style="margin:10px 0;">Generar equipos balanceados</button>
-
-  <div id="teamsResult" style="margin-top:15px;"></div>
-
-  <div style="display:flex;gap:20px;margin-top:12px">
-    <div style="flex:1">
-      <h3>Negro</h3>
-      <ul id="teamA"></ul>
-      <div id="avgA" class="small"></div>
-    </div>
-    <div style="flex:1">
-      <h3>Blanco</h3>
-      <ul id="teamB"></ul>
-      <div id="avgB" class="small"></div>
-    </div>
-  </div>
+  <div id="teamsArea" style="margin-top:15px;"></div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
+  const SUPABASE_KEY = 'TU_SUPABASE_KEY_AQUI';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let localPlayers = [];
   let remotePlayers = [];
+  let localIdCounter = 100000;
 
   const authMsg = document.getElementById('authMsg');
   const addPlayerBox = document.getElementById('addPlayerBox');
@@ -99,22 +87,29 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnRegister').addEventListener('click', registerUser);
   document.getElementById('btnLogin').addEventListener('click', loginUser);
   document.getElementById('btnAddPlayer').addEventListener('click', onAddPlayerClicked);
-  document.getElementById('btnGenerateTeams').addEventListener('click', onGenerateClicked);
+  document.getElementById('btnGenerateTeams').addEventListener('click', generateBalancedTeams);
 
   async function registerUser() {
     const email = document.getElementById('registerEmail').value.trim();
     const pass  = document.getElementById('registerPassword').value;
     if (!email || !pass) return alert('Introduce email y contraseña.');
-    const { error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) authMsg.textContent = error.message;
-    else authMsg.textContent = 'Registro enviado.';
+
+    authMsg.textContent = 'Registrando...';
+    const { data, error } = await supabase.auth.signUp({ email, password: pass });
+    if (error) { authMsg.textContent = error.message; console.error(error); return; }
+    authMsg.textContent = 'Registro enviado. Confirma tu email si es necesario.';
   }
 
   async function loginUser() {
     const email = document.getElementById('loginEmail').value.trim();
     const pass  = document.getElementById('loginPassword').value;
+    if (!email || !pass) return alert('Introduce email y contraseña.');
+
+    authMsg.textContent = 'Iniciando sesión...';
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) { authMsg.textContent = error.message; return; }
+    if (error) { authMsg.textContent = error.message; console.error(error); return; }
+
+    authMsg.textContent = 'Login correcto. Cargando datos...';
     await loadRemotePlayersAndShowUI();
   }
 
@@ -124,170 +119,128 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadRemotePlayersAndShowUI() {
+    const user = await getCurrentUser();
+    if (!user) { authMsg.textContent = 'No hay usuario'; return; }
+
     addPlayerBox.style.display = 'block';
     generateBox.style.display = 'block';
     document.getElementById('authBox').style.display = 'none';
 
     remotePlayers = await loadPlayersFromSupabase();
     renderPlayersList();
+    authMsg.textContent = `Conectado como ${user.email}`;
   }
 
   async function loadPlayersFromSupabase(){
     const user = await getCurrentUser();
     if (!user) return [];
-    const { data } = await supabase.from('players').select('*').eq('user_id', user.id);
-    return data.map(r => ({ id: r.id, name: r.name, position: r.position, rating: r.rating }));
+    const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('id', { ascending: true });
+    if (error) { console.error(error); return []; }
+    return data.map(row => ({ id: row.id, name: row.name, position: row.position, rating: row.rating }));
   }
 
   function renderPlayersList() {
     playersListEl.innerHTML = '';
-
     const list = [...remotePlayers, ...localPlayers];
     if (list.length === 0) {
-      playersListEl.innerHTML = '<div class="small">No hay jugadores.</div>';
+      playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
       return;
     }
+
+    const positionOrderMap = { portero: 0, defensa: 1, medio: 2, delantero: 3 };
+    list.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
 
     list.forEach(player => {
       const div = document.createElement('div');
       div.className = 'player-row';
-
       const cb = document.createElement('input');
       cb.type = 'checkbox';
-      cb.className = 'player-select';
+      cb.className = 'player-checkbox';
       cb.dataset.id = player.id;
-
+      cb.dataset.name = player.name;
+      cb.dataset.position = player.position;
+      cb.dataset.rating = player.rating;
       const span = document.createElement('span');
       span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
-
       div.appendChild(cb);
       div.appendChild(span);
       playersListEl.appendChild(div);
     });
   }
 
-  let localIdCounter = 100000;
-
   async function onAddPlayerClicked() {
     const name = document.getElementById('playerName').value.trim();
     const position = document.getElementById('playerPosition').value;
     const rating = parseFloat(document.getElementById('playerSkill').value);
 
+    if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
+        return alert("La media debe estar entre 1 y 10.");
+    }
+
     const user = await getCurrentUser();
     if (user) {
-      const { data } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
-      remotePlayers.push(data[0]);
+        const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
+        if (error) { console.error(error); alert('Error guardando en la nube'); return; }
+        remotePlayers.push({ id: data[0].id, name, position, rating });
     } else {
-      localIdCounter++;
-      localPlayers.push({ id: localIdCounter, name, position, rating });
+        localIdCounter++;
+        localPlayers.push({ id: localIdCounter, name, position, rating });
+    }
+    renderPlayersList();
+    document.getElementById('playerName').value = '';
+    document.getElementById('playerSkill').value = '';
+  }
+
+  function generateBalancedTeams() {
+    const selectedNodes = document.querySelectorAll(".player-checkbox:checked");
+    const selectedPlayers = Array.from(selectedNodes).map(cb => ({
+        id: cb.dataset.id,
+        name: cb.dataset.name,
+        position: cb.dataset.position,
+        rating: parseFloat(cb.dataset.rating)
+    }));
+
+    if (selectedPlayers.length < 2) {
+        alert("Selecciona al menos 2 jugadores.");
+        return;
     }
 
-    renderPlayersList();
-  }
+    const minPerPos = { portero:1, defensa:2, medio:2, delantero:1 };
+    for (const pos in minPerPos) {
+        const count = selectedPlayers.filter(p => p.position === pos).length;
+        if (count < minPerPos[pos]) {
+            alert(`Faltan ${minPerPos[pos]-count} jugadores en la posición: ${pos}`);
+            return;
+        }
+    }
 
-  // ------------------------------
-  // OBTENER JUGADORES MARCADOS
-  // ------------------------------
-  function getSelectedPlayers() {
-    const checkboxes = document.querySelectorAll('.player-select:checked');
-    const selected = [];
-
-    checkboxes.forEach(cb => {
-      const id = parseInt(cb.dataset.id);
-      const player =
-        remotePlayers.find(p => p.id == id) ||
-        localPlayers.find(p => p.id == id);
-      if (player) selected.push(player);
-    });
-
-    return selected;
-  }
-
-  // ------------------------------
-  // GENERAR EQUIPOS
-  // ------------------------------
-  function generateBalancedTeams(players) {
-    if (players.length < 14) return null;
-
-    const teamsize = 7;
-
-    const pos = {
-      portero: [],
-      defensa: [],
-      medio: [],
-      delantero: []
-    };
-
-    players.forEach(p => pos[p.position]?.push(p));
-
-    if (pos.portero.length < 2) return null;
-    if (pos.defensa.length < 6) return null;
-    if (pos.medio.length < 2) return null;
-    if (pos.delantero.length < 2) return null;
-
-    function shuffle(a) { return a.sort(() => Math.random() - 0.5); }
-
+    const shuffled = [...selectedPlayers].sort(() => Math.random() - 0.5);
     const teamA = [];
     const teamB = [];
+    const limits = {};
+    for (const pos in minPerPos) limits[pos] = Math.ceil(minPerPos[pos]/2);
+    const teamCount = { A:{...limits}, B:{...limits} };
 
-    function assign(positionArray, minCount) {
-      shuffle(positionArray);
-      const a = positionArray.slice(0, minCount);
-      const b = positionArray.slice(minCount, minCount * 2);
-      teamA.push(...a);
-      teamB.push(...b);
-      return positionArray.slice(minCount * 2);
+    for (const player of shuffled) {
+        const pos = player.position;
+        if (teamCount.A[pos] > 0) { teamA.push(player); teamCount.A[pos]--; }
+        else if (teamCount.B[pos] > 0) { teamB.push(player); teamCount.B[pos]--; }
+        else { (teamA.length <= teamB.length ? teamA : teamB).push(player); }
     }
 
-    let rest = [];
-    rest.push(...assign(pos.portero, 1));
-    rest.push(...assign(pos.defensa, 3));
-    rest.push(...assign(pos.medio, 1));
-    rest.push(...assign(pos.delantero, 1));
-
-    shuffle(rest);
-
-    while (teamA.length < teamsize) teamA.push(rest.pop());
-    while (teamB.length < teamsize) teamB.push(rest.pop());
-
-    return { teamA, teamB };
+    renderTeams(teamA, teamB);
   }
 
-  // ------------------------------
-  // CLICK EN GENERAR EQUIPOS
-  // ------------------------------
-  function onGenerateClicked() {
-    const players = getSelectedPlayers();
-
-    const result = generateBalancedTeams(players);
-    if (!result) {
-      alert("No se pudieron generar equipos con los jugadores seleccionados.");
-      return;
-    }
-
-    const { teamA, teamB } = result;
-
-    renderTeam("teamA", teamA);
-    renderTeam("teamB", teamB);
-
-    const avgA = teamA.reduce((a,b)=>a+b.rating,0)/7;
-    const avgB = teamB.reduce((a,b)=>a+b.rating,0)/7;
-
-    document.getElementById("avgA").textContent = "Media: " + avgA.toFixed(2);
-    document.getElementById("avgB").textContent = "Media: " + avgB.toFixed(2);
-  }
-
-  function renderTeam(id, team) {
-    const el = document.getElementById(id);
-    el.innerHTML = "";
-    team.forEach(p => {
-      const li = document.createElement("li");
-      li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-      el.appendChild(li);
-    });
+  function renderTeams(teamA, teamB) {
+    const area = document.getElementById("teamsArea");
+    area.innerHTML = `
+      <h3>Equipo Negro</h3>
+      <ul>${teamA.map(p => `<li>${p.name} - ${p.position}</li>`).join("")}</ul>
+      <h3>Equipo Blanco</h3>
+      <ul>${teamB.map(p => `<li>${p.name} - ${p.position}</li>`).join("")}</ul>
+    `;
   }
 });
 </script>
-
 </body>
 </html>

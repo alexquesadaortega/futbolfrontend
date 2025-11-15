@@ -184,35 +184,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let localIdCounter = 100000;
-  async function onAddPlayerClicked() {
-    const name = document.getElementById('playerName').value.trim();
-    const position = document.getElementById('playerPosition').value;
-    const rating = parseFloat(document.getElementById('playerSkill').value);
+  async function onGenerateTeamsClicked() {
+    const checkboxes = Array.from(document.querySelectorAll('.player-select'));
+    const selectedPlayers = checkboxes
+        .filter(cb => cb.checked)
+        .map(cb => {
+            const id = parseInt(cb.dataset.playerId);
+            return [...localPlayers, ...remotePlayers].find(p => p.id === id);
+        })
+        .filter(p => p !== undefined); // <-- FILTRO LOS UNDEFINED
 
-    if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
-        return alert("La media debe estar entre 1 y 10 (se permiten decimales).");
-    }
+    if (selectedPlayers.length < 14) return alert('Debes seleccionar al menos 14 jugadores.');
 
-    const user = await getCurrentUser();
-    if (user) {
-        const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
-        if (error) { console.error(error); alert('Error guardando en la nube'); return; }
+    const teams = generateBalancedTeams(selectedPlayers);
+    if (!teams) return alert('No se pudieron generar equipos con los jugadores seleccionados.');
 
-        remotePlayers.push({ id: data[0].id, name, position, rating });
-        renderPlayersList();
-        document.getElementById('playerName').value = '';
-        document.getElementById('playerSkill').value = '';
-        alert('Jugador guardado en Supabase.');
-    } else {
-        localIdCounter++;
-        const localPlayer = { id: localIdCounter, name, position, rating };
-        localPlayers.push(localPlayer);
-        renderPlayersList();
-        document.getElementById('playerName').value = '';
-        document.getElementById('playerSkill').value = '';
-        alert('Jugador añadido localmente (inicia sesión para guardarlo en la nube).');
-    }
-  }
+    const { teamA, teamB } = teams;
+
+    const teamAEl = document.getElementById('teamA');
+    const teamBEl = document.getElementById('teamB');
+    teamAEl.innerHTML = ''; teamBEl.innerHTML = '';
+
+    teamA.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position}) - ${p.rating}`; teamAEl.appendChild(li); });
+    teamB.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position}) - ${p.rating}`; teamBEl.appendChild(li); });
+
+    const avg = arr => (arr.reduce((sum,p)=>sum+p.rating,0)/arr.length).toFixed(2);
+    document.getElementById('avgA').textContent = `Media: ${avg(teamA)}`;
+    document.getElementById('avgB').textContent = `Media: ${avg(teamB)}`;
+}
 
   function generateBalancedTeams(players) {
     const teamSize = 7;

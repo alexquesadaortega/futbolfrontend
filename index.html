@@ -66,8 +66,12 @@
 <div class="box" id="generateBox" style="display:none;">
   <h2>Generar Equipos 7 vs 7</h2>
   <p class="small">Se respetan mínimos: 1 portero / equipo, 3 defensas / equipo, 1 delantero / equipo. Rellena con otros hasta 7.</p>
-  <button id="btnGenerate">Generar Equipos Balanceados (desde la nube)</button>
-  <button id="btnGenerateLocal" style="margin-left:8px">Generar con lista local (sin guardar)</button>
+    <!-- BOTÓN PARA GENERAR -->
+  <button id="btnGenerateTeams" class="primary" style="margin:10px 0;">Generar equipos balanceados</button>
+
+  <!-- DONDE SE VAN A MOSTRAR LOS EQUIPOS -->
+  <div id="teamsResult" style="margin-top:15px;"></div>
+
   <div style="display:flex;gap:20px;margin-top:12px">
     <div style="flex:1">
       <h3>Equipo A</h3>
@@ -185,6 +189,39 @@ document.addEventListener('DOMContentLoaded', () => {
       playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
       return;
     }
+        list.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'player-row';
+
+      // PASO 1: Checkbox para seleccionar jugadores
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'player-select';
+      cb.dataset.playerId = p.id;
+
+      // Nombre + posición
+      const label = document.createElement('span');
+      label.textContent = `${p.name} (${p.position})`;
+
+      div.appendChild(cb);
+      div.appendChild(label);
+      playersListEl.appendChild(div);
+    });
+}
+
+        list.forEach(player => {
+      playersListEl.innerHTML += `
+        <div class="player-item">
+          <input type="checkbox" class="select-player" data-id="${player.id}">
+          <span>${player.name} (${player.position}) - ${player.rating}</span>
+
+          <button class="editPlayerBtn" data-id="${player.id}">Editar</button>
+          <button class="deletePlayerBtn" data-id="${player.id}">Eliminar</button>
+        </div>
+      `;
+    });
+}
+
 
     // Mostrar con botón eliminar (si es remoto, eliminará en Supabase)
     list.forEach(p => {
@@ -211,6 +248,15 @@ document.addEventListener('DOMContentLoaded', () => {
       playersListEl.appendChild(div);
     });
   }
+function getSelectedPlayers(){
+  const selected = [];
+  document.querySelectorAll('.player-select:checked').forEach(cb => {
+    const id = Number(cb.dataset.playerId);
+    const p = remotePlayers.find(pl => pl.id === id);
+    if (p) selected.push(p);
+  });
+  return selected;
+}
 
   // ------------------------
   // AÑADIR JUGADOR (local y / o remoto)

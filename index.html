@@ -257,14 +257,10 @@ function getSelectedPlayers(){
       alert('Jugador añadido localmente (inicia sesión para guardarlo en la nube).');
     }
   }
-
- // -----------------------------
-// GENERAR EQUIPOS BALANCEADOS
-// -----------------------------
+  
 // ------------------------
 // GENERAR EQUIPOS BALANCEADOS
 // ------------------------
-document.getElementById('btnGenerateTeams').addEventListener('click', generateBalancedTeams);
 
 function generateBalancedTeams() {
   const selectedIds = Array.from(document.querySelectorAll('.player-select:checked'))

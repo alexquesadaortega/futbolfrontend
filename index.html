@@ -214,46 +214,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function generateBalancedTeams(players) {
-    const teamSize = 7;
-    const positions = { Portero: [], Defensa: [], Delantero: [] };
+  function generateBalancedTeamsVariations(players, numVariations = 50) {
+    const validTeams = [];
 
-    players.forEach(p => {
-      const pos = p.position.charAt(0).toUpperCase() + p.position.slice(1);
-      if (positions[pos]) positions[pos].push(p);
-    });
-
-    if (positions.Portero.length < 2 || positions.Defensa.length < 6 || positions.Delantero.length < 2) return null;
-
-    const teamA = [], teamB = [];
-    function assignAlternating(arr) {
-      arr.sort(() => Math.random() - 0.5);
-      arr.forEach((player, i) => {
-        if (teamA.length < teamSize && teamB.length < teamSize) {
-          i % 2 === 0 ? teamA.push(player) : teamB.push(player);
-        } else if (teamA.length < teamSize) teamA.push(player);
-        else teamB.push(player);
-      });
+    for (let v = 0; v < numVariations; v++) {
+        const teams = generateBalancedTeams(players);
+        if (teams) {
+            const avgA = teams.teamA.reduce((sum, p) => sum + p.rating, 0) / teams.teamA.length;
+            const avgB = teams.teamB.reduce((sum, p) => sum + p.rating, 0) / teams.teamB.length;
+            const diff = Math.abs(avgA - avgB);
+            validTeams.push({ ...teams, diff });
+        }
     }
 
-    assignAlternating(positions.Portero);
-    assignAlternating(positions.Defensa);
-    assignAlternating(positions.Delantero);
+    validTeams.sort((a, b) => a.diff - b.diff); // las más equilibradas al principio
+    return validTeams.slice(0, 5);
+}
 
-    // rellenar con cualquier jugador restante
-    const allAssigned = [...teamA, ...teamB];
-    const remaining = players.filter(p => !allAssigned.includes(p));
-    assignAlternating(remaining);
-
-    if (teamA.length !== 7 || teamB.length !== 7) return null;
-
-    return { teamA, teamB };
-  }
-
-  async function onGenerateTeamsClicked() {
+async function onGenerateTeamsClicked() {
    const checkboxes = Array.from(document.querySelectorAll('.player-select'));
    const allPlayers = [...localPlayers, ...remotePlayers];
- 
+
    const selectedPlayers = checkboxes
      .filter(cb => cb.checked)
      .map(cb => {
@@ -266,34 +247,51 @@ document.addEventListener('DOMContentLoaded', () => {
      return alert('Debes seleccionar al menos 14 jugadores válidos.');
    }
 
-   const teams = generateBalancedTeams(selectedPlayers);
-   if (!teams) {
-     return alert('No se pudieron generar equipos con los jugadores seleccionados.');
-   }
+   const topTeams = generateBalancedTeamsVariations(selectedPlayers, 100); // probamos 100 variaciones
 
-   const { teamA, teamB } = teams;
+   const teamsResultEl = document.getElementById('teamsResult');
+   teamsResultEl.innerHTML = '';
 
-   const teamAEl = document.getElementById('teamA');
-   const teamBEl = document.getElementById('teamB');
-   teamAEl.innerHTML = '';
-   teamBEl.innerHTML = '';
+   topTeams.forEach((t, index) => {
+       const div = document.createElement('div');
+       div.style.marginBottom = '20px';
 
-   teamA.forEach(p => {
-     const li = document.createElement('li');
-     li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-     teamAEl.appendChild(li);
+       const h4 = document.createElement('h4');
+       h4.textContent = `Opción ${index + 1} (diferencia de media: ${t.diff.toFixed(2)})`;
+       div.appendChild(h4);
+
+       const flex = document.createElement('div');
+       flex.style.display = 'flex';
+       flex.style.gap = '20px';
+
+       const createTeamList = (team, title) => {
+           const container = document.createElement('div');
+           container.style.flex = '1';
+           const h3 = document.createElement('h5');
+           h3.textContent = title;
+           container.appendChild(h3);
+           const ul = document.createElement('ul');
+           team.forEach(p => {
+               const li = document.createElement('li');
+               li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
+               ul.appendChild(li);
+           });
+           container.appendChild(ul);
+           const avg = (arr) => (arr.reduce((sum, p) => sum + p.rating, 0) / arr.length).toFixed(2);
+           const avgDiv = document.createElement('div');
+           avgDiv.className = 'small';
+           avgDiv.textContent = `Media: ${avg(team)}`;
+           container.appendChild(avgDiv);
+           return container;
+       };
+
+       flex.appendChild(createTeamList(t.teamA, 'Negro'));
+       flex.appendChild(createTeamList(t.teamB, 'Blanco'));
+
+       div.appendChild(flex);
+       teamsResultEl.appendChild(div);
    });
-
-   teamB.forEach(p => {
-     const li = document.createElement('li');
-     li.textContent = `${p.name} (${p.position}) - ${p.rating}`;
-     teamBEl.appendChild(li);
-   });
-
-   const avg = arr => (arr.reduce((sum, p) => sum + p.rating, 0) / arr.length).toFixed(2);
-   document.getElementById('avgA').textContent = `Media: ${avg(teamA)}`;
-   document.getElementById('avgB').textContent = `Media: ${avg(teamB)}`;
- }
+}
 
 
   window._supabase = supabase;

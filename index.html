@@ -1,26 +1,9 @@
-Entendido. El error anterior era que el algoritmo simplemente repartía "uno para ti, uno para mí" sin bloquear primero los huecos obligatorios.
-
-Para arreglar esto, he cambiado la lógica a un sistema de **"Cupos Obligatorios + Relleno"**.
-
-### ¿Cómo funciona ahora el algoritmo?
-
-1.  **Validación estricta:** Antes de empezar, comprueba si tienes **mínimo 2 porteros, 6 defensas y 2 delanteros** en total entre los jugadores seleccionados. Si no los tienes, te avisará y no generará equipos rotos.
-2.  **Asignación Blindada:**
-      * Primero, coge obligatoriamente **1 portero** para cada equipo.
-      * Luego, coge obligatoriamente **3 defensas** para cada equipo.
-      * Luego, coge obligatoriamente **1 delantero** para cada equipo.
-3.  **Relleno (Flex):** Todos los jugadores que sobran (los que no entraron en los cupos obligatorios) se mezclan en una bolsa común y se reparten equitativamente hasta llegar a 7 jugadores por equipo.
-4.  **Balanceo:** Repite esto cientos de veces y te da las 5 opciones donde la media de calidad sea más parecida.
-
-Aquí tienes el código completo corregido:
-
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fútbol 7 Pro - Logic Fix</title>
+<title>Fútbol 7 Pro - No Duplicados</title>
 
 <style>
   :root { --primary: #06b6d4; --secondary: #10b981; --bg: #f3f4f6; --text: #1f2937; }
@@ -140,8 +123,8 @@ Aquí tienes el código completo corregido:
 
   <div class="box">
     <h2>Generar Opciones</h2>
-    <p class="small">Requisitos estrictos por equipo: <strong>1 Portero, 3 Defensas, 1 Delantero</strong> (mínimo). El resto (2) se rellenan con los sobrantes.</p>
-    <button id="btnGenerateTeams" class="primary">🎲 Generar 5 Opciones</button>
+    <p class="small">Requisitos: <strong>1 Portero, 3 Defensas, 1 Delantero</strong> (mínimo). Se rellenan con sobrantes.</p>
+    <button id="btnGenerateTeams" class="primary">🎲 Generar 5 Opciones Únicas</button>
     <div id="generateError" class="error-msg"></div>
 
     <div id="teamsResult" style="margin-top:20px;"></div>
@@ -247,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- LÓGICA DE GENERACIÓN ESTRICTA ---
+  // --- LÓGICA DE GENERACIÓN ---
   function generateTeamOptions() {
     generateError.textContent = '';
     const checks = document.querySelectorAll('.p-select:checked');
@@ -256,40 +239,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (pool.length < 14) return generateError.textContent = 'Selecciona al menos 14 jugadores.';
 
-    // 1. VALIDACIÓN PREVIA DE REQUISITOS
     const countPos = (pos) => pool.filter(p => p.position === pos).length;
     const nGK = countPos('portero');
     const nDef = countPos('defensa');
     const nFwd = countPos('delantero');
 
-    if (nGK < 2) return generateError.textContent = `Faltan porteros. Tienes ${nGK}, necesitas mínimo 2.`;
-    if (nDef < 6) return generateError.textContent = `Faltan defensas. Tienes ${nDef}, necesitas mínimo 6 (3 por equipo).`;
-    if (nFwd < 2) return generateError.textContent = `Faltan delanteros. Tienes ${nFwd}, necesitas mínimo 2 (1 por equipo).`;
+    if (nGK < 2) return generateError.textContent = `Faltan porteros. Tienes ${nGK}, mín 2.`;
+    if (nDef < 6) return generateError.textContent = `Faltan defensas. Tienes ${nDef}, mín 6.`;
+    if (nFwd < 2) return generateError.textContent = `Faltan delanteros. Tienes ${nFwd}, mín 2.`;
 
-    // 2. GENERAR VARIACIONES
     let variations = [];
-    for(let i=0; i<200; i++) { // Intentamos 200 veces
+    const seenHashes = new Set(); // Para evitar duplicados
+
+    // Aumentamos los intentos para asegurar encontrar 5 distintas
+    for(let i=0; i<500; i++) { 
         const attempt = createStrictVariation(pool);
-        if(attempt) variations.push(attempt);
+        if(!attempt) continue;
+
+        // Crear Huella Digital Única
+        // 1. Obtener IDs ordenados de cada equipo
+        const idsA = attempt.teamA.map(p => p.num_id || p.id).sort().join('-');
+        const idsB = attempt.teamB.map(p => p.num_id || p.id).sort().join('-');
+        
+        // 2. Ordenar los dos equipos para que A vs B sea igual a B vs A
+        const matchHash = [idsA, idsB].sort().join('::');
+
+        if(seenHashes.has(matchHash)) {
+            continue; // Si ya existe esta combinación exacta, saltar
+        }
+
+        seenHashes.add(matchHash);
+        variations.push(attempt);
     }
 
-    // Ordenar por equilibrio
     variations.sort((a, b) => a.diff - b.diff);
     const top5 = variations.slice(0, 5);
     
-    if (top5.length === 0) return generateError.textContent = "Error inesperado generando combinaciones.";
+    if (top5.length === 0) return generateError.textContent = "No se encontraron combinaciones válidas.";
     
     displayOptions(top5);
   }
 
   function createStrictVariation(originalPool) {
-    // Clonamos para no afectar el original
-    // Creamos bolsas separadas
     const gks = originalPool.filter(p => p.position === 'portero');
     const defs = originalPool.filter(p => p.position === 'defensa');
     const fwds = originalPool.filter(p => p.position === 'delantero');
 
-    // Función barajar
     const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
 
     const s_gks = shuffle(gks);
@@ -299,32 +294,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const teamA = [];
     const teamB = [];
 
-    // --- FASE 1: ASIGNACIÓN OBLIGATORIA (Cupos) ---
-    
-    // 1 GK por equipo
-    teamA.push(s_gks.pop());
-    teamB.push(s_gks.pop());
-
-    // 3 DEFs por equipo
+    // FASE 1: OBLIGATORIOS
+    teamA.push(s_gks.pop()); teamB.push(s_gks.pop());
     for(let k=0; k<3; k++) teamA.push(s_defs.pop());
     for(let k=0; k<3; k++) teamB.push(s_defs.pop());
+    teamA.push(s_fwds.pop()); teamB.push(s_fwds.pop());
 
-    // 1 FWD por equipo
-    teamA.push(s_fwds.pop());
-    teamB.push(s_fwds.pop());
-
-    // --- FASE 2: RELLENO (Fillers) ---
-    // Juntamos TODO lo que sobró en una bolsa común
+    // FASE 2: RELLENO
     const leftovers = [...s_gks, ...s_defs, ...s_fwds];
     const s_leftovers = shuffle(leftovers);
-
-    // Repartimos hasta llenar (se asume que queremos 7 vs 7)
-    // Actualmente TeamA y TeamB tienen 5 jugadores cada uno (1+3+1). Faltan 2.
     
     while(teamA.length < 7 && s_leftovers.length > 0) teamA.push(s_leftovers.pop());
     while(teamB.length < 7 && s_leftovers.length > 0) teamB.push(s_leftovers.pop());
 
-    // Calcular stats
     const getSum = t => t.reduce((acc, c) => acc + c.rating, 0);
     const avgA = getSum(teamA) / teamA.length;
     const avgB = getSum(teamB) / teamB.length;
@@ -370,7 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderTeamList(team) {
-    // Ordenar lista para visualización: GK, DEF, FWD
     const order = { portero:0, defensa:1, delantero:2 };
     const sorted = [...team].sort((a,b) => order[a.position] - order[b.position]);
     return sorted.map(p => `<li><span>${p.name}</span><span class="pos-mini">${p.position.substring(0,3)}</span></li>`).join('');
@@ -381,23 +362,19 @@ document.addEventListener('DOMContentLoaded', () => {
     cleanTokens(fieldA); cleanTokens(fieldB);
     
     // Coordenadas fijas para la estructura 1-3-1 + 2 libres
-    // Los libres se colocan en el medio campo
     const posCoords = {
         portero: [{x:155, y:450}],
-        defensa: [{x:50, y:350}, {x:155, y:350}, {x:260, y:350}, {x:80, y:300}, {x:230, y:300}], // extras van un poco mas adelante
-        delantero: [{x:155, y:100}, {x:100, y:150}, {x:210, y:150}] // extras van un poco mas atras
+        defensa: [{x:50, y:350}, {x:155, y:350}, {x:260, y:350}, {x:80, y:300}, {x:230, y:300}], 
+        delantero: [{x:155, y:100}, {x:100, y:150}, {x:210, y:150}] 
     };
 
     const place = (team, div, color) => {
-      // Clonamos las coordenas disponibles para ir gastándolas
       const currentCoords = JSON.parse(JSON.stringify(posCoords));
-      
       team.forEach(p => {
         let spot;
         if (currentCoords[p.position] && currentCoords[p.position].length > 0) {
             spot = currentCoords[p.position].shift();
         } else {
-            // Si hay exceso de una posición (ej: 4 defensas), va al medio
             spot = {x: 155 + (Math.random()*40 - 20), y: 220 + (Math.random()*40 - 20)};
         }
         createToken(p, div, color, spot.x, spot.y);
@@ -437,4 +414,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-```

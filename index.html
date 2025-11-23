@@ -31,6 +31,64 @@
     user-select:none;
   }
   .player-dot:active { cursor:grabbing; }
+
+  .football-field {
+  position: relative;
+  width: 350px;
+  height: 550px;
+  background: #1f8b4c;
+  border: 4px solid #fff;
+  border-radius: 10px;
+  margin: 0 auto;
+}
+
+/* Línea central */
+.football-field::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #fff;
+  transform: translateY(-50%);
+}
+
+/* Círculo central */
+.football-field::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Área portero izquierda */
+.football-field .goal-area-left {
+  position: absolute;
+  left: 0;
+  top: 180px;
+  width: 70px;
+  height: 190px;
+  border: 2px solid #fff;
+  border-left: none;
+}
+
+/* Área portero derecha */
+.football-field .goal-area-right {
+  position: absolute;
+  right: 0;
+  top: 180px;
+  width: 70px;
+  height: 190px;
+  border: 2px solid #fff;
+  border-right: none;
+}
+
 </style>
 
 <!-- Supabase CDN (v2) -->
@@ -89,11 +147,11 @@
     <div style="display:flex; gap:20px; justify-content:center;">
       <div>
         <h3 style="text-align:center;">Negro</h3>
-        <div id="fieldA" style="position:relative;width:350px;height:550px;background:#1f8b4c;border:4px solid #fff;border-radius:10px;"></div>
+        <div id="fieldA" class="football-field"></div>
       </div>
       <div>
         <h3 style="text-align:center;">Blanco</h3>
-        <div id="fieldB" style="position:relative;width:350px;height:550px;background:#1f8b4c;border:4px solid #fff;border-radius:10px;"></div>
+        <div id="fieldB" class="football-field"></div>
       </div>
     </div>
   </div>
@@ -342,63 +400,134 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function placePlayersOnField(teamA, teamB) {
-    const basePositions = [
-        { x: 140, y: 480 }, { x: 40,  y: 360 }, { x: 140, y: 330 },
-        { x: 240, y: 360 }, { x: 80,  y: 200 }, { x: 200, y: 200 },
-        { x: 140, y: 80 }
-    ];
-    fieldA.innerHTML = "";
-    fieldB.innerHTML = "";
+    const fieldA = document.getElementById("fieldA");
+    const fieldB = document.getElementById("fieldB");
 
+    const basePositions = [
+        { x: 140, y: 480 }, // Portero
+        { x: 40,  y: 360 }, // Defensa izq
+        { x: 140, y: 330 }, // Defensa centro
+        { x: 240, y: 360 }, // Defensa der
+        { x: 80,  y: 200 }, // Medio izq
+        { x: 200, y: 200 }, // Medio der
+        { x: 140, y: 80 }   // Delantero
+    ];
+
+// solo eliminar los jugadores
+fieldA.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
+fieldB.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
+
+
+    function createPlayerEl(player, color, spot, container) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "player-dot-wrapper";
+        wrapper.style.position = "absolute";
+        wrapper.style.left = spot.x + "px";
+        wrapper.style.top = spot.y + "px";
+        wrapper.style.textAlign = "center";
+        wrapper.style.cursor = "grab";
+
+        // Imagen de camiseta
+        const img = document.createElement("img");
+        img.src = color === "negra" ? "camiseta_negra.png" : "camiseta_blanca.png";
+        img.style.width = "60px";
+        img.style.height = "60px";
+        wrapper.appendChild(img);
+
+        // Nombre debajo
+        const name = document.createElement("div");
+        name.textContent = player.name;
+        name.style.fontSize = "12px";
+        name.style.marginTop = "4px";
+        wrapper.appendChild(name);
+
+        makeDraggableWithSnap(wrapper, container);
+        container.appendChild(wrapper);
+    }
+
+    // TEAM A – Negro
     teamA.forEach((player, i) => {
-        const pos = basePositions[i % basePositions.length];
-        const div = document.createElement("div");
-        div.className = "player-dot";
-        div.textContent = player.name;
-        div.style.left = pos.x + "px";
-        div.style.top = pos.y + "px";
-        makeDraggableWithSnap(div, fieldA);
-        fieldA.appendChild(div);
+        const spot = basePositions[i % basePositions.length];
+        createPlayerEl(player, "negra", spot, fieldA);
     });
 
+    // TEAM B – Blanco
     teamB.forEach((player, i) => {
-        const pos = basePositions[i % basePositions.length];
-        const div = document.createElement("div");
-        div.className = "player-dot";
-        div.textContent = player.name;
-        div.style.left = pos.x + "px";
-        div.style.top = pos.y + "px";
-        makeDraggableWithSnap(div, fieldB);
-        fieldB.appendChild(div);
+        const spot = basePositions[i % basePositions.length];
+        createPlayerEl(player, "blanca", spot, fieldB);
     });
 
     document.getElementById("fieldBox").style.display = "block";
-  }
+}
+  function setupFieldLines(field) {
+    const leftArea = document.createElement("div");
+    leftArea.className = "goal-area-left";
+    field.appendChild(leftArea);
+
+    const rightArea = document.createElement("div");
+    rightArea.className = "goal-area-right";
+    field.appendChild(rightArea);
+}
+
+// Llamadas para ambos campos
+setupFieldLines(document.getElementById("fieldA"));
+setupFieldLines(document.getElementById("fieldB"));
+
 
   function makeDraggableWithSnap(el, container) {
-    el.onmousedown = function (e) {
-      el.style.zIndex = 9999;
-      const shiftX = e.clientX - el.getBoundingClientRect().left;
-      const shiftY = e.clientY - el.getBoundingClientRect().top;
+    el.onmousedown = function(e) {
+        e.preventDefault();
+        el.style.zIndex = 9999;
 
-      function moveAt(pageX, pageY) {
-        el.style.left = (pageX - shiftX - container.getBoundingClientRect().left) + "px";
-        el.style.top  = (pageY - shiftY - container.getBoundingClientRect().top) + "px";
-      }
+        const rect = container.getBoundingClientRect();
+        const offsetX = e.clientX - el.getBoundingClientRect().left;
+        const offsetY = e.clientY - el.getBoundingClientRect().top;
 
-      function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
-      document.addEventListener("mousemove", onMouseMove);
+        function moveAt(pageX, pageY) {
+          let newX = pageX - rect.left - offsetX;
+          let newY = pageY - rect.top - offsetY;
 
-      el.onmouseup = function () {
-        document.removeEventListener("mousemove", onMouseMove);
-        const snapSize = 40;
-        el.style.left = Math.round(parseInt(el.style.left) / snapSize) * snapSize + "px";
-        el.style.top  = Math.round(parseInt(el.style.top) / snapSize) * snapSize + "px";
-        el.onmouseup = null;
-      };
+          // Limitar dentro del contenedor
+          newX = Math.max(0, Math.min(newX, container.clientWidth - el.offsetWidth));
+          newY = Math.max(0, Math.min(newY, container.clientHeight - el.offsetHeight));
+
+         // Snap durante arrastre
+         const snapSize = 40;
+         newX = Math.round(newX / snapSize) * snapSize;
+         newY = Math.round(newY / snapSize) * snapSize;
+
+         el.style.left = newX + "px";
+         el.style.top = newY + "px";
+    }
+
+
+        function onMouseMove(e) {
+            moveAt(e.pageX, e.pageY);
+        }
+
+        document.addEventListener("mousemove", onMouseMove);
+
+        el.onmouseup = function() {
+            document.removeEventListener("mousemove", onMouseMove);
+            el.onmouseup = null;
+
+            // Snap a cuadrícula
+            const snapSize = 40;
+            let left = parseInt(el.style.left);
+            let top = parseInt(el.style.top);
+            left = Math.round(left / snapSize) * snapSize;
+            top = Math.round(top / snapSize) * snapSize;
+
+            // Limitar nuevamente al contenedor
+            left = Math.max(0, Math.min(left, container.clientWidth - el.offsetWidth));
+            top = Math.max(0, Math.min(top, container.clientHeight - el.offsetHeight));
+
+            el.style.left = left + "px";
+            el.style.top = top + "px";
+        };
     };
     el.ondragstart = () => false;
-  }
+}
 
 });
 </script>

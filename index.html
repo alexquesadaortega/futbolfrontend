@@ -16,24 +16,21 @@
   .small { font-size: 13px; color:#374151; }
   .player-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
   .player-row button { background:#ef4444; padding:6px 8px; }
-.player-dot {
-  position:absolute;
-  width:70px;
-  height:30px;
-  background:white;
-  border-radius:12px;
-  text-align:center;
-  line-height:30px;
-  cursor:grab;
-  font-size:13px;
-  font-weight:bold;
-  box-shadow:0 0 6px rgba(0,0,0,0.5);
-  user-select:none;
-}
-.player-dot:active {
-  cursor:grabbing;
-}
-
+  .player-dot {
+    position:absolute;
+    width:70px;
+    height:30px;
+    background:white;
+    border-radius:12px;
+    text-align:center;
+    line-height:30px;
+    cursor:grab;
+    font-size:13px;
+    font-weight:bold;
+    box-shadow:0 0 6px rgba(0,0,0,0.5);
+    user-select:none;
+  }
+  .player-dot:active { cursor:grabbing; }
 </style>
 
 <!-- Supabase CDN (v2) -->
@@ -86,31 +83,19 @@
   <button id="btnGenerateTeams" class="primary" style="margin:10px 0;">Generar equipos balanceados</button>
 
   <div id="teamsResult" style="margin-top:15px;"></div>
+
   <div id="fieldBox" class="box" style="margin-top:20px; display:none;">
     <h2>Campo (alineación editable)</h2>
-
     <div style="display:flex; gap:20px; justify-content:center;">
-
-  <!-- Campo equipo NEGRO -->
-  <div>
-    <h3 style="text-align:center;">Negro</h3>
-    <div id="fieldA"
-      style="position:relative;width:350px;height:550px;background:#1f8b4c;
-             border:4px solid #fff;border-radius:10px;">
+      <div>
+        <h3 style="text-align:center;">Negro</h3>
+        <div id="fieldA" style="position:relative;width:350px;height:550px;background:#1f8b4c;border:4px solid #fff;border-radius:10px;"></div>
+      </div>
+      <div>
+        <h3 style="text-align:center;">Blanco</h3>
+        <div id="fieldB" style="position:relative;width:350px;height:550px;background:#1f8b4c;border:4px solid #fff;border-radius:10px;"></div>
+      </div>
     </div>
-  </div>
-
-  <!-- Campo equipo BLANCO -->
-  <div>
-    <h3 style="text-align:center;">Blanco</h3>
-    <div id="fieldB"
-      style="position:relative;width:350px;height:550px;background:#1f8b4c;
-             border:4px solid #fff;border-radius:10px;">
-    </div>
-  </div>
-
-</div>
-
   </div>
 
   <div id="selectedLineup" class="box" style="margin-top:20px; display:none;">
@@ -125,21 +110,8 @@
        <ul id="selectedB"></ul>
      </div>
    </div>
- </div>
-
-
-  <div style="display:flex;gap:20px;margin-top:12px">
-    <div style="flex:1">
-      <h3>Negro</h3>
-      <ul id="teamA"></ul>
-      <div id="avgA" class="small"></div>
-    </div>
-    <div style="flex:1">
-      <h3>Blanco</h3>
-      <ul id="teamB"></ul>
-      <div id="avgB" class="small"></div>
-    </div>
   </div>
+
 </div>
 
 <script>
@@ -150,11 +122,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let localPlayers = [];
   let remotePlayers = [];
+  let localIdCounter = 100000;
 
   const authMsg = document.getElementById('authMsg');
   const addPlayerBox = document.getElementById('addPlayerBox');
   const generateBox = document.getElementById('generateBox');
   const playersListEl = document.getElementById('playersList');
+  const fieldA = document.getElementById("fieldA");
+  const fieldB = document.getElementById("fieldB");
 
   document.getElementById('btnRegister').addEventListener('click', registerUser);
   document.getElementById('btnLogin').addEventListener('click', loginUser);
@@ -165,7 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = document.getElementById('registerEmail').value.trim();
     const pass  = document.getElementById('registerPassword').value;
     if (!email || !pass) return alert('Introduce email y contraseña.');
-
     authMsg.textContent = 'Registrando...';
     const { data, error } = await supabase.auth.signUp({ email, password: pass });
     if (error) { authMsg.textContent = error.message; console.error(error); return; }
@@ -176,11 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = document.getElementById('loginEmail').value.trim();
     const pass  = document.getElementById('loginPassword').value;
     if (!email || !pass) return alert('Introduce email y contraseña.');
-
     authMsg.textContent = 'Iniciando sesión...';
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
     if (error) { authMsg.textContent = error.message; console.error(error); return; }
-
     authMsg.textContent = 'Login correcto. Cargando datos...';
     await loadRemotePlayersAndShowUI();
   }
@@ -193,11 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadRemotePlayersAndShowUI() {
     const user = await getCurrentUser();
     if (!user) { authMsg.textContent = 'No hay usuario'; return; }
-
     addPlayerBox.style.display = 'block';
     generateBox.style.display = 'block';
     document.getElementById('authBox').style.display = 'none';
-
     remotePlayers = await loadPlayersFromSupabase();
     renderPlayersList();
     authMsg.textContent = `Conectado como ${user.email}`;
@@ -213,41 +183,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderPlayersList() {
     playersListEl.innerHTML = '';
-
     const list = [...remotePlayers, ...localPlayers];
-
     if (list.length === 0) {
       playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
       return;
     }
-
     const positionOrderMap = { portero: 0, defensa: 1, delantero: 2 };
     list.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
-
     list.forEach(player => {
       const div = document.createElement('div');
       div.className = 'player-row';
-
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.className = 'player-select';
       cb.dataset.playerId = player.num_id;
-
       const span = document.createElement('span');
       span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
-
       div.appendChild(cb);
       div.appendChild(span);
       playersListEl.appendChild(div);
     });
   }
 
-  let localIdCounter = 100000;
   async function onAddPlayerClicked() {
     const name = document.getElementById('playerName').value.trim();
     const position = document.getElementById('playerPosition').value;
     const rating = parseFloat(document.getElementById('playerSkill').value);
-
     if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
         return alert("La media debe estar entre 1 y 10 (se permiten decimales).");
     }
@@ -256,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (user) {
         const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
         if (error) { console.error(error); alert('Error guardando en la nube'); return; }
-
         remotePlayers.push({ id: data[0].id, name, position, rating });
         renderPlayersList();
         document.getElementById('playerName').value = '';
@@ -264,8 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Jugador guardado en Supabase.');
     } else {
         localIdCounter++;
-        const localPlayer = { id: localIdCounter, name, position, rating };
-        localPlayers.push(localPlayer);
+        localPlayers.push({ id: localIdCounter, num_id: localIdCounter, name, position, rating });
         renderPlayersList();
         document.getElementById('playerName').value = '';
         document.getElementById('playerSkill').value = '';
@@ -276,12 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function generateBalancedTeams(players) {
     const teamSize = 7;
     const positions = { Portero: [], Defensa: [], Delantero: [] };
-
     players.forEach(p => {
       const pos = p.position.charAt(0).toUpperCase() + p.position.slice(1);
       if (positions[pos]) positions[pos].push(p);
     });
-
     if (positions.Portero.length < 2 || positions.Defensa.length < 6 || positions.Delantero.length < 2) return null;
 
     const teamA = [], teamB = [];
@@ -294,24 +251,19 @@ document.addEventListener('DOMContentLoaded', () => {
         else teamB.push(player);
       });
     }
-
     assignAlternating(positions.Portero);
     assignAlternating(positions.Defensa);
     assignAlternating(positions.Delantero);
-
-    // rellenar con cualquier jugador restante
     const allAssigned = [...teamA, ...teamB];
     const remaining = players.filter(p => !allAssigned.includes(p));
     assignAlternating(remaining);
 
     if (teamA.length !== 7 || teamB.length !== 7) return null;
-
     return { teamA, teamB };
   }
 
   function generateBalancedTeamsVariations(players, numVariations = 50) {
     const validTeams = [];
-
     for (let v = 0; v < numVariations; v++) {
         const teams = generateBalancedTeams(players);
         if (teams) {
@@ -321,45 +273,34 @@ document.addEventListener('DOMContentLoaded', () => {
             validTeams.push({ ...teams, diff });
         }
     }
-
-    validTeams.sort((a, b) => a.diff - b.diff); // las más equilibradas al principio
+    validTeams.sort((a, b) => a.diff - b.diff);
     return validTeams.slice(0, 5);
-}
+  }
 
-async function onGenerateTeamsClicked() {
-   const checkboxes = Array.from(document.querySelectorAll('.player-select'));
-   const allPlayers = [...localPlayers, ...remotePlayers];
+  async function onGenerateTeamsClicked() {
+    const checkboxes = Array.from(document.querySelectorAll('.player-select'));
+    const allPlayers = [...localPlayers, ...remotePlayers];
+    const selectedPlayers = checkboxes.filter(cb => cb.checked)
+      .map(cb => allPlayers.find(p => p.num_id === parseInt(cb.dataset.playerId)))
+      .filter(p => p !== undefined);
+    if (selectedPlayers.length < 14) return alert('Debes seleccionar al menos 14 jugadores válidos.');
 
-   const selectedPlayers = checkboxes
-     .filter(cb => cb.checked)
-     .map(cb => {
-       const id = parseInt(cb.dataset.playerId);
-       return allPlayers.find(p => p.num_id === id);
-     })
-     .filter(p => p !== undefined);
+    const topTeams = generateBalancedTeamsVariations(selectedPlayers, 100);
+    const teamsResultEl = document.getElementById('teamsResult');
+    teamsResultEl.innerHTML = '';
 
-   if (selectedPlayers.length < 14) {
-     return alert('Debes seleccionar al menos 14 jugadores válidos.');
-   }
+    topTeams.forEach((t, index) => {
+      const div = document.createElement('div');
+      div.style.marginBottom = '20px';
+      const h4 = document.createElement('h4');
+      h4.textContent = `Opción ${index + 1} (diferencia de media: ${t.diff.toFixed(2)})`;
+      div.appendChild(h4);
 
-   const topTeams = generateBalancedTeamsVariations(selectedPlayers, 100); // probamos 100 variaciones
+      const flex = document.createElement('div');
+      flex.style.display = 'flex';
+      flex.style.gap = '20px';
 
-   const teamsResultEl = document.getElementById('teamsResult');
-   teamsResultEl.innerHTML = '';
-
-   topTeams.forEach((t, index) => {
-       const div = document.createElement('div');
-       div.style.marginBottom = '20px';
-
-       const h4 = document.createElement('h4');
-       h4.textContent = `Opción ${index + 1} (diferencia de media: ${t.diff.toFixed(2)})`;
-       div.appendChild(h4);
-
-       const flex = document.createElement('div');
-       flex.style.display = 'flex';
-       flex.style.gap = '20px';
-
-       const btnSelect = document.createElement('button');
+      const btnSelect = document.createElement('button');
       btnSelect.textContent = "Seleccionar esta opción";
       btnSelect.style.marginTop = "10px";
       btnSelect.addEventListener("click", () => {
@@ -367,178 +308,97 @@ async function onGenerateTeamsClicked() {
           placePlayersOnField(t.teamA, t.teamB);
       });
       div.appendChild(btnSelect);
-      const createTeamList = (team, title) => {
+
+      function createTeamList(team, title) {
            const container = document.createElement('div');
            container.style.flex = '1';
            const h3 = document.createElement('h5');
            h3.textContent = title;
            container.appendChild(h3);
            const ul = document.createElement('ul');
-           team.forEach(p => {
-               const li = document.createElement('li');
-               li.textContent = `${p.name} (${p.position})`;
-               ul.appendChild(li);
-           });
+           team.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position})`; ul.appendChild(li); });
            container.appendChild(ul);
            const avg = (arr) => (arr.reduce((sum, p) => sum + p.rating, 0) / arr.length).toFixed(2);
-           const avgDiv = document.createElement('div');
-           avgDiv.className = 'small';
-           avgDiv.textContent = `Media: ${avg(team)}`;
+           const avgDiv = document.createElement('div'); avgDiv.className = 'small'; avgDiv.textContent = `Media: ${avg(team)}`;
            container.appendChild(avgDiv);
            return container;
-       };
+      }
 
-       flex.appendChild(createTeamList(t.teamA, 'Negro'));
-       flex.appendChild(createTeamList(t.teamB, 'Blanco'));
+      flex.appendChild(createTeamList(t.teamA, 'Negro'));
+      flex.appendChild(createTeamList(t.teamB, 'Blanco'));
+      div.appendChild(flex);
+      teamsResultEl.appendChild(div);
+    });
+  }
 
-       div.appendChild(flex);
-       teamsResultEl.appendChild(div);
-   });
-}
   function showSelectedLineup(teamA, teamB) {
     const box = document.getElementById("selectedLineup");
     const ulA = document.getElementById("selectedA");
     const ulB = document.getElementById("selectedB");
-
-    ulA.innerHTML = "";
-    ulB.innerHTML = "";
-
-    teamA.forEach(p => {
-        const li = document.createElement("li");
-        li.textContent = `${p.name} (${p.position})`;
-        ulA.appendChild(li);
-    });
-
-    teamB.forEach(p => {
-        const li = document.createElement("li");
-        li.textContent = `${p.name} (${p.position})`;
-        ulB.appendChild(li);
-    });
-
+    ulA.innerHTML = ""; ulB.innerHTML = "";
+    teamA.forEach(p => { const li = document.createElement("li"); li.textContent = `${p.name} (${p.position})`; ulA.appendChild(li); });
+    teamB.forEach(p => { const li = document.createElement("li"); li.textContent = `${p.name} (${p.position})`; ulB.appendChild(li); });
     box.style.display = "block";
-}
+  }
 
-
-
-  window._supabase = supabase;
-  window._localPlayers = localPlayers;
-  window._remotePlayers = remotePlayers;
-});
-<script>
-function placePlayersOnField(teamA, teamB) {
-    const fieldA = document.getElementById("footballFieldA");
-    const fieldB = document.getElementById("footballFieldB");
-
+  function placePlayersOnField(teamA, teamB) {
     const basePositions = [
-        { x: 140, y: 480 }, // Portero
-        { x: 40,  y: 360 }, // Defensa izq
-        { x: 140, y: 330 }, // Defensa centro
-        { x: 240, y: 360 }, // Defensa der
-        { x: 80,  y: 200 }, // Medio izq
-        { x: 200, y: 200 }, // Medio der
-        { x: 140, y: 80 }   // Delantero
+        { x: 140, y: 480 }, { x: 40,  y: 360 }, { x: 140, y: 330 },
+        { x: 240, y: 360 }, { x: 80,  y: 200 }, { x: 200, y: 200 },
+        { x: 140, y: 80 }
     ];
-
-    // Limpiar campos antes de colocar jugadores
     fieldA.innerHTML = "";
     fieldB.innerHTML = "";
 
-    // TEAM A – Negro
     teamA.forEach((player, i) => {
-        const spot = basePositions[i % basePositions.length];
+        const pos = basePositions[i % basePositions.length];
         const div = document.createElement("div");
         div.className = "player-dot";
         div.textContent = player.name;
-
-        div.style.left = spot.x + "px";
-        div.style.top  = spot.y + "px";
-
+        div.style.left = pos.x + "px";
+        div.style.top = pos.y + "px";
         makeDraggableWithSnap(div, fieldA);
         fieldA.appendChild(div);
     });
 
-    // TEAM B – Blanco
     teamB.forEach((player, i) => {
-        const spot = basePositions[i % basePositions.length];
+        const pos = basePositions[i % basePositions.length];
         const div = document.createElement("div");
         div.className = "player-dot";
         div.textContent = player.name;
-
-        div.style.left = spot.x + "px";
-        div.style.top  = spot.y + "px";
-
+        div.style.left = pos.x + "px";
+        div.style.top = pos.y + "px";
         makeDraggableWithSnap(div, fieldB);
         fieldB.appendChild(div);
     });
 
     document.getElementById("fieldBox").style.display = "block";
-}
+  }
 
-// Drag & Drop simple
-function makeDraggable(el) {
+  function makeDraggableWithSnap(el, container) {
     el.onmousedown = function (e) {
-        el.style.zIndex = 9999;
+      el.style.zIndex = 9999;
+      const shiftX = e.clientX - el.getBoundingClientRect().left;
+      const shiftY = e.clientY - el.getBoundingClientRect().top;
 
-        const shiftX = e.clientX - el.getBoundingClientRect().left;
-        const shiftY = e.clientY - el.getBoundingClientRect().top;
+      function moveAt(pageX, pageY) {
+        el.style.left = (pageX - shiftX - container.getBoundingClientRect().left) + "px";
+        el.style.top  = (pageY - shiftY - container.getBoundingClientRect().top) + "px";
+      }
 
-        function moveAt(pageX, pageY) {
-            el.style.left = pageX - shiftX + "px";
-            el.style.top  = pageY - shiftY + "px";
-        }
+      function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+      document.addEventListener("mousemove", onMouseMove);
 
-        function onMouseMove(e) {
-            moveAt(e.pageX, e.pageY);
-        }
-
-        document.addEventListener("mousemove", onMouseMove);
-
-        el.onmouseup = function () {
-            document.removeEventListener("mousemove", onMouseMove);
-            el.onmouseup = null;
-        };
+      el.onmouseup = function () {
+        document.removeEventListener("mousemove", onMouseMove);
+        const snapSize = 40;
+        el.style.left = Math.round(parseInt(el.style.left) / snapSize) * snapSize + "px";
+        el.style.top  = Math.round(parseInt(el.style.top) / snapSize) * snapSize + "px";
+        el.onmouseup = null;
+      };
     };
-
     el.ondragstart = () => false;
-}
+  }
 
-// Drag & Drop con SNAP
-function makeDraggableWithSnap(el, container) {
-    el.onmousedown = function (e) {
-        el.style.zIndex = 9999;
-
-        const shiftX = e.clientX - el.getBoundingClientRect().left;
-        const shiftY = e.clientY - el.getBoundingClientRect().top;
-
-        function moveAt(pageX, pageY) {
-            el.style.left = (pageX - shiftX - container.getBoundingClientRect().left) + "px";
-            el.style.top  = (pageY - shiftY - container.getBoundingClientRect().top) + "px";
-        }
-
-        function onMouseMove(e) {
-            moveAt(e.pageX, e.pageY);
-        }
-
-        document.addEventListener("mousemove", onMouseMove);
-
-        el.onmouseup = function () {
-            document.removeEventListener("mousemove", onMouseMove);
-
-            // SNAP
-            const snapSize = 40; // tamaño de cuadrícula
-            const x = parseInt(el.style.left);
-            const y = parseInt(el.style.top);
-
-            el.style.left = Math.round(x / snapSize) * snapSize + "px";
-            el.style.top  = Math.round(y / snapSize) * snapSize + "px";
-
-            el.onmouseup = null;
-        };
-    };
-
-    el.ondragstart = () => false;
-}
+});
 </script>
-
-</body>
-</html>

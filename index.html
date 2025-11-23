@@ -34,13 +34,16 @@
 
   .football-field {
   position: relative;
-  width: 350px;
-  height: 550px;
+  width: 350px;       /* ancho fijo */
+  height: 550px;      /* alto fijo */
   background: #1f8b4c;
   border: 4px solid #fff;
   border-radius: 10px;
   margin: 0 auto;
+  box-sizing: border-box; /* importante para que padding y border no cambien la posición */
+  overflow: hidden;        /* evita que jugadores salgan del campo */
 }
+
 
 /* Área portero superior */
 .football-field .goal-area-top {
@@ -455,27 +458,28 @@ const fieldLines = [
 function getLinePositionsForPosition(position, numPlayers, containerWidth) {
     const positions = [];
     const midX = containerWidth / 2;
+    const dotWidth = 70; // ancho del jugador
     let spacing = 0;
 
     switch(position) {
         case 'portero':
-            return [{ x: midX, y: 480 }];
+            return [{ x: midX - dotWidth/2, y: 480 }]; // centrado
         case 'defensa':
             spacing = 60;
             for(let i = 0; i < numPlayers; i++) {
-                positions.push({ x: midX + (i - (numPlayers-1)/2)*spacing, y: 360 });
+                positions.push({ x: midX - dotWidth/2 + (i - (numPlayers-1)/2)*spacing, y: 360 });
             }
             break;
         case 'medio':
             spacing = 50;
             for(let i = 0; i < numPlayers; i++) {
-                positions.push({ x: midX + (i - (numPlayers-1)/2)*spacing, y: 220 });
+                positions.push({ x: midX - dotWidth/2 + (i - (numPlayers-1)/2)*spacing, y: 220 });
             }
             break;
         case 'delantero':
             spacing = 50;
             for(let i = 0; i < numPlayers; i++) {
-                positions.push({ x: midX + (i - (numPlayers-1)/2)*spacing, y: 80 });
+                positions.push({ x: midX - dotWidth/2 + (i - (numPlayers-1)/2)*spacing, y: 80 });
             }
             break;
     }
@@ -537,14 +541,14 @@ fieldB.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
     }
 
    function placeTeamOnField(team, color, field) {
-    // Agrupar por posición
     const grouped = { portero: [], defensa: [], medio: [], delantero: [] };
-    team.forEach(p => { if(grouped[p.position]) grouped[p.position].push(p); });
+    team.forEach(p => {
+        if(grouped[p.position]) grouped[p.position].push(p);
+    });
 
     Object.keys(grouped).forEach(pos => {
         const players = grouped[pos];
         if(players.length === 0) return;
-
         const slots = getLinePositionsForPosition(pos, players.length, field.clientWidth);
         players.forEach((player, i) => {
             createPlayerEl(player, color, slots[i], field);
@@ -559,25 +563,39 @@ placeTeamOnField(teamB, "blanca", fieldB);
     document.getElementById("fieldBox").style.display = "block";
 }
   function setupFieldLines(field) {
+    // Limpiar el campo primero
+    field.innerHTML = '';
+
     // Área portero superior
     const topArea = document.createElement("div");
-    topArea.className = "goal-area-top";
+    topArea.style.position = "absolute";
+    topArea.style.top = "0";
+    topArea.style.left = "0";
+    topArea.style.width = "100%";
+    topArea.style.height = "70px";
+    topArea.style.border = "2px solid #fff";
+    topArea.style.borderTop = "none";
     field.appendChild(topArea);
 
     // Área portero inferior
     const bottomArea = document.createElement("div");
-    bottomArea.className = "goal-area-bottom";
+    bottomArea.style.position = "absolute";
+    bottomArea.style.bottom = "0";
+    bottomArea.style.left = "0";
+    bottomArea.style.width = "100%";
+    bottomArea.style.height = "70px";
+    bottomArea.style.border = "2px solid #fff";
+    bottomArea.style.borderBottom = "none";
     field.appendChild(bottomArea);
 
-    // Línea central vertical
+    // Línea central horizontal
     const midLine = document.createElement("div");
     midLine.style.position = "absolute";
-    midLine.style.left = "50%";
-    midLine.style.top = "0";
-    midLine.style.width = "2px";
-    midLine.style.height = "100%";
+    midLine.style.top = "50%";
+    midLine.style.left = "0";
+    midLine.style.width = "100%";
+    midLine.style.height = "2px";
     midLine.style.background = "#fff";
-    midLine.style.transform = "translateX(-50%)";
     field.appendChild(midLine);
 
     // Círculo central

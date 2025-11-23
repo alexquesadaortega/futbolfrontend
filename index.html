@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fútbol 7 Generator (Supabase)</title>
+<title>Fútbol 7 Generator</title>
 
 <style>
   body { font-family: Arial, Helvetica, sans-serif; padding: 20px; background: #f3f4f6; color:#0f1724; }
@@ -436,32 +436,32 @@ const fieldLines = [
 
     function getSlotsY(containerHeight) {
     return [
-        { y: 60, slots: 5 },    // Delanteros
-        { y: 160, slots: 5 },   // Medios
-        { y: 360, slots: 5 },   // Defensas
-        { y: 480, slots: 1 }    // Portero
+        { y: 60, slots: 1 },    // Delantero (arriba)
+        { y: 160, slots: 2 },   // Medios
+        { y: 320, slots: 3 },   // Defensas
+        { y: 480, slots: 1 }    // Portero (abajo)
     ];
 }
 
 function getSlotPositions(line, containerWidth) {
     const positions = [];
     const midX = containerWidth / 2;
-    const spacing = 50; // distancia horizontal entre slots
 
     if (line.slots === 1) {
-        positions.push({ x: midX });
+        positions.push({ x: midX, y: line.y });
     } else if (line.slots === 2) {
-        positions.push({ x: midX - spacing });
-        positions.push({ x: midX + spacing });
-    } else if (line.slots === 5) {
-        positions.push({ x: midX });                // centro
-        positions.push({ x: midX - spacing });     // izquierda 1
-        positions.push({ x: midX - 2*spacing });   // izquierda 2
-        positions.push({ x: midX + spacing });     // derecha 1
-        positions.push({ x: midX + 2*spacing });   // derecha 2
+        const spacing = 50;
+        positions.push({ x: midX - spacing, y: line.y });
+        positions.push({ x: midX + spacing, y: line.y });
+    } else if (line.slots === 3) {
+        const spacing = 60;
+        positions.push({ x: midX, y: line.y });
+        positions.push({ x: midX - spacing, y: line.y });
+        positions.push({ x: midX + spacing, y: line.y });
     }
-    return positions.map(pos => ({ x: pos.x, y: line.y }));
+    return positions;
 }
+
 
 
 // solo eliminar los jugadores
@@ -502,13 +502,14 @@ fieldB.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
 
     lines.forEach(line => {
         const slots = getSlotPositions(line, field.clientWidth);
-        slots.forEach(slot => {
+        for (let i = 0; i < slots.length; i++) {
             if (playerIndex >= team.length) return;
-            createPlayerEl(team[playerIndex], color, slot, field);
+            createPlayerEl(team[playerIndex], color, slots[i], field);
             playerIndex++;
-        });
+        }
     });
 }
+
 
 placeTeamOnField(teamA, "negra", fieldA);
 placeTeamOnField(teamB, "blanca", fieldB);
@@ -535,7 +536,7 @@ setupFieldLines(document.getElementById("fieldB"));
     let offsetX, offsetY;
     let isDragging = false;
 
-    const snapSize = 20; // tamaño del snap (puedes ajustar)
+    const snapSize = 10; // tamaño del snap (puedes ajustar)
 
     const startDrag = (clientX, clientY) => {
         const rect = el.getBoundingClientRect();

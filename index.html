@@ -3,396 +3,457 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fútbol 7 Generator</title>
+<title>Fútbol 7 Generator Pro</title>
 
 <style>
-  body { font-family: Arial, Helvetica, sans-serif; padding: 20px; background: #f3f4f6; color:#0f1724; }
-  h1 { margin-bottom: 6px; }
-  .box { background: #fff; padding: 14px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-  input, select, button { padding: 8px; margin:6px 4px 4px 0; border-radius:6px; border:1px solid #ddd; }
-  button { cursor:pointer; background:#06b6d4; color:#fff; border:none; }
-  button.secondary { background:#10b981; }
-  ul { padding-left: 18px; }
-  .small { font-size: 13px; color:#374151; }
-  .player-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
-  .player-row button { background:#ef4444; padding:6px 8px; }
+  :root { --primary: #06b6d4; --secondary: #10b981; --bg: #f3f4f6; --text: #1f2937; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: var(--bg); color: var(--text); max-width: 1000px; margin: 0 auto; }
+  
+  h1, h2, h3 { margin-top: 0; color: #111827; }
+  .box { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  
+  /* Inputs y Botones */
+  input, select { padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #d1d5db; width: 100%; box-sizing: border-box; }
+  .row-inputs { display: flex; gap: 10px; }
+  
+  button { padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: opacity 0.2s; width: 100%; margin-top: 10px; }
+  button:hover { opacity: 0.9; }
+  button.primary { background: var(--primary); color: #fff; }
+  button.secondary { background: var(--secondary); color: #fff; }
+  button.danger { background: #ef4444; color: #fff; width: auto; padding: 4px 10px; font-size: 12px; margin: 0; }
 
+  /* Listas */
+  .player-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+  .player-info { display: flex; align-items: center; gap: 10px; }
+  .tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; }
+  .tag.portero { background: #fef3c7; color: #d97706; }
+  .tag.defensa { background: #d1fae5; color: #059669; }
+  .tag.delantero { background: #fee2e2; color: #dc2626; }
+
+  /* CAMPO DE FÚTBOL CSS */
+  .field-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
   .football-field {
     position: relative;
     width: 350px; 
-    height: 550px; 
-    background: url('imagen-campo.jpg') no-repeat center center;
-    background-size: cover;
-    border: 4px solid #fff;
-    border-radius: 10px;
-    margin: 0 auto;
-    box-sizing: border-box;
+    height: 500px; 
+    background-color: #4ca153;
+    background-image: linear-gradient(0deg, transparent 24%, rgba(255,255,255,.3) 25%, rgba(255,255,255,.3) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.3) 75%, rgba(255,255,255,.3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,.3) 25%, rgba(255,255,255,.3) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.3) 75%, rgba(255,255,255,.3) 76%, transparent 77%, transparent);
+    background-size: 50px 50px;
+    border: 5px solid #fff;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+    overflow: hidden;
+    user-select: none;
   }
+  /* Líneas del campo */
+  .field-line-center { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.8); }
+  .field-circle { position: absolute; top: 50%; left: 50%; width: 80px; height: 80px; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); }
+  .area-top { position: absolute; top: 0; left: 50%; width: 160px; height: 80px; border: 2px solid rgba(255,255,255,0.8); border-top: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
+  .area-bottom { position: absolute; bottom: 0; left: 50%; width: 160px; height: 80px; border: 2px solid rgba(255,255,255,0.8); border-bottom: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
+
+  /* Fichas Jugadores */
+  .player-token {
+    position: absolute;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: bold;
+    cursor: grab;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    z-index: 10;
+    transition: transform 0.1s;
+  }
+  .player-token:active { cursor: grabbing; transform: scale(1.1); z-index: 20; }
+  .token-black { background: #1f2937; color: white; }
+  .token-white { background: #f9fafb; color: #1f2937; border-color: #1f2937; }
+  
+  .player-label {
+    position: absolute;
+    bottom: -16px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.7); color: #fff;
+    padding: 1px 4px; border-radius: 3px;
+    font-size: 9px; white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .hidden { display: none; }
+  .small { font-size: 0.85rem; color: #6b7280; }
 </style>
 
-<!-- Supabase CDN (v2) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<h1>Generador de Equipos Fútbol 7</h1>
-<p class="small">Conexión Supabase integrada. Regístrate / inicia sesión y guarda tus jugadores en la nube.</p>
+<h1>⚽ Generador de Equipos F7</h1>
 
-<!-- AUTH -->
 <div class="box" id="authBox">
-  <h2>Registro</h2>
-  <input id="registerEmail" placeholder="Email">
-  <input id="registerPassword" type="password" placeholder="Contraseña">
-  <button id="btnRegister">Registrar</button>
-
-  <hr>
-
-  <h2>Login</h2>
-  <input id="loginEmail" placeholder="Email">
-  <input id="loginPassword" type="password" placeholder="Contraseña">
-  <button id="btnLogin">Login</button>
-
-  <div id="authMsg" class="small" style="margin-top:8px;color:#6b7280"></div>
+  <h2>Acceso</h2>
+  <p class="small">Guarda tus jugadores en la nube.</p>
+  <div class="row-inputs">
+    <input id="authEmail" placeholder="Email">
+    <input id="authPassword" type="password" placeholder="Contraseña">
+  </div>
+  <div class="row-inputs">
+    <button id="btnLogin" class="primary">Iniciar Sesión</button>
+    <button id="btnRegister" class="secondary">Registrarse</button>
+  </div>
+  <div id="authMsg" class="small" style="margin-top:10px;"></div>
 </div>
 
-<!-- ADD PLAYER -->
-<div class="box" id="addPlayerBox" style="display:none;">
-  <h2>Añadir jugador</h2>
-  <div class="player-row">
-    <input id="playerName" placeholder="Nombre" style="flex:1">
-    <select id="playerPosition">
-      <option value="portero">Portero</option>
-      <option value="defensa">Defensa</option>
-      <option value="delantero">Delantero</option>
-    </select>
-    <input id="playerSkill" type="number" placeholder="Media (1-10)" min="1" max="10" step="0.1">
-    <button id="btnAddPlayer" class="secondary">Agregar</button>
+<div id="appContent" class="hidden">
+  
+  <div class="box">
+    <h2>Añadir Jugador</h2>
+    <div class="row-inputs">
+      <input id="playerName" placeholder="Nombre" style="flex: 2;">
+      <select id="playerPosition" style="flex: 1;">
+        <option value="portero">Portero</option>
+        <option value="defensa">Defensa</option>
+        <option value="delantero">Delantero</option>
+      </select>
+      <input id="playerSkill" type="number" placeholder="Media (1-10)" min="1" max="10" step="0.1" style="flex: 1;">
+    </div>
+    <button id="btnAddPlayer" class="secondary">Guardar Jugador</button>
+
+    <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+    
+    <h3>Lista de Jugadores <span id="playerCount" class="small"></span></h3>
+    <div id="playersList"></div>
   </div>
 
-  <div id="playersListTitle" class="small" style="margin-top:8px">Jugadores guardados (tu cuenta):</div>
-  <div id="playersList" style="margin-top:8px"></div>
-</div>
+  <div class="box">
+    <h2>Generar Partido</h2>
+    <p class="small">Selecciona al menos 14 jugadores arriba.</p>
+    <button id="btnGenerateTeams" class="primary">⚖️ Generar Equipos Balanceados</button>
 
-<!-- GENERATE TEAMS -->
-<div class="box" id="generateBox" style="display:none;">
-  <h2>Generar Equipos 7 vs 7</h2>
-  <p class="small">Se respetan mínimos: 1 portero / equipo, 3 defensas / equipo, 1 delantero / equipo. Rellena con otros hasta 7.</p>
-  <button id="btnGenerateTeams" class="primary" style="margin:10px 0;">Generar equipos balanceados</button>
+    <div id="teamsResult"></div>
+  </div>
 
-  <div id="teamsResult" style="margin-top:15px;"></div>
-
-  <div id="fieldBox" class="box" style="margin-top:20px; display:none;">
-    <h2>Campo (alineación editable)</h2>
-    <div style="display:flex; gap:20px; justify-content:center;">
+  <div id="fieldSection" class="box hidden">
+    <h2>Pizarra Táctica (Drag & Drop)</h2>
+    <p class="small">Arrastra los círculos para ajustar la posición.</p>
+    
+    <div class="field-container">
       <div>
-        <h3 style="text-align:center;">Negro</h3>
-        <div id="fieldA" class="football-field"></div>
+        <h3 style="text-align:center;">Equipo Negro</h3>
+        <div id="fieldA" class="football-field">
+            <div class="field-line-center"></div>
+            <div class="field-circle"></div>
+            <div class="area-top"></div>
+            <div class="area-bottom"></div>
+        </div>
       </div>
+      
       <div>
-        <h3 style="text-align:center;">Blanco</h3>
-        <div id="fieldB" class="football-field"></div>
+        <h3 style="text-align:center;">Equipo Blanco</h3>
+        <div id="fieldB" class="football-field">
+            <div class="field-line-center"></div>
+            <div class="field-circle"></div>
+            <div class="area-top"></div>
+            <div class="area-bottom"></div>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div id="selectedLineup" class="box" style="margin-top:20px; display:none;">
-   <h2>Alineación seleccionada</h2>
-   <div style="display:flex;gap:20px;">
-     <div style="flex:1">
-       <h3>Negro</h3>
-       <ul id="selectedA"></ul>
-     </div>
-     <div style="flex:1">
-       <h3>Blanco</h3>
-       <ul id="selectedB"></ul>
-     </div>
-   </div>
   </div>
 
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // CONFIGURACIÓN SUPABASE (Nota: Para producción, usa variables de entorno)
   const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
+  let supabase;
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch (e) {
+    console.error("Error init Supabase", e);
+  }
 
-  let localPlayers = [];
-  let remotePlayers = [];
-  let localIdCounter = 100000;
+  // ESTADO
+  let allPlayers = [];
+  let currentUser = null;
 
+  // ELEMENTOS DOM
+  const authBox = document.getElementById('authBox');
+  const appContent = document.getElementById('appContent');
   const authMsg = document.getElementById('authMsg');
-  const addPlayerBox = document.getElementById('addPlayerBox');
-  const generateBox = document.getElementById('generateBox');
   const playersListEl = document.getElementById('playersList');
-  const fieldA = document.getElementById("fieldA");
-  const fieldB = document.getElementById("fieldB");
+  const fieldA = document.getElementById('fieldA');
+  const fieldB = document.getElementById('fieldB');
 
-  document.getElementById('btnRegister').addEventListener('click', registerUser);
-  document.getElementById('btnLogin').addEventListener('click', loginUser);
-  document.getElementById('btnAddPlayer').addEventListener('click', onAddPlayerClicked);
-  document.getElementById('btnGenerateTeams').addEventListener('click', onGenerateTeamsClicked);
+  // LISTENERS
+  document.getElementById('btnRegister').addEventListener('click', () => handleAuth('signup'));
+  document.getElementById('btnLogin').addEventListener('click', () => handleAuth('signin'));
+  document.getElementById('btnAddPlayer').addEventListener('click', addPlayer);
+  document.getElementById('btnGenerateTeams').addEventListener('click', generateTeams);
 
-  async function registerUser() {
-    const email = document.getElementById('registerEmail').value.trim();
-    const pass  = document.getElementById('registerPassword').value;
-    if (!email || !pass) return alert('Introduce email y contraseña.');
-    authMsg.textContent = 'Registrando...';
-    const { data, error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) { authMsg.textContent = error.message; console.error(error); return; }
-    authMsg.textContent = 'Registro enviado. Confirma tu email si es necesario.';
-  }
+  // AUTH
+  async function handleAuth(type) {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    if (!email || !password) return showMsg('Rellena email y contraseña');
 
-  async function loginUser() {
-    const email = document.getElementById('loginEmail').value.trim();
-    const pass  = document.getElementById('loginPassword').value;
-    if (!email || !pass) return alert('Introduce email y contraseña.');
-    authMsg.textContent = 'Iniciando sesión...';
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) { authMsg.textContent = error.message; console.error(error); return; }
-    authMsg.textContent = 'Login correcto. Cargando datos...';
-    await loadRemotePlayersAndShowUI();
-  }
-
-  async function getCurrentUser(){
-    const res = await supabase.auth.getUser();
-    return res?.data?.user || null;
-  }
-
-  async function loadRemotePlayersAndShowUI() {
-    const user = await getCurrentUser();
-    if (!user) { authMsg.textContent = 'No hay usuario'; return; }
-    addPlayerBox.style.display = 'block';
-    generateBox.style.display = 'block';
-    document.getElementById('authBox').style.display = 'none';
-    remotePlayers = await loadPlayersFromSupabase();
-    renderPlayersList();
-    authMsg.textContent = `Conectado como ${user.email}`;
-  }
-
-  async function loadPlayersFromSupabase(){
-    const user = await getCurrentUser();
-    if (!user) return [];
-    const { data, error } = await supabase.from('players').select('*').eq('user_id', user.id).order('num_id', { ascending: true });
-    if (error) { console.error(error); return []; }
-    return data.map(row => ({ id: row.id, num_id: row.num_id, name: row.name, position: row.position, rating: row.rating }));
-  }
-
-  function renderPlayersList() {
-    playersListEl.innerHTML = '';
-    const list = [...remotePlayers, ...localPlayers];
-    if (list.length === 0) {
-      playersListEl.innerHTML = '<div class="small">No hay jugadores todavía.</div>';
-      return;
+    showMsg('Procesando...');
+    let res;
+    if (type === 'signup') {
+      res = await supabase.auth.signUp({ email, password });
+    } else {
+      res = await supabase.auth.signInWithPassword({ email, password });
     }
-    const positionOrderMap = { portero: 0, defensa: 1, delantero: 2 };
-    list.sort((a, b) => positionOrderMap[a.position] - positionOrderMap[b.position]);
-    list.forEach(player => {
+
+    if (res.error) {
+      showMsg('Error: ' + res.error.message);
+    } else {
+      currentUser = res.data.user;
+      showMsg('¡Éxito! Cargando...');
+      initApp();
+    }
+  }
+
+  function showMsg(txt) { authMsg.textContent = txt; }
+
+  async function initApp() {
+    authBox.style.display = 'none';
+    appContent.classList.remove('hidden');
+    await loadPlayers();
+  }
+
+  // LOGICA JUGADORES
+  async function loadPlayers() {
+    if (!currentUser) return;
+    const { data, error } = await supabase
+      .from('players')
+      .select('*')
+      .eq('user_id', currentUser.id);
+    
+    if (error) {
+      console.error(error); 
+      // Modo local si falla la DB
+      allPlayers = allPlayers.length ? allPlayers : [];
+    } else {
+      allPlayers = data || [];
+    }
+    renderList();
+  }
+
+  async function addPlayer() {
+    const name = document.getElementById('playerName').value.trim();
+    const position = document.getElementById('playerPosition').value;
+    const rating = parseFloat(document.getElementById('playerSkill').value);
+
+    if (!name || !rating) return alert('Faltan datos');
+    if (rating < 1 || rating > 10) return alert('Media entre 1 y 10');
+
+    const newPlayer = {
+      user_id: currentUser.id,
+      name, 
+      position,
+      rating,
+      num_id: Date.now() // ID temporal
+    };
+
+    // Guardar en Supabase
+    const { data, error } = await supabase.from('players').insert([newPlayer]).select();
+    
+    if (error) {
+      alert('Error guardando en nube, guardando localmente.');
+      allPlayers.push(newPlayer);
+    } else {
+      if(data && data.length) allPlayers.push(data[0]);
+    }
+
+    document.getElementById('playerName').value = '';
+    renderList();
+  }
+
+  function renderList() {
+    playersListEl.innerHTML = '';
+    document.getElementById('playerCount').textContent = `(${allPlayers.length})`;
+
+    // Ordenar: Portero > Defensa > Delantero
+    const order = { portero: 1, defensa: 2, delantero: 3 };
+    const sorted = [...allPlayers].sort((a,b) => order[a.position] - order[b.position]);
+
+    sorted.forEach(p => {
       const div = document.createElement('div');
       div.className = 'player-row';
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'player-select';
-      cb.dataset.playerId = player.num_id;
-      const span = document.createElement('span');
-      span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
-      div.appendChild(cb);
-      div.appendChild(span);
+      div.innerHTML = `
+        <div class="player-info">
+          <input type="checkbox" class="p-select" checked value="${p.num_id || p.id}">
+          <strong>${p.name}</strong>
+          <span class="tag ${p.position}">${p.position}</span>
+        </div>
+        <span>${p.rating}</span>
+      `;
       playersListEl.appendChild(div);
     });
   }
 
-  async function onAddPlayerClicked() {
-    const name = document.getElementById('playerName').value.trim();
-    const position = document.getElementById('playerPosition').value;
-    const rating = parseFloat(document.getElementById('playerSkill').value);
-    if (!name || !position || isNaN(rating) || rating < 1 || rating > 10) {
-        return alert("La media debe estar entre 1 y 10 (se permiten decimales).");
-    }
+  // LOGICA EQUIPOS
+  function generateTeams() {
+    // Filtrar seleccionados
+    const checks = document.querySelectorAll('.p-select:checked');
+    const selectedIds = Array.from(checks).map(c => c.value);
+    const pool = allPlayers.filter(p => selectedIds.includes(String(p.num_id)) || selectedIds.includes(String(p.id)));
 
-    const user = await getCurrentUser();
-    if (user) {
-        const { data, error } = await supabase.from('players').insert([{ user_id: user.id, name, position, rating }]).select();
-        if (error) { console.error(error); alert('Error guardando en la nube'); return; }
-        remotePlayers.push({ id: data[0].id, num_id: data[0].num_id, name, position, rating });
-        renderPlayersList();
-        document.getElementById('playerName').value = '';
-        document.getElementById('playerSkill').value = '';
-        alert('Jugador guardado en Supabase.');
-    } else {
-        localIdCounter++;
-        localPlayers.push({ id: localIdCounter, num_id: localIdCounter, name, position, rating });
-        renderPlayersList();
-        document.getElementById('playerName').value = '';
-        document.getElementById('playerSkill').value = '';
-        alert('Jugador añadido localmente (inicia sesión para guardarlo en la nube).');
-    }
+    if (pool.length < 14) return alert('Selecciona al menos 14 jugadores para 7vs7');
+
+    // Algoritmo simple de serpiente por valoración
+    pool.sort((a, b) => b.rating - a.rating); // Ordenar de mejor a peor
+    
+    const teamA = [];
+    const teamB = [];
+    
+    // Reparto "1-2-2-1" para equilibrar mejor que "1-1-1-1"
+    pool.forEach((p, i) => {
+      if (i % 2 === 0) teamA.push(p);
+      else teamB.push(p);
+    });
+
+    // Calcular medias
+    const getAvg = t => (t.reduce((acc, c) => acc + c.rating, 0) / t.length).toFixed(2);
+    const diff = Math.abs(getAvg(teamA) - getAvg(teamB)).toFixed(2);
+
+    displayResults(teamA, teamB, diff);
   }
 
-  function generateBalancedTeams(players) {
-    const teamSize = 7;
-    const positions = { Portero: [], Defensa: [], Delantero: [] };
-    players.forEach(p => {
-      const pos = p.position.charAt(0).toUpperCase() + p.position.slice(1);
-      if (positions[pos]) positions[pos].push(p);
-    });
-    if (positions.Portero.length < 2 || positions.Defensa.length < 6 || positions.Delantero.length < 2) return null;
+  function displayResults(teamA, teamB, diff) {
+    const container = document.getElementById('teamsResult');
+    container.innerHTML = `
+      <div style="background:#e0f2fe; padding:10px; border-radius:6px; margin-bottom:10px;">
+        <strong>Resultado:</strong> Diferencia de media: ${diff} pts.
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <button id="btnViz" class="secondary" style="margin:0">Ver en el Campo</button>
+      </div>
+    `;
 
-    const teamA = [], teamB = [];
-    function assignAlternating(arr) {
-      arr.sort(() => Math.random() - 0.5);
-      arr.forEach((player, i) => {
-        if (teamA.length < teamSize && teamB.length < teamSize) {
-          i % 2 === 0 ? teamA.push(player) : teamB.push(player);
-        } else if (teamA.length < teamSize) teamA.push(player);
-        else teamB.push(player);
+    document.getElementById('btnViz').onclick = () => {
+      document.getElementById('fieldSection').classList.remove('hidden');
+      drawField(teamA, teamB);
+      // Scroll hacia el campo
+      document.getElementById('fieldSection').scrollIntoView({behavior: "smooth"});
+    };
+  }
+
+  // VISUALIZACIÓN Y DRAG & DROP
+  function drawField(teamA, teamB) {
+    // Limpiar fichas anteriores (manteniendo las líneas del campo)
+    cleanTokens(fieldA);
+    cleanTokens(fieldB);
+
+    // Coordenadas base (formación 1-3-2-1 aproximada)
+    const formation = [
+      {x: 155, y: 450}, // GK
+      {x: 50, y: 350}, {x: 155, y: 350}, {x: 260, y: 350}, // DEF
+      {x: 100, y: 200}, {x: 210, y: 200}, // MED/DEL
+      {x: 155, y: 100} // ST
+    ];
+
+    function placeTeam(team, container, colorClass) {
+      // Ordenamos por posición para asignar huecos lógicos
+      const posPriority = { portero: 0, defensa: 1, delantero: 2 };
+      const sortedTeam = [...team].sort((a,b) => posPriority[a.position] - posPriority[b.position]);
+
+      sortedTeam.forEach((p, i) => {
+        const coords = formation[i] || {x: 155, y: 250}; // Fallback al centro
+        createToken(p, container, colorClass, coords.x, coords.y);
       });
     }
-    assignAlternating(positions.Portero);
-    assignAlternating(positions.Defensa);
-    assignAlternating(positions.Delantero);
-    const allAssigned = [...teamA, ...teamB];
-    const remaining = players.filter(p => !allAssigned.includes(p));
-    assignAlternating(remaining);
 
-    if (teamA.length !== 7 || teamB.length !== 7) return null;
-    return { teamA, teamB };
+    placeTeam(teamA, fieldA, 'token-black');
+    placeTeam(teamB, fieldB, 'token-white');
   }
 
-  function generateBalancedTeamsVariations(players, numVariations = 50) {
-    const validTeams = [];
-    for (let v = 0; v < numVariations; v++) {
-        const teams = generateBalancedTeams(players);
-        if (teams) {
-            const avgA = teams.teamA.reduce((sum, p) => sum + p.rating, 0) / teams.teamA.length;
-            const avgB = teams.teamB.reduce((sum, p) => sum + p.rating, 0) / teams.teamB.length;
-            const diff = Math.abs(avgA - avgB);
-            validTeams.push({ ...teams, diff });
-        }
-    }
-    validTeams.sort((a, b) => a.diff - b.diff);
-    return validTeams.slice(0, 5);
+  function cleanTokens(container) {
+    const tokens = container.querySelectorAll('.player-token');
+    tokens.forEach(t => t.remove());
   }
 
-  async function onGenerateTeamsClicked() {
-    const checkboxes = Array.from(document.querySelectorAll('.player-select'));
-    const allPlayers = [...localPlayers, ...remotePlayers];
-    const selectedPlayers = checkboxes.filter(cb => cb.checked)
-      .map(cb => allPlayers.find(p => p.num_id === parseInt(cb.dataset.playerId)))
-      .filter(p => p !== undefined);
-    if (selectedPlayers.length < 14) return alert('Debes seleccionar al menos 14 jugadores válidos.');
+  function createToken(player, container, cssClass, x, y) {
+    const el = document.createElement('div');
+    el.className = `player-token ${cssClass}`;
+    // Iniciales
+    el.textContent = player.name.substring(0,2).toUpperCase();
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
 
-    const topTeams = generateBalancedTeamsVariations(selectedPlayers, 100);
-    const teamsResultEl = document.getElementById('teamsResult');
-    teamsResultEl.innerHTML = '';
+    // Etiqueta nombre completo
+    const label = document.createElement('div');
+    label.className = 'player-label';
+    label.textContent = player.name;
+    el.appendChild(label);
 
-    topTeams.forEach((t, index) => {
-      const div = document.createElement('div');
-      div.style.marginBottom = '20px';
-      const h4 = document.createElement('h4');
-      h4.textContent = `Opción ${index + 1} (diferencia de media: ${t.diff.toFixed(2)})`;
-      div.appendChild(h4);
+    // Eventos Drag
+    el.addEventListener('mousedown', onMouseDown);
+    // Soporte touch básico
+    el.addEventListener('touchstart', onTouchStart, {passive: false});
 
-      const flex = document.createElement('div');
-      flex.style.display = 'flex';
-      flex.style.gap = '20px';
-
-      const btnSelect = document.createElement('button');
-      btnSelect.textContent = "Seleccionar esta opción";
-      btnSelect.style.marginTop = "10px";
-      btnSelect.addEventListener("click", () => {
-          showSelectedLineup(t.teamA, t.teamB);
-          placePlayersOnField(t.teamA, t.teamB);
-      });
-      div.appendChild(btnSelect);
-
-      function createTeamList(team, title) {
-           const container = document.createElement('div');
-           container.style.flex = '1';
-           const h3 = document.createElement('h5');
-           h3.textContent = title;
-           container.appendChild(h3);
-           const ul = document.createElement('ul');
-           team.forEach(p => { const li = document.createElement('li'); li.textContent = `${p.name} (${p.position})`; ul.appendChild(li); });
-           container.appendChild(ul);
-           const avg = (arr) => (arr.reduce((sum, p) => sum + p.rating, 0) / arr.length).toFixed(2);
-           const avgDiv = document.createElement("div"); avgDiv.className = 'small'; avgDiv.textContent = `Media: ${avg(team)}`;
-           container.appendChild(avgDiv);
-           return container;
-      }
-
-      flex.appendChild(createTeamList(t.teamA, 'Negro'));
-      flex.appendChild(createTeamList(t.teamB, 'Blanco'));
-      div.appendChild(flex);
-      teamsResultEl.appendChild(div);
-    });
+    container.appendChild(el);
   }
 
-  function showSelectedLineup(teamA, teamB) {
-    const box = document.getElementById("selectedLineup");
-    const ulA = document.getElementById("selectedA");
-    const ulB = document.getElementById("selectedB");
-    ulA.innerHTML = ""; ulB.innerHTML = "";
-    teamA.forEach(p => { const li = document.createElement("li"); li.textContent = `${p.name} (${p.position})`; ulA.appendChild(li); });
-    teamB.forEach(p => { const li = document.createElement("li"); li.textContent = `${p.name} (${p.position})`; ulB.appendChild(li); });
-    box.style.display = "block";
+  // Lógica de Arrastre (Mouse)
+  let activeToken = null;
+  let startX, startY, initialLeft, initialTop;
+
+  function onMouseDown(e) {
+    e.preventDefault();
+    activeToken = e.currentTarget;
+    startX = e.clientX;
+    startY = e.clientY;
+    initialLeft = activeToken.offsetLeft;
+    initialTop = activeToken.offsetTop;
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   }
 
-  function createPlayerEl(player, color, spot, container) {
-      const wrapper = document.createElement("div");
-      wrapper.className = "player-dot-wrapper";
-      wrapper.style.position = "absolute";
-      wrapper.style.left = spot.x + "px";
-      wrapper.style.top = spot.y + "px";
-      wrapper.style.textAlign = "center";
-      wrapper.style.cursor = "grab";
-
-      const img = document.createElement("img");
-      img.src = color === "negra" ? "camiseta-negra.png" : "camiseta-blanca.png";
-      img.style.width = "40px";
-      img.style.height = "40px";
-      img.style.borderRadius = "50%";
-      wrapper.appendChild(img);
-
-      const span = document.createElement("span");
-      span.textContent = player.name;
-      span.style.fontSize = "10px";
-      span.style.display = "block";
-      wrapper.appendChild(span);
-
-      container.appendChild(wrapper);
+  function onMouseMove(e) {
+    if (!activeToken) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    activeToken.style.left = (initialLeft + dx) + 'px';
+    activeToken.style.top = (initialTop + dy) + 'px';
   }
 
-  function placePlayersOnField(teamA, teamB) {
-    fieldA.innerHTML = "";
-    fieldB.innerHTML = "";
+  function onMouseUp() {
+    activeToken = null;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
 
-    // Posiciones predefinidas para 7 jugadores (portero, defensa, delantero)
-    const positionsA = {
-      portero: [{x:155,y:20}], 
-      defensa: [{x:50,y:120},{x:155,y:120},{x:260,y:120}], 
-      delantero: [{x:80,y:420},{x:155,y:420},{x:230,y:420}],
-    };
+  // Lógica de Arrastre (Touch)
+  function onTouchStart(e) {
+    e.preventDefault();
+    activeToken = e.currentTarget;
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    initialLeft = activeToken.offsetLeft;
+    initialTop = activeToken.offsetTop;
+    
+    document.addEventListener('touchmove', onTouchMove, {passive: false});
+    document.addEventListener('touchend', onTouchEnd);
+  }
 
-    const positionsB = {
-      portero: [{x:155,y:510}], 
-      defensa: [{x:50,y:400},{x:155,y:400},{x:260,y:400}], 
-      delantero: [{x:80,y:100},{x:155,y:100},{x:230,y:100}],
-    };
+  function onTouchMove(e) {
+    if (!activeToken) return;
+    e.preventDefault(); 
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    activeToken.style.left = (initialLeft + dx) + 'px';
+    activeToken.style.top = (initialTop + dy) + 'px';
+  }
 
-    teamA.forEach(p => {
-        const spot = positionsA[p.position]?.shift() || {x:155,y:250};
-        createPlayerEl(p,"negra",spot,fieldA);
-    });
-
-    teamB.forEach(p => {
-        const spot = positionsB[p.position]?.shift() || {x:155,y:250};
-        createPlayerEl(p,"blanca",spot,fieldB);
-    });
-
-    document.getElementById("fieldBox").style.display = "block";
-}
-
+  function onTouchEnd() {
+    activeToken = null;
+    document.removeEventListener('touchmove', onTouchMove);
+    document.removeEventListener('touchend', onTouchEnd);
+  }
 
 });
 </script>

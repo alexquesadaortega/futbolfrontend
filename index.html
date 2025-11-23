@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fútbol 7 Pro - No Duplicados</title>
+<title>Fútbol 7 Pro - Compartir WhatsApp</title>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  :root { --primary: #06b6d4; --secondary: #10b981; --bg: #f3f4f6; --text: #1f2937; }
+  :root { --primary: #06b6d4; --secondary: #10b981; --bg: #f3f4f6; --text: #1f2937; --whatsapp: #25D366; }
   body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: var(--bg); color: var(--text); max-width: 1000px; margin: 0 auto; }
   
   h1, h2, h3, h4 { margin-top: 0; color: #111827; }
@@ -20,6 +23,7 @@
   button:hover { opacity: 0.9; }
   button.primary { background: var(--primary); color: #fff; }
   button.secondary { background: var(--secondary); color: #fff; }
+  button.whatsapp { background: var(--whatsapp); color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1.1rem; }
   button.outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
 
   /* Listas */
@@ -40,7 +44,9 @@
   .pos-mini { font-size:0.75rem; color:#6b7280; margin-left:5px; }
 
   /* CAMPO DE FÚTBOL CSS */
-  .field-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+  /* Añadimos padding al container para que la captura salga con margen */
+  .field-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; background: #fff; padding: 10px; border-radius: 8px; }
+  
   .football-field {
     position: relative;
     width: 350px; 
@@ -79,7 +85,6 @@
   .error-msg { color: #dc2626; font-size: 0.9rem; margin-top: 5px; font-weight: bold; }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -123,7 +128,7 @@
 
   <div class="box">
     <h2>Generar Opciones</h2>
-    <p class="small">Requisitos: <strong>1 Portero, 3 Defensas, 1 Delantero</strong> (mínimo). Se rellenan con sobrantes.</p>
+    <p class="small">Requisitos: <strong>1 Portero, 3 Defensas, 1 Delantero</strong> (mínimo). Resto: Relleno.</p>
     <button id="btnGenerateTeams" class="primary">🎲 Generar 5 Opciones Únicas</button>
     <div id="generateError" class="error-msg"></div>
 
@@ -131,9 +136,10 @@
   </div>
 
   <div id="fieldSection" class="box hidden">
-    <h2>Pizarra Táctica (Drag & Drop)</h2>
-    <p class="small">Mueve las fichas para ajustar la posición.</p>
-    <div class="field-container">
+    <h2>Pizarra Táctica</h2>
+    <p class="small">Mueve las fichas si es necesario y comparte la imagen.</p>
+    
+    <div class="field-container" id="captureArea">
       <div>
         <h3 style="text-align:center;">Equipo Negro</h3>
         <div id="fieldA" class="football-field">
@@ -147,6 +153,10 @@
         </div>
       </div>
     </div>
+
+    <button id="btnShareWhatsapp" class="whatsapp">
+        📸 Compartir Imagen por WhatsApp
+    </button>
   </div>
 
 </div>
@@ -169,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fieldA = document.getElementById('fieldA');
   const fieldB = document.getElementById('fieldB');
   const generateError = document.getElementById('generateError');
+  const btnShare = document.getElementById('btnShareWhatsapp');
 
   document.getElementById('btnRegister').addEventListener('click', () => handleAuth('signup'));
   document.getElementById('btnLogin').addEventListener('click', () => handleAuth('signin'));
@@ -177,6 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnSelectAll').addEventListener('click', () => {
     document.querySelectorAll('.p-select').forEach(c => c.checked = true);
   });
+  
+  // LISTENER PARA COMPARTIR
+  btnShare.addEventListener('click', shareFieldsImage);
 
   async function handleAuth(type) {
     const email = document.getElementById('authEmail').value.trim();
@@ -249,34 +263,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nFwd < 2) return generateError.textContent = `Faltan delanteros. Tienes ${nFwd}, mín 2.`;
 
     let variations = [];
-    const seenHashes = new Set(); // Para evitar duplicados
+    const seenHashes = new Set(); 
 
-    // Aumentamos los intentos para asegurar encontrar 5 distintas
     for(let i=0; i<500; i++) { 
         const attempt = createStrictVariation(pool);
         if(!attempt) continue;
 
-        // Crear Huella Digital Única
-        // 1. Obtener IDs ordenados de cada equipo
         const idsA = attempt.teamA.map(p => p.num_id || p.id).sort().join('-');
         const idsB = attempt.teamB.map(p => p.num_id || p.id).sort().join('-');
-        
-        // 2. Ordenar los dos equipos para que A vs B sea igual a B vs A
         const matchHash = [idsA, idsB].sort().join('::');
 
-        if(seenHashes.has(matchHash)) {
-            continue; // Si ya existe esta combinación exacta, saltar
-        }
-
+        if(seenHashes.has(matchHash)) continue; 
         seenHashes.add(matchHash);
         variations.push(attempt);
     }
 
     variations.sort((a, b) => a.diff - b.diff);
     const top5 = variations.slice(0, 5);
-    
     if (top5.length === 0) return generateError.textContent = "No se encontraron combinaciones válidas.";
-    
     displayOptions(top5);
   }
 
@@ -361,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function drawField(teamA, teamB) {
     cleanTokens(fieldA); cleanTokens(fieldB);
     
-    // Coordenadas fijas para la estructura 1-3-1 + 2 libres
     const posCoords = {
         portero: [{x:155, y:450}],
         defensa: [{x:50, y:350}, {x:155, y:350}, {x:260, y:350}, {x:80, y:300}, {x:230, y:300}], 
@@ -392,7 +395,6 @@ document.addEventListener('DOMContentLoaded', () => {
     el.style.left = x+'px'; el.style.top = y+'px';
     const l = document.createElement('div'); l.className='player-label'; l.textContent=p.name;
     el.appendChild(l);
-    
     el.onmousedown = dragMouse;
     el.ontouchstart = dragTouch;
     div.appendChild(el);
@@ -408,6 +410,47 @@ document.addEventListener('DOMContentLoaded', () => {
     active=e.currentTarget; const t=e.touches[0]; startX=t.clientX; startY=t.clientY; initX=active.offsetLeft; initY=active.offsetTop;
     document.ontouchmove=e=>{ if(!active)return; const t=e.touches[0]; active.style.left=(initX+t.clientX-startX)+'px'; active.style.top=(initY+t.clientY-startY)+'px'; };
     document.ontouchend=()=>{ active=null; document.ontouchmove=null; };
+  }
+
+  // --- FUNCIÓN COMPARTIR ---
+  async function shareFieldsImage() {
+    const element = document.getElementById('captureArea');
+    btnShare.textContent = "⏳ Generando imagen...";
+    
+    try {
+        const canvas = await html2canvas(element, { backgroundColor: '#ffffff', scale: 2 }); // Scale 2 para mejor calidad
+        
+        canvas.toBlob(async (blob) => {
+            const file = new File([blob], 'alineacion_f7.png', { type: 'image/png' });
+
+            // 1. Intento API nativa (Móvil)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Alineación Partido',
+                        text: 'Aquí tenéis los equipos para el partido ⚽'
+                    });
+                    btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
+                } catch (err) {
+                    console.log('Compartir cancelado o fallido', err);
+                    btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
+                }
+            } else {
+                // 2. Fallback Escritorio (Descarga)
+                const link = document.createElement('a');
+                link.download = 'alineacion_f7.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                alert("Imagen descargada. Arrástrala a WhatsApp Web.");
+                btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
+            }
+        });
+    } catch (e) {
+        console.error(e);
+        alert("Error generando la imagen");
+        btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
+    }
   }
 
 });

@@ -346,7 +346,7 @@ async function onGenerateTeamsClicked() {
       btnSelect.style.marginTop = "10px";
       btnSelect.addEventListener("click", () => {
           showSelectedLineup(t.teamA, t.teamB);
-          placePlayersOnfield(t.teamA, t.teamB);
+          placePlayersOnField(t.teamA, t.teamB);
       });
       div.appendChild(btnSelect);
       const createTeamList = (team, title) => {

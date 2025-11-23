@@ -260,17 +260,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // --- CONFIG ---
+  // --- CONFIG (ACTUALIZA ESTO CON TUS CLAVES REALES DE SUPABASE) ---
   const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA' ;
-  
   let supabase;
   try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Error Supabase", e); }
 
   let allPlayers = [];
   let currentUser = null;
 
-  // --- ELEMENTOS ---
+  // --- ELEMENTOS y EVENTOS (sin cambios relevantes en esta zona) ---
   const authBox = document.getElementById('authBox');
   const appContent = document.getElementById('appContent');
   const authMsg = document.getElementById('authMsg');
@@ -278,20 +277,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateError = document.getElementById('generateError');
   const btnShare = document.getElementById('btnShareWhatsapp');
   
-  // --- EVENTOS ---
   document.getElementById('btnRegister').addEventListener('click', () => handleAuth('signup'));
   document.getElementById('btnLogin').addEventListener('click', () => handleAuth('signin'));
   document.getElementById('btnAddPlayer').addEventListener('click', addPlayer);
   document.getElementById('btnGenerateTeams').addEventListener('click', generateTeamOptions);
   document.getElementById('btnSelectAll').addEventListener('click', selectAllPlayers);
-  document.getElementById('btnDeselectAll').addEventListener('click', deselectAllPlayers); // NUEVO LISTENER
+  document.getElementById('btnDeselectAll').addEventListener('click', deselectAllPlayers);
   btnShare.addEventListener('click', shareFieldsImage);
 
-  // --- FUNCIONES UTILIDAD ---
   function selectAllPlayers() { document.querySelectorAll('.p-select').forEach(c => c.checked = true); }
-  function deselectAllPlayers() { document.querySelectorAll('.p-select').forEach(c => c.checked = false); } // NUEVA FUNCIÓN
+  function deselectAllPlayers() { document.querySelectorAll('.p-select').forEach(c => c.checked = false); } 
   
-  // --- AUTH ---
+  // ... (Resto de funciones de Auth, LoadPlayers y GenerateTeams sin cambios)
+
   async function handleAuth(type) {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
@@ -314,7 +312,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function showMsg(txt) { authMsg.textContent = txt; }
   async function initApp() { authBox.style.display = 'none'; appContent.classList.remove('hidden'); await loadPlayers(); }
 
-  // --- JUGADORES (SIN CAMBIOS) ---
   async function loadPlayers() {
     if (!currentUser) return;
     const { data } = await supabase.from('players').select('*').eq('user_id', currentUser.id);
@@ -364,14 +361,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- LÓGICA ESTRICTA (SIN CAMBIOS) ---
   function generateTeamOptions() {
     generateError.style.display = 'none';
     const checks = document.querySelectorAll('.p-select:checked');
     const selectedIds = Array.from(checks).map(c => c.value);
     const pool = allPlayers.filter(p => selectedIds.includes(String(p.num_id)) || selectedIds.includes(String(p.id)));
 
-    // Validación Mínimos
     if (pool.length < 14) { showError('Selecciona al menos 14 jugadores para 7vs7.'); return; }
     
     const count = (pos) => pool.filter(p => p.position === pos).length;
@@ -411,12 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const teamA = []; const teamB = [];
 
-    // 1. REPARTO OBLIGATORIO (ESQUELETO)
     teamA.push(gks.pop()); teamB.push(gks.pop());         
     for(let k=0;k<3;k++) { teamA.push(defs.pop()); teamB.push(defs.pop()); } 
     teamA.push(fwds.pop()); teamB.push(fwds.pop());       
 
-    // 2. RELLENO 
     let leftovers = [...gks, ...defs, ...fwds]; 
     leftovers = shuffle(leftovers);
 
@@ -464,34 +457,53 @@ document.addEventListener('DOMContentLoaded', () => {
     return [...t].sort((a,b)=>order[a.position]-order[b.position]).map(p=>`<li><span>${p.name}</span><span style="font-size:0.7rem;opacity:0.7;">${p.position.substring(0,3).toUpperCase()}</span></li>`).join('');
   }
 
-  // --- PIZARRA TÁCTICA (COLOCACIÓN MEJORADA) ---
+  // --- FUNCIÓN PIZARRA TÁCTICA MEJORADA (DELANTEROS EXTRA) ---
   function drawField(team, div, colorClass) {
     div.querySelectorAll('.player-token').forEach(e => e.remove());
     // Coordenadas fijas OBLIGATORIAS (Esqueleto 1-3-1)
     const coords = {
         portero:   [{x:140, y:400}],
         defensa:   [{x:50, y:300}, {x:140, y:300}, {x:230, y:300}], 
-        delantero: [{x:140, y:100}]
+        delantero: [{x:140, y:100}] // Delantero Principal
     };
     const slots = JSON.parse(JSON.stringify(coords));
-
+    
+    // Coordenadas predefinidas para los 'rellenos' que tienen posición clave
+    const fillerPositions = {
+        delantero: [ // Línea de Ataque Secundaria (para delanteros extra)
+            {x: 80, y: 150},
+            {x: 200, y: 150},
+            {x: 140, y: 180},
+        ],
+        defensa: [ // Línea de Medio Campo Defensiva (para defensas extra)
+            {x: 50, y: 250},
+            {x: 230, y: 250},
+        ]
+        // Los porteros/otros rellenos irán a la posición central de reserva
+    };
+    
+    const usedFillerSpots = { delantero: 0, defensa: 0 };
+    
     team.forEach(p => {
         let pos = null;
         
-        // 1. Intentar usar un slot fijo obligatorio
+        // 1. Intentar usar un slot fijo obligatorio (1 GK, 3 DEF, 1 FWD)
         if (slots[p.position] && slots[p.position].length > 0) {
             pos = slots[p.position].shift();
         } 
         
-        // 2. Si no hay slot fijo (es un jugador extra), ubicar en zona lógica
+        // 2. Si no hay slot fijo, usar una posición de relleno específica para su rol
         if (!pos) {
-            pos = {x: 0, y: 0};
-            pos.x = 60 + Math.random() * 200; // Posición horizontal aleatoria
-            
-            if (p.position === 'portero') pos.y = 380 + Math.random() * 20; // Cerca de la portería
-            else if (p.position === 'defensa') pos.y = 250 + Math.random() * 50; // Línea de medio campo defensiva
-            else if (p.position === 'delantero') pos.y = 130 + Math.random() * 50; // LÍNEA DE ATAQUE AVANZADA (CORREGIDO)
-            else pos.y = 200 + Math.random() * 50; // Centro campo general
+            if (p.position === 'delantero' && usedFillerSpots.delantero < fillerPositions.delantero.length) {
+                pos = fillerPositions.delantero[usedFillerSpots.delantero];
+                usedFillerSpots.delantero++;
+            } else if (p.position === 'defensa' && usedFillerSpots.defensa < fillerPositions.defensa.length) {
+                pos = fillerPositions.defensa[usedFillerSpots.defensa];
+                usedFillerSpots.defensa++;
+            } else {
+                // Posición de reserva aleatoria (Para GKs extra o FWDs/DEFs que excedan los slots de relleno)
+                pos = {x: 60 + Math.random() * 200, y: 180 + Math.random() * 100};
+            }
         }
         
         createToken(p, div, colorClass, pos.x, pos.y);

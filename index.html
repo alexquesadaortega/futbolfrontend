@@ -21,7 +21,6 @@
     --accent: #a3e635;       /* Lima */
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    --danger: #ef4444;
     --whatsapp: #25D366;
     --glass-border: 1px solid rgba(255, 255, 255, 0.1);
   }
@@ -34,7 +33,7 @@
     background-image: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
     color: var(--text-main);
     margin: 0; 
-    padding: 20px 15px 120px 15px; /* Padding extra abajo para scroll */
+    padding: 20px 15px 120px 15px; /* Espacio extra abajo para scroll */
     min-height: 100vh;
   }
   
@@ -50,7 +49,7 @@
 
   h2 { font-size: 1.4rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
   
-  /* ESTILO GLASSMORPHISM (CRISTAL) */
+  /* ESTILO CRISTAL (Glassmorphism) */
   .box { 
     background: var(--bg-card);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -115,7 +114,7 @@
     border-radius: 50%; font-weight: bold; color: var(--accent); border: 2px solid #334155; font-size: 0.9rem;
   }
 
-  /* TARJETAS RESULTADOS */
+  /* RESULTADOS */
   .option-card { 
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05);
     border-radius: 16px; padding: 20px; margin-bottom: 20px; 
@@ -138,7 +137,7 @@
   .football-field {
     position: relative; width: 320px; height: 460px; 
     background-color: #369a43;
-    /* Patrón de césped cortado */
+    /* Patrón de césped */
     background-image: 
       linear-gradient(0deg, transparent 24%, rgba(255,255,255,.1) 25%, rgba(255,255,255,.1) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.1) 75%, rgba(255,255,255,.1) 76%, transparent 77%, transparent),
       repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 50px, transparent 50px, transparent 100px);
@@ -156,7 +155,7 @@
     position: absolute; width: 42px; height: 42px; border-radius: 50%; 
     display: flex; align-items: center; justify-content: center;
     font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 800; 
-    cursor: grab; z-index: 10; touch-action: none; /* Vital para móvil */
+    cursor: grab; z-index: 10; touch-action: none; /* Vital para arrastrar en móvil */
     box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.3);
     transition: transform 0.1s;
   }
@@ -220,7 +219,7 @@
   <div class="box" style="border: 1px solid var(--primary);">
     <h2 style="color: var(--primary);">⚡ Generar Partido</h2>
     <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">
-        <strong>Regla F7:</strong> Se asignarán obligatoriamente 1 Portero, 3 Defensas y 1 Delantero por equipo. El resto rellenará huecos.
+        <strong>Regla F7:</strong> Se asignarán obligatoriamente 1 Portero, 3 Defensas y 1 Delantero por equipo. El resto se rellena equilibrando la media.
     </p>
     
     <button id="btnGenerateTeams" class="primary" style="font-size: 1.1rem; box-shadow: 0 0 20px rgba(6,182,212,0.3);">🎲 Crear Equipos</button>
@@ -463,7 +462,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function drawField(team, div, colorClass) {
     div.querySelectorAll('.player-token').forEach(e => e.remove());
     // Coordenadas fijas para los OBLIGATORIOS (1 GK, 3 DEF, 1 FWD)
-    // Usamos JSON parse/stringify para tener copias limpias de las coordenadas
     const coords = {
         portero:   [{x:140, y:400}],
         defensa:   [{x:50, y:300}, {x:140, y:300}, {x:230, y:300}], 
@@ -474,11 +472,11 @@ document.addEventListener('DOMContentLoaded', () => {
     team.forEach(p => {
         let pos = {x: 140, y: 200}; // Posición por defecto (centro) para los "rellenos"
         
-        // Si hay hueco en su posición natural (es parte del esqueleto obligatorio), lo usa
+        // Si es parte del esqueleto obligatorio y hay hueco, lo usa
         if (slots[p.position] && slots[p.position].length > 0) {
             pos = slots[p.position].shift();
         } else {
-            // Si es un jugador extra (relleno), se posiciona aleatoriamente en el medio campo
+            // Si es relleno, aleatorio en medio campo
             pos.x = 60 + Math.random() * 200;
             pos.y = 180 + Math.random() * 60;
         }

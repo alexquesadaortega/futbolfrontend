@@ -533,35 +533,5 @@ setupFieldLines(document.getElementById("fieldB"));
 }
 
 
-    function onMouseMove(e) {
-      moveAt(e.clientX, e.clientY);
-    }
-
-    document.addEventListener("mousemove", onMouseMove);
-
-    document.onmouseup = function() {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.onmouseup = null;
-
-      // Snap a cuadrícula SOLO AL SOLTAR
-      const snapSize = 40;
-      let left = parseInt(el.style.left);
-      let top = parseInt(el.style.top);
-      left = Math.round(left / snapSize) * snapSize;
-      top = Math.round(top / snapSize) * snapSize;
-
-      // Limitar nuevamente al contenedor
-      left = Math.max(0, Math.min(left, container.clientWidth - el.offsetWidth));
-      top = Math.max(0, Math.min(top, container.clientHeight - el.offsetHeight));
-
-      el.style.left = left + "px";
-      el.style.top = top + "px";
-    };
-  };
-
-  el.ondragstart = () => false;
-}
-
-
 });
 </script>

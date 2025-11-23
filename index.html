@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <meta name="theme-color" content="#0f172a">
-<title>Fútbol 7 Pro - Ultimate</title>
+<title>Fútbol 7 Pro - Ultimate Edition</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
     --bg-dark: #0f172a;
     --bg-card: rgba(30, 41, 59, 0.7);
     --primary: #06b6d4;      /* Cian */
-    --accent: #a3e635;       /* Lima Eléctrico */
+    --accent: #a3e635;       /* Lima */
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --danger: #ef4444;
@@ -31,198 +31,132 @@
   body { 
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-dark);
-    /* Fondo con degradado sutil */
     background-image: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
     color: var(--text-main);
     margin: 0; 
-    padding: 20px 15px 100px 15px;
+    padding: 20px 15px 120px 15px; /* Padding extra abajo para scroll */
     min-height: 100vh;
   }
   
   h1, h2, h3 { font-family: 'Kanit', sans-serif; margin-top: 0; letter-spacing: 0.5px; }
   
   h1 { 
-    font-weight: 800; 
-    font-size: 2rem; 
-    text-align: center; 
-    margin-bottom: 25px; 
+    font-weight: 800; font-size: 2rem; text-align: center; margin-bottom: 25px; 
     text-transform: uppercase;
     background: linear-gradient(to right, #22d3ee, #a3e635);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
   }
 
   h2 { font-size: 1.4rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
   
-  /* CAJAS GLASSMORPHISM */
+  /* ESTILO GLASSMORPHISM (CRISTAL) */
   .box { 
     background: var(--bg-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: var(--glass-border);
-    padding: 20px; 
-    border-radius: 20px; 
-    margin-bottom: 24px; 
+    padding: 20px; border-radius: 20px; margin-bottom: 24px; 
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.5s ease-out forwards;
   }
   
-  /* INPUTS FUTURISTAS */
+  /* INPUTS */
   input, select { 
-    padding: 14px; 
-    margin-bottom: 12px; 
-    border-radius: 12px; 
-    border: 1px solid #334155; 
-    width: 100%; 
-    font-size: 16px; 
-    background: #1e293b; 
-    color: #fff;
-    transition: all 0.3s ease;
+    padding: 14px; margin-bottom: 12px; border-radius: 12px; 
+    border: 1px solid #334155; width: 100%; font-size: 16px; 
+    background: #1e293b; color: #fff; transition: all 0.3s ease;
     font-family: 'Inter', sans-serif;
   }
   input:focus, select:focus { 
-    border-color: var(--primary); 
-    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2); 
-    outline: none; 
-    background: #0f172a;
+    border-color: var(--primary); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2); 
+    outline: none; background: #0f172a;
   }
-  input::placeholder { color: #64748b; }
 
-  .row-inputs { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row-inputs { display: flex; gap: 10px; }
   
-  /* BOTONES MODERNOS */
+  /* BOTONES */
   button { 
-    padding: 16px; 
-    border-radius: 12px; 
-    border: none; 
-    cursor: pointer; 
-    font-family: 'Kanit', sans-serif;
-    font-weight: 600; 
-    font-size: 1rem; 
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    width: 100%; 
-    margin-top: 10px; 
-    transition: transform 0.1s, filter 0.2s;
-    position: relative; 
-    overflow: hidden;
+    padding: 16px; border-radius: 12px; border: none; cursor: pointer; 
+    font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 1rem; 
+    text-transform: uppercase; letter-spacing: 1px; width: 100%; margin-top: 10px; 
+    transition: transform 0.1s;
   }
   button:active { transform: scale(0.97); }
 
   button.primary { 
     background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%); 
-    color: #fff; 
-    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+    color: #fff; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
   }
-  
-  button.secondary { 
-    background: #334155; 
-    color: var(--accent); 
-    border: 1px solid rgba(163, 230, 53, 0.2);
-  }
-  
+  button.secondary { background: #334155; color: var(--accent); border: 1px solid rgba(163, 230, 53, 0.2); }
   button.whatsapp { 
-    background: #25D366; 
-    color: #fff; 
-    display: flex; align-items: center; justify-content: center; gap: 10px; 
+    background: var(--whatsapp); color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; 
     box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
   }
-
   button.outline { 
-    background: transparent; 
-    border: 1px solid var(--primary); 
-    color: var(--primary); 
-    font-size: 0.8rem; padding: 8px 15px; margin: 0; width: auto; 
-    box-shadow: none;
+    background: transparent; border: 1px solid var(--primary); color: var(--primary); 
+    font-size: 0.8rem; padding: 6px 12px; width: auto; margin: 0;
   }
 
-  /* LISTAS CON ESTILO */
+  /* LISTAS */
   .player-row { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 12px; 
-    margin-bottom: 8px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 10px;
-    border: 1px solid transparent;
-    transition: border-color 0.2s;
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.03); 
+    border-radius: 10px; border: 1px solid transparent;
   }
-  .player-row:hover { border-color: rgba(255,255,255,0.1); }
-
-  .p-select { width: 22px; height: 22px; margin-right: 12px; accent-color: var(--accent); cursor: pointer; }
+  .p-select { width: 22px; height: 22px; margin-right: 12px; accent-color: var(--accent); }
   
-  .tag { 
-    padding: 4px 8px; border-radius: 4px; font-size: 9px; 
-    text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; margin-left: 5px;
-  }
-  .tag.portero { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .tag.defensa { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-  .tag.delantero { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .tag { padding: 4px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 800; margin-left: 5px; }
+  .tag.portero { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+  .tag.defensa { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+  .tag.delantero { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
   .rating-badge {
-    background: #0f172a;
-    width: 35px; height: 35px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 50%;
-    font-family: 'Kanit', sans-serif;
-    font-weight: bold;
-    color: var(--accent);
-    border: 2px solid #334155;
+    background: #0f172a; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-weight: bold; color: var(--accent); border: 2px solid #334155; font-size: 0.9rem;
   }
 
-  /* TARJETAS DE RESULTADOS */
+  /* TARJETAS RESULTADOS */
   .option-card { 
-    background: rgba(255,255,255,0.05); 
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 16px; 
-    padding: 20px; 
-    margin-bottom: 20px; 
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px; padding: 20px; margin-bottom: 20px; 
   }
   .team-columns { display: flex; flex-direction: column; gap: 20px; margin-top: 15px; } 
   @media (min-width: 768px) { .team-columns { flex-direction: row; } }
 
-  .team-col strong { display: block; margin-bottom: 10px; color: var(--primary); font-family: 'Kanit'; text-transform: uppercase; }
+  .team-col ul { padding: 0; list-style: none; }
   .team-col li { 
-    padding: 8px 0; border-bottom: 1px dashed #334155; 
-    display:flex; justify-content:space-between; font-size: 0.95rem; color: #cbd5e1;
+    padding: 8px 0; border-bottom: 1px dashed #334155; display:flex; justify-content:space-between; 
+    font-size: 0.9rem; color: #cbd5e1;
   }
 
-  /* --- CAMPO DE FÚTBOL PRO --- */
+  /* CAMPO DE FÚTBOL REALISTA */
   .field-container { 
     display: flex; flex-direction: column; align-items: center; gap: 25px; 
-    background: #e2e8f0; /* Fondo claro para contraste al exportar */
-    padding: 20px; border-radius: 12px; margin-top: 10px;
+    background: #e2e8f0; padding: 20px; border-radius: 12px; margin-top: 10px;
   }
   
   .football-field {
-    position: relative;
-    width: 320px; height: 460px; 
+    position: relative; width: 320px; height: 460px; 
     background-color: #369a43;
-    /* Efecto césped cortado */
+    /* Patrón de césped cortado */
     background-image: 
       linear-gradient(0deg, transparent 24%, rgba(255,255,255,.1) 25%, rgba(255,255,255,.1) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.1) 75%, rgba(255,255,255,.1) 76%, transparent 77%, transparent),
       repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 50px, transparent 50px, transparent 100px);
-    border: 6px solid #fff;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    overflow: hidden;
-    user-select: none;
+    border: 6px solid #fff; border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3); overflow: hidden; user-select: none;
   }
 
-  /* Líneas del campo */
-  .field-line-center, .field-circle, .area-top, .area-bottom { border-color: rgba(255,255,255,0.85); box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-  .field-line-center { position: absolute; top: 50%; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.85); }
-  .field-circle { position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 3px solid rgba(255,255,255,0.85); border-radius: 50%; transform: translate(-50%, -50%); }
-  .area-top { position: absolute; top: 0; left: 50%; width: 140px; height: 60px; border: 3px solid rgba(255,255,255,0.85); border-top: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
-  .area-bottom { position: absolute; bottom: 0; left: 50%; width: 140px; height: 60px; border: 3px solid rgba(255,255,255,0.85); border-bottom: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
+  .field-line-center { position: absolute; top: 50%; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.8); }
+  .field-circle { position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 3px solid rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); }
+  .area-top { position: absolute; top: 0; left: 50%; width: 140px; height: 60px; border: 3px solid rgba(255,255,255,0.8); border-top: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
+  .area-bottom { position: absolute; bottom: 0; left: 50%; width: 140px; height: 60px; border: 3px solid rgba(255,255,255,0.8); border-bottom: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
 
-  /* FICHAS JUGADORES (Estilo Imán Táctico) */
+  /* FICHAS JUGADORES */
   .player-token {
     position: absolute; width: 42px; height: 42px; border-radius: 50%; 
     display: flex; align-items: center; justify-content: center;
     font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 800; 
-    cursor: grab; z-index: 10; touch-action: none; 
+    cursor: grab; z-index: 10; touch-action: none; /* Vital para móvil */
     box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.3);
     transition: transform 0.1s;
   }
@@ -232,20 +166,15 @@
   .token-white { background: radial-gradient(circle at 30% 30%, #fff, #e5e7eb); color: #111827; border: 2px solid #111827; }
 
   .player-label {
-    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.85); color: #fff; padding: 2px 8px; border-radius: 10px;
-    font-size: 10px; white-space: nowrap; font-weight: 600; text-transform: uppercase; pointer-events: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); color: #fff; padding: 2px 8px; border-radius: 8px;
+    font-size: 10px; white-space: nowrap; font-weight: 600; pointer-events: none;
   }
 
   .hidden { display: none !important; }
-  .small { font-size: 0.8rem; color: var(--text-muted); }
   .error-msg { background: rgba(239,68,68,0.2); color: #fca5a5; padding: 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.4); margin-top: 10px; display: none; text-align: center; }
   .sticky-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-
-  /* Animación de entrada */
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .box, .player-row, .option-card { animation: fadeIn 0.4s ease-out forwards; }
 </style>
 </head>
 <body>
@@ -253,15 +182,15 @@
 <h1>Fútbol 7 <span style="color:#fff; -webkit-text-fill-color: initial;">Pro</span></h1>
 
 <div class="box" id="authBox" style="text-align: center;">
-  <h2 style="justify-content: center;">Bienvenido Míster</h2>
-  <p class="small" style="margin-bottom: 20px;">Gestiona tu plantilla y crea la táctica perfecta.</p>
+  <h2>Bienvenido Míster</h2>
+  <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Gestiona tu equipo como un profesional.</p>
   
   <input id="authEmail" type="email" placeholder="Correo electrónico">
   <input id="authPassword" type="password" placeholder="Contraseña">
   
-  <button id="btnLogin" class="primary">Entrar al Vestuario</button>
-  <button id="btnRegister" class="secondary" style="margin-top:15px; background: transparent;">Crear Cuenta Nueva</button>
-  <div id="authMsg" class="small" style="margin-top:15px; min-height:20px;"></div>
+  <button id="btnLogin" class="primary">Iniciar Sesión</button>
+  <button id="btnRegister" class="secondary" style="margin-top:15px; background:transparent;">Registrarse</button>
+  <div id="authMsg" style="margin-top:15px; font-size:0.8rem; min-height:20px;"></div>
 </div>
 
 <div id="appContent" class="hidden">
@@ -277,53 +206,50 @@
         <option value="defensa">🛡️ Defensa</option>
         <option value="delantero">⚡ Delantero</option>
     </select>
-    <button id="btnAddPlayer" class="secondary" style="background: rgba(255,255,255,0.05); color: #fff;">➕ Añadir a la plantilla</button>
+    <button id="btnAddPlayer" class="secondary">➕ Añadir a plantilla</button>
   </div>
 
   <div class="box">
     <div class="sticky-header">
-        <h3 style="margin:0; color:var(--primary);">📋 Convocatoria <span id="playerCount" style="color:var(--text-muted); font-size:0.9rem;"></span></h3>
+        <h3 style="margin:0; color:var(--primary);">Convocatoria <span id="playerCount" style="color:var(--text-muted); font-size:0.9rem;"></span></h3>
         <button id="btnSelectAll" class="outline">Marcar Todos</button>
     </div>
     <div id="playersList"></div>
   </div>
 
   <div class="box" style="border: 1px solid var(--primary);">
-    <h2 style="color: var(--primary);">⚡ Matchmaking</h2>
-    <p class="small" style="margin-bottom:15px;">El algoritmo equilibrará la media de ambos equipos.</p>
+    <h2 style="color: var(--primary);">⚡ Generar Partido</h2>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">
+        <strong>Regla F7:</strong> Se asignarán obligatoriamente 1 Portero, 3 Defensas y 1 Delantero por equipo. El resto rellenará huecos.
+    </p>
     
-    <button id="btnGenerateTeams" class="primary" style="font-size: 1.2rem; box-shadow: 0 0 20px rgba(6,182,212,0.3);">🎲 Generar Partido</button>
+    <button id="btnGenerateTeams" class="primary" style="font-size: 1.1rem; box-shadow: 0 0 20px rgba(6,182,212,0.3);">🎲 Crear Equipos</button>
     <div id="generateError" class="error-msg"></div>
 
     <div id="teamsResult" style="margin-top:20px;"></div>
   </div>
 
   <div id="fieldSection" class="box hidden" style="background: #f1f5f9; color: #1e293b;">
-    <h2 style="text-align:center; margin-bottom:5px; color:#1e293b;">Pizarra Táctica</h2>
-    <p class="small" style="text-align:center; margin-bottom:15px; color:#64748b;">Mueve las fichas y comparte la alineación.</p>
+    <h2 style="text-align:center; color:#1e293b;">Pizarra Táctica</h2>
+    <p style="text-align:center; font-size:0.8rem; color:#64748b; margin-bottom:15px;">Mueve las fichas y comparte la imagen.</p>
     
     <div class="field-container" id="captureArea">
-      
       <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
-        <div style="background:#111827; color:white; padding:6px 20px; border-radius:20px; margin-bottom:10px; font-weight:bold; font-family:'Kanit'; letter-spacing:1px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">EQUIPO NEGRO</div>
+        <div style="background:#111827; color:white; padding:6px 20px; border-radius:20px; margin-bottom:10px; font-weight:bold; font-family:'Kanit'; letter-spacing:1px;">EQUIPO NEGRO</div>
         <div id="fieldA" class="football-field">
             <div class="field-line-center"></div><div class="field-circle"></div><div class="area-top"></div><div class="area-bottom"></div>
         </div>
       </div>
-
-      <div style="width:100%; display:flex; flex-direction:column; align-items:center; margin-top:20px;">
-        <div style="background:#fff; color:#111827; border:2px solid #111827; padding:6px 20px; border-radius:20px; margin-bottom:10px; font-weight:bold; font-family:'Kanit'; letter-spacing:1px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">EQUIPO BLANCO</div>
+      <div style="width:100%; display:flex; flex-direction:column; align-items:center; margin-top:10px;">
+        <div style="background:#fff; color:#111827; border:2px solid #111827; padding:6px 20px; border-radius:20px; margin-bottom:10px; font-weight:bold; font-family:'Kanit'; letter-spacing:1px;">EQUIPO BLANCO</div>
         <div id="fieldB" class="football-field">
             <div class="field-line-center"></div><div class="field-circle"></div><div class="area-top"></div><div class="area-bottom"></div>
         </div>
       </div>
-
     </div>
 
     <div style="position:sticky; bottom:0; background:transparent; padding:15px 0; z-index:100;">
-        <button id="btnShareWhatsapp" class="whatsapp">
-            📲 Enviar Alineación
-        </button>
+        <button id="btnShareWhatsapp" class="whatsapp">📲 Enviar Alineación</button>
     </div>
   </div>
 
@@ -331,17 +257,17 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // CONFIG SUPABASE
+  // --- CONFIG ---
   const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
   
   let supabase;
-  try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Supabase init fail", e); }
+  try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Error Supabase", e); }
 
   let allPlayers = [];
   let currentUser = null;
 
-  // DOM ELEMENTS
+  // --- ELEMENTOS ---
   const authBox = document.getElementById('authBox');
   const appContent = document.getElementById('appContent');
   const authMsg = document.getElementById('authMsg');
@@ -349,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateError = document.getElementById('generateError');
   const btnShare = document.getElementById('btnShareWhatsapp');
 
-  // EVENTS
+  // --- EVENTOS ---
   document.getElementById('btnRegister').addEventListener('click', () => handleAuth('signup'));
   document.getElementById('btnLogin').addEventListener('click', () => handleAuth('signin'));
   document.getElementById('btnAddPlayer').addEventListener('click', addPlayer);
@@ -359,41 +285,33 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   btnShare.addEventListener('click', shareFieldsImage);
 
-  // AUTH
+  // --- AUTH ---
   async function handleAuth(type) {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
     
     authMsg.style.color = '#94a3b8';
-    if (!email || !password) return showMsg('⚠️ Rellena email y contraseña');
+    if (!email || !password) return showMsg('⚠️ Rellena los datos');
     
     showMsg('⏳ Conectando...');
-    
-    let res;
-    if(type === 'signup') res = await supabase.auth.signUp({ email, password });
-    else res = await supabase.auth.signInWithPassword({ email, password });
+    let res = type === 'signup' ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password });
 
     if (res.error) {
-        authMsg.style.color = '#f87171';
-        showMsg(res.error.message === 'Invalid login credentials' ? 'Datos incorrectos' : res.error.message);
+        authMsg.style.color = '#ef4444';
+        showMsg(res.error.message);
     } else { 
         currentUser = res.data.user; 
-        showMsg('✅ ¡Dentro!'); 
+        showMsg('✅ ¡Vamos!'); 
         setTimeout(initApp, 500);
     }
   }
   function showMsg(txt) { authMsg.textContent = txt; }
+  async function initApp() { authBox.style.display = 'none'; appContent.classList.remove('hidden'); await loadPlayers(); }
 
-  async function initApp() { 
-    authBox.style.display = 'none'; 
-    appContent.classList.remove('hidden'); 
-    await loadPlayers(); 
-  }
-
-  // PLAYER MANAGEMENT
+  // --- JUGADORES ---
   async function loadPlayers() {
     if (!currentUser) return;
-    const { data, error } = await supabase.from('players').select('*').eq('user_id', currentUser.id);
+    const { data } = await supabase.from('players').select('*').eq('user_id', currentUser.id);
     allPlayers = data || [];
     renderList();
   }
@@ -402,27 +320,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const nameIn = document.getElementById('playerName');
     const skillIn = document.getElementById('playerSkill');
     const posIn = document.getElementById('playerPosition');
-
+    
     const name = nameIn.value.trim();
     const rating = parseFloat(skillIn.value);
     const position = posIn.value;
 
-    if (!name || !rating) return alert('Por favor rellena nombre y media');
+    if (!name || !rating) return alert('Datos incompletos');
     
     const newPlayer = { user_id: currentUser.id, name, position, rating, num_id: Date.now() };
-    allPlayers.push(newPlayer);
+    allPlayers.push(newPlayer); // Optimistic update
     renderList();
     nameIn.value = ''; skillIn.value = '';
 
-    const { data, error } = await supabase.from('players').insert([newPlayer]).select();
-    if (error) console.error("Error sync", error); 
-    else if(data && data.length) allPlayers[allPlayers.length-1] = data[0];
+    const { data } = await supabase.from('players').insert([newPlayer]).select();
+    if(data && data.length) allPlayers[allPlayers.length-1] = data[0];
   }
 
   function renderList() {
     playersListEl.innerHTML = '';
     document.getElementById('playerCount').textContent = `(${allPlayers.length})`;
-    
     const order = { portero: 1, defensa: 2, delantero: 3 };
     
     [...allPlayers].sort((a,b) => order[a.position] - order[b.position] || b.rating - a.rating).forEach(p => {
@@ -431,9 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
       div.innerHTML = `
         <div style="display:flex; align-items:center;">
           <input type="checkbox" class="p-select" checked value="${p.num_id || p.id}">
-          <div style="display:flex; flex-direction:column;">
+          <div>
              <span style="font-weight:600; font-size:1rem; color:#f1f5f9;">${p.name}</span>
-             <span class="tag ${p.position}" style="width:fit-content; margin:0;">${p.position}</span>
+             <span class="tag ${p.position}">${p.position}</span>
           </div>
         </div>
         <div class="rating-badge">${p.rating}</div>
@@ -442,60 +358,69 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // GENERATION LOGIC
+  // --- LÓGICA ESTRICTA (1 GK, 3 DEF, 1 FWD OBLIGATORIOS) ---
   function generateTeamOptions() {
     generateError.style.display = 'none';
-    generateError.textContent = '';
-    
     const checks = document.querySelectorAll('.p-select:checked');
     const selectedIds = Array.from(checks).map(c => c.value);
     const pool = allPlayers.filter(p => selectedIds.includes(String(p.num_id)) || selectedIds.includes(String(p.id)));
 
-    if (pool.length < 10) { showError('Mínimo 10 jugadores requeridos.'); return; }
-    const countPos = (pos) => pool.filter(p => p.position === pos).length;
-    if (countPos('portero') < 2) { showError('Faltan porteros (mínimo 2).'); return; }
+    // Validación Mínimos
+    if (pool.length < 14) { showError('Selecciona al menos 14 jugadores para 7vs7.'); return; }
+    
+    const count = (pos) => pool.filter(p => p.position === pos).length;
+    if (count('portero') < 2) { showError('Faltan Porteros. Mínimo 2.'); return; }
+    if (count('defensa') < 6) { showError('Faltan Defensas. Mínimo 6 (3 por equipo).'); return; }
+    if (count('delantero') < 2) { showError('Faltan Delanteros. Mínimo 2 (1 por equipo).'); return; }
 
     let variations = [];
     const seenHashes = new Set(); 
 
-    for(let i=0; i<300; i++) { 
-        const attempt = createBalancedMatch(pool);
+    // Generar 500 intentos y quedarse con los mejores
+    for(let i=0; i<500; i++) { 
+        const attempt = createStrictMatch(pool);
         if(!attempt) continue;
-        const idsA = attempt.teamA.map(p => p.num_id||p.id).sort().join('-');
-        const idsB = attempt.teamB.map(p => p.num_id||p.id).sort().join('-');
-        const matchHash = [idsA, idsB].sort().join('::');
+        
+        const idsA = attempt.teamA.map(p => p.id||p.num_id).sort().join('-');
+        const idsB = attempt.teamB.map(p => p.id||p.num_id).sort().join('-');
+        const hash = [idsA, idsB].sort().join('::');
 
-        if(seenHashes.has(matchHash)) continue; 
-        seenHashes.add(matchHash);
+        if(seenHashes.has(hash)) continue; 
+        seenHashes.add(hash);
         variations.push(attempt);
     }
 
-    variations.sort((a, b) => a.diff - b.diff);
+    variations.sort((a, b) => a.diff - b.diff); // Ordenar por equilibrio
     const top3 = variations.slice(0, 3);
     
-    if (top3.length === 0) { showError("Imposible equilibrar con estas posiciones."); return; }
+    if (top3.length === 0) { showError("Error generando combinaciones."); return; }
     displayOptions(top3);
   }
-  
+
   function showError(msg) { generateError.textContent = msg; generateError.style.display = 'block'; }
 
-  function createBalancedMatch(originalPool) {
+  function createStrictMatch(originalPool) {
     const gks = shuffle(originalPool.filter(p => p.position === 'portero'));
     const defs = shuffle(originalPool.filter(p => p.position === 'defensa'));
     const fwds = shuffle(originalPool.filter(p => p.position === 'delantero'));
 
     const teamA = []; const teamB = [];
-    teamA.push(gks.pop()); teamB.push(gks.pop());
 
-    let fieldPlayers = [...defs, ...fwds, ...gks];
-    fieldPlayers = shuffle(fieldPlayers);
+    // 1. REPARTO OBLIGATORIO (ESQUELETO)
+    teamA.push(gks.pop()); teamB.push(gks.pop());          // 1 GK
+    for(let k=0;k<3;k++) { teamA.push(defs.pop()); teamB.push(defs.pop()); } // 3 DEF
+    teamA.push(fwds.pop()); teamB.push(fwds.pop());        // 1 FWD
 
-    while(fieldPlayers.length > 0) {
-        if(teamA.length <= teamB.length) teamA.push(fieldPlayers.pop());
-        else teamB.push(fieldPlayers.pop());
+    // 2. RELLENO (LO QUE SOBRA SE REPARTE AL AZAR)
+    let leftovers = [...gks, ...defs, ...fwds]; // Juntar sobrantes
+    leftovers = shuffle(leftovers);
+
+    while(leftovers.length > 0) {
+        if(teamA.length <= teamB.length) teamA.push(leftovers.pop());
+        else teamB.push(leftovers.pop());
     }
     
-    const getAvg = t => t.length ? t.reduce((a,c)=>a+c.rating,0) / t.length : 0;
+    const getAvg = t => t.reduce((a,c)=>a+c.rating,0) / t.length;
     const avgA = getAvg(teamA); const avgB = getAvg(teamB);
 
     return { teamA, teamB, avgA: avgA.toFixed(2), avgB: avgB.toFixed(2), diff: Math.abs(avgA - avgB) };
@@ -506,28 +431,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function displayOptions(options) {
     const container = document.getElementById('teamsResult');
     container.innerHTML = '';
-
     options.forEach((opt, index) => {
         const div = document.createElement('div');
         div.className = 'option-card';
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:10px;">
                 <h4 style="margin:0; color:var(--primary);">Opción ${index + 1}</h4>
                 <span class="tag" style="background:#334155; color:#fff;">Dif: ${opt.diff.toFixed(2)}</span>
             </div>
             <div class="team-columns">
-                <div class="team-col">
-                    <strong style="color:#94a3b8">Equipo Negro (${opt.avgA})</strong>
-                    <ul>${renderTeamList(opt.teamA)}</ul>
-                </div>
-                <div class="team-col">
-                    <strong style="color:#f1f5f9">Equipo Blanco (${opt.avgB})</strong>
-                    <ul>${renderTeamList(opt.teamB)}</ul>
-                </div>
+                <div class="team-col"><strong style="color:#94a3b8">Negro (${opt.avgA})</strong><ul>${renderListSimple(opt.teamA)}</ul></div>
+                <div class="team-col"><strong style="color:#f1f5f9">Blanco (${opt.avgB})</strong><ul>${renderListSimple(opt.teamB)}</ul></div>
             </div>
             <button class="outline select-opt-btn" style="margin-top:15px; width:100%; border-color:var(--accent); color:var(--accent);">Ver en Pizarra</button>
         `;
-        
         div.querySelector('.select-opt-btn').addEventListener('click', () => {
             document.getElementById('fieldSection').classList.remove('hidden');
             drawField(opt.teamA, document.getElementById('fieldA'), 'token-black');
@@ -537,30 +454,33 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(div);
     });
   }
-
-  function renderTeamList(team) {
-    const order = { portero:0, defensa:1, delantero:2 };
-    return [...team].sort((a,b) => order[a.position] - order[b.position]).map(p => 
-        `<li><span>${p.name}</span><span style="font-size:0.7rem; opacity:0.7; text-transform:uppercase;">${p.position.substring(0,3)}</span></li>`
-    ).join('');
+  function renderListSimple(t) {
+    const order={portero:0,defensa:1,delantero:2};
+    return [...t].sort((a,b)=>order[a.position]-order[b.position]).map(p=>`<li><span>${p.name}</span><span style="font-size:0.7rem;opacity:0.7;">${p.position.substring(0,3).toUpperCase()}</span></li>`).join('');
   }
 
-  // FIELD LOGIC (UNCHANGED FUNCTIONALITY)
+  // --- PIZARRA & ARRASTRAR ---
   function drawField(team, div, colorClass) {
     div.querySelectorAll('.player-token').forEach(e => e.remove());
+    // Coordenadas fijas para los OBLIGATORIOS (1 GK, 3 DEF, 1 FWD)
+    // Usamos JSON parse/stringify para tener copias limpias de las coordenadas
     const coords = {
         portero:   [{x:140, y:400}],
-        defensa:   [{x:50, y:300}, {x:140, y:300}, {x:230, y:300}, {x:95, y:250}, {x:185, y:250}], 
-        delantero: [{x:140, y:100}, {x:90, y:150}, {x:190, y:150}] 
+        defensa:   [{x:50, y:300}, {x:140, y:300}, {x:230, y:300}], 
+        delantero: [{x:140, y:100}]
     };
-    const available = JSON.parse(JSON.stringify(coords));
+    const slots = JSON.parse(JSON.stringify(coords));
 
     team.forEach(p => {
-        let pos = {x: 140, y: 230}; 
-        if(available[p.position] && available[p.position].length > 0) {
-            pos = available[p.position].shift();
+        let pos = {x: 140, y: 200}; // Posición por defecto (centro) para los "rellenos"
+        
+        // Si hay hueco en su posición natural (es parte del esqueleto obligatorio), lo usa
+        if (slots[p.position] && slots[p.position].length > 0) {
+            pos = slots[p.position].shift();
         } else {
-            pos.x += (Math.random()*40 - 20); pos.y += (Math.random()*40 - 20);
+            // Si es un jugador extra (relleno), se posiciona aleatoriamente en el medio campo
+            pos.x = 60 + Math.random() * 200;
+            pos.y = 180 + Math.random() * 60;
         }
         createToken(p, div, colorClass, pos.x, pos.y);
     });
@@ -574,36 +494,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const l = document.createElement('div'); l.className='player-label'; l.textContent=p.name;
     el.appendChild(l);
     
+    // Listeners Touch/Mouse unificados
     el.addEventListener('mousedown', startDrag);
     el.addEventListener('touchstart', startDrag, {passive: false});
     div.appendChild(el);
   }
 
+  // Lógica Drag & Drop Móvil
   let activeItem = null; let activeContainer = null;
   let initialX, initialY, xOffset = 0, yOffset = 0;
 
   function startDrag(e) {
-    if (e.type === 'touchstart') {
-        initialX = e.touches[0].clientX - xOffset; initialY = e.touches[0].clientY - yOffset;
-    } else {
-        initialX = e.clientX - xOffset; initialY = e.clientY - yOffset;
-    }
+    const evt = e.type === 'touchstart' ? e.touches[0] : e;
+    initialX = evt.clientX - xOffset; initialY = evt.clientY - yOffset;
     activeItem = e.currentTarget;
     activeContainer = activeItem.parentElement;
     
     const rect = activeItem.getBoundingClientRect();
     const parentRect = activeContainer.getBoundingClientRect();
-    const offsetX = (e.type==='touchstart'?e.touches[0].clientX:e.clientX) - rect.left;
-    const offsetY = (e.type==='touchstart'?e.touches[0].clientY:e.clientY) - rect.top;
+    const offsetX = evt.clientX - rect.left;
+    const offsetY = evt.clientY - rect.top;
     
     const moveHandler = (moveEvent) => {
-        moveEvent.preventDefault();
-        const clientX = moveEvent.type==='touchmove' ? moveEvent.touches[0].clientX : moveEvent.clientX;
-        const clientY = moveEvent.type==='touchmove' ? moveEvent.touches[0].clientY : moveEvent.clientY;
+        moveEvent.preventDefault(); // Evita scroll
+        const mv = moveEvent.type === 'touchmove' ? moveEvent.touches[0] : moveEvent;
         
-        let newLeft = clientX - parentRect.left - offsetX;
-        let newTop = clientY - parentRect.top - offsetY;
+        let newLeft = mv.clientX - parentRect.left - offsetX;
+        let newTop = mv.clientY - parentRect.top - offsetY;
         
+        // Límites del campo (320x460 - 42 tamaño ficha)
         newLeft = Math.max(0, Math.min(newLeft, 320 - 42)); 
         newTop = Math.max(0, Math.min(newTop, 460 - 42));
         
@@ -625,21 +544,18 @@ document.addEventListener('DOMContentLoaded', () => {
     btnShare.innerHTML = "⚡ Generando..."; btnShare.disabled = true;
     
     try {
-        const canvas = await html2canvas(element, { backgroundColor: '#e2e8f0', scale: 2, logging: false, useCORS: true });
+        const canvas = await html2canvas(element, { backgroundColor: '#e2e8f0', scale: 2, useCORS: true });
         canvas.toBlob(async (blob) => {
             const file = new File([blob], 'partido-f7.png', { type: 'image/png' });
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                try { await navigator.share({ files: [file], title: 'Equipos F7', text: 'Alineación para el partido ⚽' }); } catch (err) {}
+                try { await navigator.share({ files: [file], title: 'Alineación', text: 'Aquí están los equipos ⚽' }); } catch (err) {}
             } else {
-                const link = document.createElement('a'); link.download = 'equipos-f7.png'; link.href = canvas.toDataURL(); link.click();
+                const link = document.createElement('a'); link.download = 'alineacion.png'; link.href = canvas.toDataURL(); link.click();
             }
             btnShare.innerHTML = originalText; btnShare.disabled = false;
         });
-    } catch (e) {
-        console.error(e); alert("Error imagen"); btnShare.innerHTML = originalText; btnShare.disabled = false;
-    }
+    } catch (e) { alert("Error al crear imagen"); btnShare.innerHTML = originalText; btnShare.disabled = false; }
   }
-
 });
 </script>
 </body>

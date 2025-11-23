@@ -366,22 +366,33 @@ document.addEventListener('DOMContentLoaded', () => {
   function placePlayersOnField(teamA, teamB) {
     fieldA.innerHTML = "";
     fieldB.innerHTML = "";
-    // setupFieldLines() eliminada
-    const positions = {
+
+    // Posiciones predefinidas para 7 jugadores (portero, defensa, delantero)
+    const positionsA = {
       portero: [{x:155,y:20}], 
       defensa: [{x:50,y:120},{x:155,y:120},{x:260,y:120}], 
       delantero: [{x:80,y:420},{x:155,y:420},{x:230,y:420}],
     };
+
+    const positionsB = {
+      portero: [{x:155,y:510}], 
+      defensa: [{x:50,y:400},{x:155,y:400},{x:260,y:400}], 
+      delantero: [{x:80,y:100},{x:155,y:100},{x:230,y:100}],
+    };
+
     teamA.forEach(p => {
-        const spot = positions[p.position]?.shift() || {x:155,y:250};
+        const spot = positionsA[p.position]?.shift() || {x:155,y:250};
         createPlayerEl(p,"negra",spot,fieldA);
     });
+
     teamB.forEach(p => {
-        const spot = positions[p.position]?.shift() || {x:155,y:250};
+        const spot = positionsB[p.position]?.shift() || {x:155,y:250};
         createPlayerEl(p,"blanca",spot,fieldB);
     });
+
     document.getElementById("fieldBox").style.display = "block";
-  }
+}
+
 
 });
 </script>

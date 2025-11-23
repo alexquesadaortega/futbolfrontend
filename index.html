@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cb.className = 'player-select';
       cb.dataset.playerId = player.num_id;
       const span = document.createElement('span');
-      span.textContent = ${player.name} (${player.position}) - ${player.rating};
+      span.textContent = `${player.name} (${player.position}) - ${player.rating}`;
       div.appendChild(cb);
       div.appendChild(span);
       playersListEl.appendChild(div);

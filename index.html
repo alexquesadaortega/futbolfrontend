@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('authBox').style.display = 'none';
     remotePlayers = await loadPlayersFromSupabase();
     renderPlayersList();
-    authMsg.textContent = Conectado como ${user.email};
+    authMsg.textContent = `Conectado como ${user.email}`;
   }
 
   async function loadPlayersFromSupabase(){

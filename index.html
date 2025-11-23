@@ -2,185 +2,292 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fútbol 7 Pro - Compartir WhatsApp</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#06b6d4">
+<title>Fútbol 7 Pro - Mobile</title>
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  :root { --primary: #06b6d4; --secondary: #10b981; --bg: #f3f4f6; --text: #1f2937; --whatsapp: #25D366; }
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: var(--bg); color: var(--text); max-width: 1000px; margin: 0 auto; }
+  :root { 
+    --primary: #06b6d4; 
+    --primary-dark: #0891b2;
+    --secondary: #10b981; 
+    --bg: #f0f2f5; 
+    --text: #1f2937; 
+    --card-bg: #ffffff;
+    --whatsapp: #25D366; 
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    background: var(--bg); 
+    color: var(--text); 
+    margin: 0; 
+    padding: 15px; 
+    padding-bottom: 80px; /* Espacio para scroll final */
+  }
   
-  h1, h2, h3, h4 { margin-top: 0; color: #111827; }
-  .box { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  h1, h2, h3 { margin-top: 0; color: #111827; letter-spacing: -0.5px; }
+  h1 { font-size: 1.5rem; text-align: center; margin-bottom: 20px; }
+  h2 { font-size: 1.25rem; margin-bottom: 15px; border-left: 4px solid var(--primary); padding-left: 10px; }
+
+  .box { 
+    background: var(--card-bg); 
+    padding: 15px; 
+    border-radius: 16px; 
+    margin-bottom: 20px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03); 
+  }
   
-  /* Inputs y Botones */
-  input, select { padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #d1d5db; width: 100%; box-sizing: border-box; }
-  .row-inputs { display: flex; gap: 10px; }
+  /* Inputs y Formularios Mobile Friendly */
+  input, select { 
+    padding: 12px; 
+    margin-bottom: 10px; 
+    border-radius: 10px; 
+    border: 1px solid #e5e7eb; 
+    width: 100%; 
+    font-size: 16px; /* Evita zoom en iOS */
+    background: #f9fafb;
+    transition: all 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--primary); outline: none; background: #fff; }
+
+  .row-inputs { 
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap; /* Permite que caigan en líneas nuevas */
+  }
   
-  button { padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: opacity 0.2s; width: 100%; margin-top: 10px; }
-  button:hover { opacity: 0.9; }
+  /* Botones Táctiles */
+  button { 
+    padding: 14px; 
+    border-radius: 10px; 
+    border: none; 
+    cursor: pointer; 
+    font-weight: 600; 
+    font-size: 1rem; 
+    width: 100%; 
+    margin-top: 8px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    active: scale(0.98);
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  button:active { transform: scale(0.98); }
+  
   button.primary { background: var(--primary); color: #fff; }
   button.secondary { background: var(--secondary); color: #fff; }
-  button.whatsapp { background: var(--whatsapp); color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1.1rem; }
-  button.outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  button.whatsapp { background: var(--whatsapp); color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
+  button.outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); box-shadow: none; padding: 8px; font-size: 0.9rem; margin-top: 0;}
 
-  /* Listas */
-  .player-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-  .player-info { display: flex; align-items: center; gap: 10px; }
-  .tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; }
-  .tag.portero { background: #fef3c7; color: #d97706; }
-  .tag.defensa { background: #d1fae5; color: #059669; }
-  .tag.delantero { background: #fee2e2; color: #dc2626; }
+  /* Listas de Jugadores */
+  .player-row { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 12px 0; 
+    border-bottom: 1px solid #f3f4f6; 
+  }
+  /* Checkbox más grande para dedos */
+  .p-select { width: 20px; height: 20px; margin-right: 10px; accent-color: var(--primary); }
+  
+  .tag { padding: 4px 8px; border-radius: 6px; font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
+  .tag.portero { background: #fffbeb; color: #b45309; }
+  .tag.defensa { background: #ecfdf5; color: #047857; }
+  .tag.delantero { background: #fef2f2; color: #b91c1c; }
 
-  /* Resultados de equipos */
-  .option-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fafafa; transition: transform 0.1s; }
-  .option-card:hover { border-color: var(--primary); background: #fff; }
-  .team-columns { display: flex; gap: 20px; margin-top: 10px; }
-  .team-col { flex: 1; }
-  .team-col ul { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
-  .team-col li { padding: 4px 0; border-bottom: 1px dashed #eee; display:flex; justify-content:space-between; }
-  .pos-mini { font-size:0.75rem; color:#6b7280; margin-left:5px; }
+  /* Resultados */
+  .option-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; margin-bottom: 15px; background: #fff; }
+  .team-columns { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; } /* Columna en móvil */
+  
+  @media (min-width: 768px) {
+    .team-columns { flex-direction: row; }
+    .row-inputs { flex-wrap: nowrap; }
+    body { max-width: 800px; margin: 0 auto; }
+  }
 
-  /* CAMPO DE FÚTBOL CSS */
-  /* Añadimos padding al container para que la captura salga con margen */
-  .field-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; background: #fff; padding: 10px; border-radius: 8px; }
+  .team-col ul { list-style: none; padding: 0; margin: 0; font-size: 0.95rem; }
+  .team-col li { padding: 6px 0; border-bottom: 1px dashed #eee; display:flex; justify-content:space-between; }
+
+  /* CAMPO DE FÚTBOL */
+  .field-container { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 20px; 
+    background: #fff; 
+    padding: 10px; 
+    border-radius: 8px; 
+  }
   
   .football-field {
     position: relative;
-    width: 350px; 
-    height: 500px; 
+    /* Ancho fijo seguro para móbiles (iPhone SE es 320px) */
+    width: 320px; 
+    height: 460px; 
     background-color: #4ca153;
-    background-image: linear-gradient(0deg, transparent 24%, rgba(255,255,255,.3) 25%, rgba(255,255,255,.3) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.3) 75%, rgba(255,255,255,.3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,.3) 25%, rgba(255,255,255,.3) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.3) 75%, rgba(255,255,255,.3) 76%, transparent 77%, transparent);
-    background-size: 50px 50px;
-    border: 5px solid #fff;
+    /* Patrón de césped */
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(255,255,255,0.1) 50px, rgba(255,255,255,0.1) 100px);
+    border: 4px solid #fff;
     border-radius: 8px;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     overflow: hidden;
     user-select: none;
+    margin: 0 auto;
   }
-  .field-line-center { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.8); }
-  .field-circle { position: absolute; top: 50%; left: 50%; width: 80px; height: 80px; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); }
-  .area-top { position: absolute; top: 0; left: 50%; width: 160px; height: 80px; border: 2px solid rgba(255,255,255,0.8); border-top: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
-  .area-bottom { position: absolute; bottom: 0; left: 50%; width: 160px; height: 80px; border: 2px solid rgba(255,255,255,0.8); border-bottom: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
+  /* Líneas del campo */
+  .field-line-center { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.7); }
+  .field-circle { position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; transform: translate(-50%, -50%); }
+  .area-top { position: absolute; top: 0; left: 50%; width: 140px; height: 60px; border: 2px solid rgba(255,255,255,0.7); border-top: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
+  .area-bottom { position: absolute; bottom: 0; left: 50%; width: 140px; height: 60px; border: 2px solid rgba(255,255,255,0.7); border-bottom: none; transform: translateX(-50%); background: rgba(255,255,255,0.1); }
 
   /* Fichas Jugadores */
   .player-token {
-    position: absolute; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #fff;
+    position: absolute; 
+    width: 40px; height: 40px; /* Más grandes para dedos */
+    border-radius: 50%; 
+    border: 2px solid #fff;
     display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: bold; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.4); z-index: 10;
+    font-size: 12px; font-weight: bold; 
+    cursor: grab; 
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3); 
+    z-index: 10;
+    /* CRUCIAL PARA MÓVIL: Evita scroll al arrastrar */
+    touch-action: none; 
   }
-  .player-token:active { cursor: grabbing; transform: scale(1.1); z-index: 20; }
-  .token-black { background: #1f2937; color: white; }
-  .token-white { background: #f9fafb; color: #1f2937; border-color: #1f2937; }
+  .player-token:active { cursor: grabbing; transform: scale(1.15); z-index: 20; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+  .token-black { background: #111827; color: white; }
+  .token-white { background: #f3f4f6; color: #111827; border-color: #111827; }
+  
   .player-label {
-    position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.7); color: #fff; padding: 1px 4px; border-radius: 3px;
-    font-size: 9px; white-space: nowrap; pointer-events: none;
+    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px;
+    font-size: 10px; white-space: nowrap; pointer-events: none; font-weight: normal;
   }
 
-  .hidden { display: none; }
+  .hidden { display: none !important; }
   .small { font-size: 0.85rem; color: #6b7280; }
-  .error-msg { color: #dc2626; font-size: 0.9rem; margin-top: 5px; font-weight: bold; }
+  .error-msg { 
+    background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; 
+    font-size: 0.9rem; margin-top: 10px; display: none; 
+    border: 1px solid #fca5a5;
+  }
+  
+  /* Header sticky para acciones principales */
+  .sticky-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
 </style>
 
 </head>
 <body>
 
-<h1>⚽ Generador de Equipos F7</h1>
+<h1>⚽ Fútbol 7 Pro</h1>
 
 <div class="box" id="authBox">
-  <h2>Acceso</h2>
-  <div class="row-inputs">
-    <input id="authEmail" placeholder="Email">
-    <input id="authPassword" type="password" placeholder="Contraseña">
+  <div style="text-align:center; margin-bottom:20px;">
+    <h2>Bienvenido</h2>
+    <p class="small">Gestiona tu equipo desde el móvil</p>
   </div>
-  <div class="row-inputs">
-    <button id="btnLogin" class="primary">Iniciar Sesión</button>
-    <button id="btnRegister" class="secondary">Registrarse</button>
-  </div>
-  <div id="authMsg" class="small" style="margin-top:10px;"></div>
+  
+  <input id="authEmail" type="email" placeholder="Correo electrónico">
+  <input id="authPassword" type="password" placeholder="Contraseña">
+  
+  <button id="btnLogin" class="primary">Iniciar Sesión</button>
+  <button id="btnRegister" class="secondary">Crear Cuenta</button>
+  <div id="authMsg" class="small" style="margin-top:15px; text-align:center; min-height:20px;"></div>
 </div>
 
 <div id="appContent" class="hidden">
   
   <div class="box">
-    <h2>Gestión de Jugadores</h2>
+    <h2>Nuevo Jugador</h2>
     <div class="row-inputs">
-      <input id="playerName" placeholder="Nombre" style="flex: 2;">
-      <select id="playerPosition" style="flex: 1;">
-        <option value="portero">Portero</option>
+      <input id="playerName" placeholder="Nombre (ej. Messi)" style="flex: 2;">
+      <input id="playerSkill" type="number" placeholder="Nota (1-10)" inputmode="decimal" step="0.1" style="flex: 1;">
+    </div>
+    <select id="playerPosition">
         <option value="defensa">Defensa</option>
         <option value="delantero">Delantero</option>
-      </select>
-      <input id="playerSkill" type="number" placeholder="Media" min="1" max="10" step="0.1" style="flex: 1;">
-    </div>
-    <button id="btnAddPlayer" class="secondary">Guardar Jugador</button>
-    <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
-    
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>Convocados <span id="playerCount" class="small"></span></h3>
-        <button id="btnSelectAll" class="outline" style="width:auto; margin:0; padding:4px 10px; font-size:12px;">Seleccionar Todos</button>
+        <option value="portero">Portero</option>
+    </select>
+    <button id="btnAddPlayer" class="secondary">➕ Añadir Jugador</button>
+  </div>
+
+  <div class="box">
+    <div class="sticky-header">
+        <h3 style="margin:0">Plantilla <span id="playerCount" class="small"></span></h3>
+        <button id="btnSelectAll" class="outline" style="width:auto;">Marcar Todos</button>
     </div>
     <div id="playersList"></div>
   </div>
 
   <div class="box">
-    <h2>Generar Opciones</h2>
-    <p class="small">Requisitos: <strong>1 Portero, 3 Defensas, 1 Delantero</strong> (mínimo). Resto: Relleno.</p>
-    <button id="btnGenerateTeams" class="primary">🎲 Generar 5 Opciones Únicas</button>
+    <h2>Hacer Equipos</h2>
+    <p class="small" style="margin-bottom:15px;">Algoritmo: Equilibra la media de los equipos basándose en las notas.</p>
+    
+    <button id="btnGenerateTeams" class="primary" style="padding: 16px; font-size: 1.1rem;">🎲 Generar Partida</button>
     <div id="generateError" class="error-msg"></div>
 
     <div id="teamsResult" style="margin-top:20px;"></div>
   </div>
 
-  <div id="fieldSection" class="box hidden">
-    <h2>Pizarra Táctica</h2>
-    <p class="small">Mueve las fichas si es necesario y comparte la imagen.</p>
+  <div id="fieldSection" class="box hidden" style="border: 2px solid var(--primary);">
+    <h2 style="text-align:center; margin-bottom:5px;">Pizarra Táctica</h2>
+    <p class="small" style="text-align:center; margin-bottom:15px;">Arrastra las fichas para colocar a los jugadores.</p>
     
     <div class="field-container" id="captureArea">
-      <div>
-        <h3 style="text-align:center;">Equipo Negro</h3>
+      
+      <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
+        <div style="background:#111827; color:white; padding:5px 15px; border-radius:15px; margin-bottom:10px; font-weight:bold;">Equipo Negro</div>
         <div id="fieldA" class="football-field">
             <div class="field-line-center"></div><div class="field-circle"></div><div class="area-top"></div><div class="area-bottom"></div>
         </div>
       </div>
-      <div>
-        <h3 style="text-align:center;">Equipo Blanco</h3>
+
+      <div style="width:100%; display:flex; flex-direction:column; align-items:center; margin-top:20px;">
+        <div style="background:#f3f4f6; color:#111827; border:1px solid #999; padding:5px 15px; border-radius:15px; margin-bottom:10px; font-weight:bold;">Equipo Blanco</div>
         <div id="fieldB" class="football-field">
             <div class="field-line-center"></div><div class="field-circle"></div><div class="area-top"></div><div class="area-bottom"></div>
         </div>
       </div>
+
     </div>
 
-    <button id="btnShareWhatsapp" class="whatsapp">
-        📸 Compartir Imagen por WhatsApp
-    </button>
+    <div style="position:sticky; bottom:0; background:#fff; padding:10px 0; z-index:100;">
+        <button id="btnShareWhatsapp" class="whatsapp">
+            📸 Enviar por WhatsApp
+        </button>
+    </div>
   </div>
 
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // CONFIG
   const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
   
   let supabase;
-  try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error(e); }
+  try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Supabase init fail", e); }
 
   let allPlayers = [];
   let currentUser = null;
 
+  // DOM ELEMENTS
   const authBox = document.getElementById('authBox');
   const appContent = document.getElementById('appContent');
   const authMsg = document.getElementById('authMsg');
   const playersListEl = document.getElementById('playersList');
-  const fieldA = document.getElementById('fieldA');
-  const fieldB = document.getElementById('fieldB');
   const generateError = document.getElementById('generateError');
   const btnShare = document.getElementById('btnShareWhatsapp');
 
+  // EVENTS
   document.getElementById('btnRegister').addEventListener('click', () => handleAuth('signup'));
   document.getElementById('btnLogin').addEventListener('click', () => handleAuth('signin'));
   document.getElementById('btnAddPlayer').addEventListener('click', addPlayer);
@@ -188,22 +295,40 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnSelectAll').addEventListener('click', () => {
     document.querySelectorAll('.p-select').forEach(c => c.checked = true);
   });
-  
-  // LISTENER PARA COMPARTIR
   btnShare.addEventListener('click', shareFieldsImage);
 
+  // AUTH
   async function handleAuth(type) {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
-    if (!email || !password) return showMsg('Rellena email y contraseña');
-    showMsg('Procesando...');
-    let res = type === 'signup' ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password });
-    if (res.error) showMsg('Error: ' + res.error.message);
-    else { currentUser = res.data.user; showMsg('¡Éxito!'); initApp(); }
+    
+    authMsg.style.color = 'black';
+    if (!email || !password) return showMsg('⚠️ Rellena email y contraseña');
+    
+    showMsg('⏳ Conectando...');
+    
+    let res;
+    if(type === 'signup') res = await supabase.auth.signUp({ email, password });
+    else res = await supabase.auth.signInWithPassword({ email, password });
+
+    if (res.error) {
+        authMsg.style.color = '#dc2626';
+        showMsg(res.error.message === 'Invalid login credentials' ? 'Datos incorrectos' : res.error.message);
+    } else { 
+        currentUser = res.data.user; 
+        showMsg('✅ ¡Dentro!'); 
+        setTimeout(initApp, 500);
+    }
   }
   function showMsg(txt) { authMsg.textContent = txt; }
-  async function initApp() { authBox.style.display = 'none'; appContent.classList.remove('hidden'); await loadPlayers(); }
 
+  async function initApp() { 
+    authBox.style.display = 'none'; 
+    appContent.classList.remove('hidden'); 
+    await loadPlayers(); 
+  }
+
+  // PLAYER MANAGEMENT
   async function loadPlayers() {
     if (!currentUser) return;
     const { data, error } = await supabase.from('players').select('*').eq('user_id', currentUser.id);
@@ -212,65 +337,81 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function addPlayer() {
-    const name = document.getElementById('playerName').value.trim();
-    const position = document.getElementById('playerPosition').value;
-    const rating = parseFloat(document.getElementById('playerSkill').value);
-    if (!name || !rating) return alert('Datos incompletos');
+    const nameIn = document.getElementById('playerName');
+    const skillIn = document.getElementById('playerSkill');
+    const posIn = document.getElementById('playerPosition');
+
+    const name = nameIn.value.trim();
+    const rating = parseFloat(skillIn.value);
+    const position = posIn.value;
+
+    if (!name || !rating) return alert('Por favor rellena nombre y media');
     
     const newPlayer = { user_id: currentUser.id, name, position, rating, num_id: Date.now() };
-    const { data, error } = await supabase.from('players').insert([newPlayer]).select();
-    if (error) { alert('Error nube, usando local'); allPlayers.push(newPlayer); }
-    else if(data && data.length) allPlayers.push(data[0]);
     
-    document.getElementById('playerName').value = '';
+    // Optimistic UI Update
+    allPlayers.push(newPlayer);
     renderList();
+    nameIn.value = ''; skillIn.value = '';
+
+    const { data, error } = await supabase.from('players').insert([newPlayer]).select();
+    if (error) console.error("Error sync", error); 
+    else if(data && data.length) {
+        // Update local ID with real DB ID
+        allPlayers[allPlayers.length-1] = data[0];
+    }
   }
 
   function renderList() {
     playersListEl.innerHTML = '';
     document.getElementById('playerCount').textContent = `(${allPlayers.length})`;
+    
     const order = { portero: 1, defensa: 2, delantero: 3 };
-    [...allPlayers].sort((a,b) => order[a.position] - order[b.position]).forEach(p => {
+    
+    [...allPlayers].sort((a,b) => order[a.position] - order[b.position] || b.rating - a.rating).forEach(p => {
       const div = document.createElement('div');
       div.className = 'player-row';
       div.innerHTML = `
-        <div class="player-info">
+        <div style="display:flex; align-items:center;">
           <input type="checkbox" class="p-select" checked value="${p.num_id || p.id}">
-          <strong>${p.name}</strong> <span class="tag ${p.position}">${p.position}</span>
+          <div style="display:flex; flex-direction:column;">
+             <span style="font-weight:600; font-size:1rem;">${p.name}</span>
+             <span class="tag ${p.position}" style="width:fit-content;">${p.position}</span>
+          </div>
         </div>
-        <span>${p.rating}</span>
+        <span style="font-weight:bold; font-size:1.1rem; color:#6b7280;">${p.rating}</span>
       `;
       playersListEl.appendChild(div);
     });
   }
 
-  // --- LÓGICA DE GENERACIÓN ---
+  // GENERATION LOGIC
   function generateTeamOptions() {
+    generateError.style.display = 'none';
     generateError.textContent = '';
+    
     const checks = document.querySelectorAll('.p-select:checked');
     const selectedIds = Array.from(checks).map(c => c.value);
     const pool = allPlayers.filter(p => selectedIds.includes(String(p.num_id)) || selectedIds.includes(String(p.id)));
 
-    if (pool.length < 14) return generateError.textContent = 'Selecciona al menos 14 jugadores.';
+    if (pool.length < 10) { // Bajamos requisito para pruebas, ideal 12-14
+        showError('Selecciona al menos 10 jugadores.'); return;
+    }
 
     const countPos = (pos) => pool.filter(p => p.position === pos).length;
-    const nGK = countPos('portero');
-    const nDef = countPos('defensa');
-    const nFwd = countPos('delantero');
-
-    if (nGK < 2) return generateError.textContent = `Faltan porteros. Tienes ${nGK}, mín 2.`;
-    if (nDef < 6) return generateError.textContent = `Faltan defensas. Tienes ${nDef}, mín 6.`;
-    if (nFwd < 2) return generateError.textContent = `Faltan delanteros. Tienes ${nFwd}, mín 2.`;
+    if (countPos('portero') < 2) { showError('Necesitas mínimo 2 Porteros.'); return; }
 
     let variations = [];
     const seenHashes = new Set(); 
 
-    for(let i=0; i<500; i++) { 
-        const attempt = createStrictVariation(pool);
+    // Intentamos generar 200 combinaciones aleatorias
+    for(let i=0; i<200; i++) { 
+        const attempt = createBalancedMatch(pool);
         if(!attempt) continue;
 
-        const idsA = attempt.teamA.map(p => p.num_id || p.id).sort().join('-');
-        const idsB = attempt.teamB.map(p => p.num_id || p.id).sort().join('-');
+        // Create ID hash to avoid duplicates
+        const idsA = attempt.teamA.map(p => p.num_id||p.id).sort().join('-');
+        const idsB = attempt.teamB.map(p => p.num_id||p.id).sort().join('-');
         const matchHash = [idsA, idsB].sort().join('::');
 
         if(seenHashes.has(matchHash)) continue; 
@@ -278,49 +419,51 @@ document.addEventListener('DOMContentLoaded', () => {
         variations.push(attempt);
     }
 
+    // Sort by most balanced (lowest diff)
     variations.sort((a, b) => a.diff - b.diff);
-    const top5 = variations.slice(0, 5);
-    if (top5.length === 0) return generateError.textContent = "No se encontraron combinaciones válidas.";
-    displayOptions(top5);
+    const top3 = variations.slice(0, 3); // Mostramos solo 3 para no saturar móvil
+    
+    if (top3.length === 0) { showError("No se pudo equilibrar. Revisa las posiciones."); return; }
+    displayOptions(top3);
+  }
+  
+  function showError(msg) {
+      generateError.textContent = msg;
+      generateError.style.display = 'block';
   }
 
-  function createStrictVariation(originalPool) {
-    const gks = originalPool.filter(p => p.position === 'portero');
-    const defs = originalPool.filter(p => p.position === 'defensa');
-    const fwds = originalPool.filter(p => p.position === 'delantero');
-
-    const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
-
-    const s_gks = shuffle(gks);
-    const s_defs = shuffle(defs);
-    const s_fwds = shuffle(fwds);
+  function createBalancedMatch(originalPool) {
+    // Estrategia simple: Barajar y repartir por posición
+    const gks = shuffle(originalPool.filter(p => p.position === 'portero'));
+    const defs = shuffle(originalPool.filter(p => p.position === 'defensa'));
+    const fwds = shuffle(originalPool.filter(p => p.position === 'delantero'));
 
     const teamA = [];
     const teamB = [];
 
-    // FASE 1: OBLIGATORIOS
-    teamA.push(s_gks.pop()); teamB.push(s_gks.pop());
-    for(let k=0; k<3; k++) teamA.push(s_defs.pop());
-    for(let k=0; k<3; k++) teamB.push(s_defs.pop());
-    teamA.push(s_fwds.pop()); teamB.push(s_fwds.pop());
+    // 1. Repartir Porteros
+    teamA.push(gks.pop()); 
+    teamB.push(gks.pop());
 
-    // FASE 2: RELLENO
-    const leftovers = [...s_gks, ...s_defs, ...s_fwds];
-    const s_leftovers = shuffle(leftovers);
+    // 2. Repartir Resto (mezclamos defensas y delanteros sobrantes si faltan)
+    // Nota: Simplificamos la lógica para que funcione siempre
+    let fieldPlayers = [...defs, ...fwds, ...gks]; // gks sobrantes si hay más de 2
+    fieldPlayers = shuffle(fieldPlayers);
+
+    while(fieldPlayers.length > 0) {
+        if(teamA.length <= teamB.length) teamA.push(fieldPlayers.pop());
+        else teamB.push(fieldPlayers.pop());
+    }
     
-    while(teamA.length < 7 && s_leftovers.length > 0) teamA.push(s_leftovers.pop());
-    while(teamB.length < 7 && s_leftovers.length > 0) teamB.push(s_leftovers.pop());
+    // Calc stats
+    const getAvg = t => t.length ? t.reduce((a,c)=>a+c.rating,0) / t.length : 0;
+    const avgA = getAvg(teamA);
+    const avgB = getAvg(teamB);
 
-    const getSum = t => t.reduce((acc, c) => acc + c.rating, 0);
-    const avgA = getSum(teamA) / teamA.length;
-    const avgB = getSum(teamB) / teamB.length;
-
-    return {
-        teamA, teamB,
-        avgA: avgA.toFixed(2), avgB: avgB.toFixed(2),
-        diff: Math.abs(avgA - avgB)
-    };
+    return { teamA, teamB, avgA: avgA.toFixed(2), avgB: avgB.toFixed(2), diff: Math.abs(avgA - avgB) };
   }
+  
+  function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
   function displayOptions(options) {
     const container = document.getElementById('teamsResult');
@@ -330,26 +473,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const div = document.createElement('div');
         div.className = 'option-card';
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;">
                 <h4 style="margin:0">Opción ${index + 1}</h4>
-                <span class="tag" style="background:#e0e7ff; color:#4338ca;">Dif: ${opt.diff.toFixed(2)}</span>
+                <span class="tag" style="background:#e0e7ff; color:#4338ca; font-size:11px;">Diferencia: ${opt.diff.toFixed(2)}</span>
             </div>
             <div class="team-columns">
                 <div class="team-col">
-                    <strong>Negro (${opt.avgA})</strong>
+                    <strong style="color:#1f2937">Equipo Negro (${opt.avgA})</strong>
                     <ul>${renderTeamList(opt.teamA)}</ul>
                 </div>
                 <div class="team-col">
-                    <strong>Blanco (${opt.avgB})</strong>
+                    <strong style="color:#6b7280">Equipo Blanco (${opt.avgB})</strong>
                     <ul>${renderTeamList(opt.teamB)}</ul>
                 </div>
             </div>
-            <button class="outline select-opt-btn" style="margin-top:10px;">Ver en campo</button>
+            <button class="outline select-opt-btn" style="margin-top:15px; border-width:1px;">Ver en el campo</button>
         `;
+        
         div.querySelector('.select-opt-btn').addEventListener('click', () => {
             document.getElementById('fieldSection').classList.remove('hidden');
-            drawField(opt.teamA, opt.teamB);
-            document.getElementById('fieldSection').scrollIntoView({behavior: "smooth"});
+            drawField(opt.teamA, document.getElementById('fieldA'), 'token-black');
+            drawField(opt.teamB, document.getElementById('fieldB'), 'token-white');
+            
+            // Smooth scroll
+            setTimeout(() => {
+                document.getElementById('fieldSection').scrollIntoView({behavior: "smooth"});
+            }, 100);
         });
         container.appendChild(div);
     });
@@ -357,99 +506,167 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderTeamList(team) {
     const order = { portero:0, defensa:1, delantero:2 };
-    const sorted = [...team].sort((a,b) => order[a.position] - order[b.position]);
-    return sorted.map(p => `<li><span>${p.name}</span><span class="pos-mini">${p.position.substring(0,3)}</span></li>`).join('');
+    return [...team].sort((a,b) => order[a.position] - order[b.position]).map(p => 
+        `<li>
+            <span>${p.name}</span>
+            <span style="font-size:0.7rem; color:#9ca3af; text-transform:uppercase;">${p.position.substring(0,3)}</span>
+        </li>`
+    ).join('');
   }
 
-  // --- VISUALIZACIÓN ---
-  function drawField(teamA, teamB) {
-    cleanTokens(fieldA); cleanTokens(fieldB);
+  // --- FIELD & DRAG LOGIC ---
+  function drawField(team, div, colorClass) {
+    div.querySelectorAll('.player-token').forEach(e => e.remove());
     
-    const posCoords = {
-        portero: [{x:155, y:450}],
-        defensa: [{x:50, y:350}, {x:155, y:350}, {x:260, y:350}, {x:80, y:300}, {x:230, y:300}], 
-        delantero: [{x:155, y:100}, {x:100, y:150}, {x:210, y:150}] 
+    // Coordenadas ajustadas para ancho 320px
+    // GK abajo, DEF medio, FWD arriba
+    const coords = {
+        portero:   [{x:140, y:400}],
+        defensa:   [{x:50, y:300}, {x:140, y:300}, {x:230, y:300}, {x:95, y:250}, {x:185, y:250}], 
+        delantero: [{x:140, y:100}, {x:90, y:150}, {x:190, y:150}] 
     };
+    
+    // Copia profunda para consumir coords
+    const available = JSON.parse(JSON.stringify(coords));
 
-    const place = (team, div, color) => {
-      const currentCoords = JSON.parse(JSON.stringify(posCoords));
-      team.forEach(p => {
-        let spot;
-        if (currentCoords[p.position] && currentCoords[p.position].length > 0) {
-            spot = currentCoords[p.position].shift();
+    team.forEach(p => {
+        let pos = {x: 140, y: 230}; // Default center
+        if(available[p.position] && available[p.position].length > 0) {
+            pos = available[p.position].shift();
         } else {
-            spot = {x: 155 + (Math.random()*40 - 20), y: 220 + (Math.random()*40 - 20)};
+            // Random offset si se llenan huecos
+            pos.x += (Math.random()*40 - 20);
+            pos.y += (Math.random()*40 - 20);
         }
-        createToken(p, div, color, spot.x, spot.y);
-      });
-    }
-    place(teamA, fieldA, 'token-black');
-    place(teamB, fieldB, 'token-white');
+        createToken(p, div, colorClass, pos.x, pos.y);
+    });
   }
 
-  function cleanTokens(div) { div.querySelectorAll('.player-token').forEach(e => e.remove()); }
   function createToken(p, div, cls, x, y) {
     const el = document.createElement('div');
     el.className = `player-token ${cls}`;
     el.textContent = p.name.substring(0,2).toUpperCase();
-    el.style.left = x+'px'; el.style.top = y+'px';
-    const l = document.createElement('div'); l.className='player-label'; l.textContent=p.name;
+    el.style.left = x+'px'; 
+    el.style.top = y+'px';
+    
+    const l = document.createElement('div'); 
+    l.className='player-label'; 
+    l.textContent=p.name;
     el.appendChild(l);
-    el.onmousedown = dragMouse;
-    el.ontouchstart = dragTouch;
+
+    // Eventos Touch/Mouse unificados
+    el.addEventListener('mousedown', startDrag);
+    el.addEventListener('touchstart', startDrag, {passive: false});
+    
     div.appendChild(el);
   }
 
-  let active = null, startX, startY, initX, initY;
-  function dragMouse(e) { 
-    e.preventDefault(); active=e.currentTarget; startX=e.clientX; startY=e.clientY; initX=active.offsetLeft; initY=active.offsetTop;
-    document.onmousemove=e=>{ if(!active)return; active.style.left=(initX+e.clientX-startX)+'px'; active.style.top=(initY+e.clientY-startY)+'px'; };
-    document.onmouseup=()=>{ active=null; document.onmousemove=null; };
-  }
-  function dragTouch(e) {
-    active=e.currentTarget; const t=e.touches[0]; startX=t.clientX; startY=t.clientY; initX=active.offsetLeft; initY=active.offsetTop;
-    document.ontouchmove=e=>{ if(!active)return; const t=e.touches[0]; active.style.left=(initX+t.clientX-startX)+'px'; active.style.top=(initY+t.clientY-startY)+'px'; };
-    document.ontouchend=()=>{ active=null; document.ontouchmove=null; };
+  // Generic Drag Handler
+  let activeItem = null;
+  let activeContainer = null;
+  let initialX, initialY, currentX, currentY, xOffset = 0, yOffset = 0;
+
+  function startDrag(e) {
+    // Si es touch, evitar scroll
+    if (e.type === 'touchstart') {
+        // e.preventDefault(); // Opcional, touch-action: none en CSS hace el trabajo
+        initialX = e.touches[0].clientX - xOffset;
+        initialY = e.touches[0].clientY - yOffset;
+    } else {
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+    }
+
+    activeItem = e.currentTarget;
+    
+    // Calcular offset basado en la posición actual parseada del style left/top
+    const styleLeft = parseFloat(activeItem.style.left || 0);
+    const styleTop = parseFloat(activeItem.style.top || 0);
+    
+    // Necesitamos saber donde empezamos relativo al padre
+    // Simplificación: Usamos lógica directa de movimiento
+    activeContainer = activeItem.parentElement;
+    
+    // Nueva logica simple
+    const rect = activeItem.getBoundingClientRect();
+    const parentRect = activeContainer.getBoundingClientRect();
+    
+    const offsetX = (e.type==='touchstart'?e.touches[0].clientX:e.clientX) - rect.left;
+    const offsetY = (e.type==='touchstart'?e.touches[0].clientY:e.clientY) - rect.top;
+    
+    const moveHandler = (moveEvent) => {
+        moveEvent.preventDefault();
+        const clientX = moveEvent.type==='touchmove' ? moveEvent.touches[0].clientX : moveEvent.clientX;
+        const clientY = moveEvent.type==='touchmove' ? moveEvent.touches[0].clientY : moveEvent.clientY;
+        
+        let newLeft = clientX - parentRect.left - offsetX;
+        let newTop = clientY - parentRect.top - offsetY;
+        
+        // Limites
+        newLeft = Math.max(0, Math.min(newLeft, 320 - 40)); // 320 width - 40 token
+        newTop = Math.max(0, Math.min(newTop, 460 - 40));  // 460 height - 40 token
+        
+        activeItem.style.left = newLeft + 'px';
+        activeItem.style.top = newTop + 'px';
+    };
+    
+    const upHandler = () => {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+        document.removeEventListener('touchmove', moveHandler);
+        document.removeEventListener('touchend', upHandler);
+        activeItem = null;
+    };
+
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', upHandler);
+    document.addEventListener('touchmove', moveHandler, {passive: false});
+    document.addEventListener('touchend', upHandler);
   }
 
-  // --- FUNCIÓN COMPARTIR ---
+  // SHARE IMAGE
   async function shareFieldsImage() {
     const element = document.getElementById('captureArea');
-    btnShare.textContent = "⏳ Generando imagen...";
+    const originalText = btnShare.innerHTML;
+    btnShare.innerHTML = "⚙️ Procesando...";
+    btnShare.disabled = true;
     
     try {
-        const canvas = await html2canvas(element, { backgroundColor: '#ffffff', scale: 2 }); // Scale 2 para mejor calidad
+        // Usamos scale 2 para pantallas retina/móviles modernos
+        const canvas = await html2canvas(element, { 
+            backgroundColor: '#ffffff', 
+            scale: 2,
+            logging: false,
+            useCORS: true
+        });
         
         canvas.toBlob(async (blob) => {
-            const file = new File([blob], 'alineacion_f7.png', { type: 'image/png' });
-
-            // 1. Intento API nativa (Móvil)
+            const file = new File([blob], 'partido-f7.png', { type: 'image/png' });
+            
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
                         files: [file],
-                        title: 'Alineación Partido',
-                        text: 'Aquí tenéis los equipos para el partido ⚽'
+                        title: 'Equipos F7',
+                        text: 'Alineación para el partido ⚽'
                     });
-                    btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
-                } catch (err) {
-                    console.log('Compartir cancelado o fallido', err);
-                    btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
-                }
+                } catch (err) { console.log('Share closed'); }
             } else {
-                // 2. Fallback Escritorio (Descarga)
+                // Fallback descarga
                 const link = document.createElement('a');
-                link.download = 'alineacion_f7.png';
+                link.download = 'equipos-f7.png';
                 link.href = canvas.toDataURL();
                 link.click();
-                alert("Imagen descargada. Arrástrala a WhatsApp Web.");
-                btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
+                alert("Imagen guardada en tu galería.");
             }
+            btnShare.innerHTML = originalText;
+            btnShare.disabled = false;
         });
     } catch (e) {
         console.error(e);
-        alert("Error generando la imagen");
-        btnShare.textContent = "📸 Compartir Imagen por WhatsApp";
+        alert("Error al crear la imagen.");
+        btnShare.innerHTML = originalText;
+        btnShare.disabled = false;
     }
   }
 

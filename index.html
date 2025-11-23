@@ -42,18 +42,39 @@
   margin: 0 auto;
 }
 
-/* Línea central horizontal */
+/* Área portero superior */
+.football-field .goal-area-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 70px;
+  border: 2px solid #fff;
+  border-top: none;
+}
+
+/* Área portero inferior */
+.football-field .goal-area-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 70px;
+  border: 2px solid #fff;
+  border-bottom: none;
+}
+
+/* Línea central vertical */
 .football-field::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 2px;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
   background: #fff;
-  transform: translateY(-50%);
+  transform: translateX(-50%);
 }
-
 
 /* Círculo central */
 .football-field::after {
@@ -68,27 +89,6 @@
   transform: translate(-50%, -50%);
 }
 
-/* Área portero superior */
-.football-field .goal-area-top {
-  position: absolute;
-  top: 0;
-  left: 90px;       /* centrar horizontalmente según ancho del campo */
-  width: 170px;      /* ancho del área */
-  height: 70px;      /* alto del área */
-  border: 2px solid #fff;
-  border-top: none;
-}
-
-/* Área portero inferior */
-.football-field .goal-area-bottom {
-  position: absolute;
-  bottom: 0;
-  left: 90px;
-  width: 170px;
-  height: 70px;
-  border: 2px solid #fff;
-  border-bottom: none;
-}
 
 
 </style>
@@ -400,20 +400,69 @@ document.addEventListener('DOMContentLoaded', () => {
     teamB.forEach(p => { const li = document.createElement("li"); li.textContent = `${p.name} (${p.position})`; ulB.appendChild(li); });
     box.style.display = "block";
   }
+  // Coordenadas base de las líneas (y) y número máximo de posiciones por línea
+const fieldLines = [
+    { y: 60, slots: 1 },   // Delantero (arriba) - 1 posición centrada
+    { y: 160, slots: 4 },  // Medios - 4 posiciones: centro + 2 izquierda + 2 derecha
+    { y: 320, slots: 2 },  // Defensas - 2 posiciones
+    { y: 480, slots: 1 }   // Portero (abajo) - 1 posición centrada
+];
+  // Función para calcular X de cada slot en la línea
+ function getLinePositions(line, containerWidth) {
+     const positions = [];
+     const midX = containerWidth / 2;
+
+     if (line.slots === 1) {
+         positions.push({ x: midX });
+     } else if (line.slots === 2) {
+         const spacing = 80; // distancia desde el centro
+         positions.push({ x: midX - spacing });
+         positions.push({ x: midX + spacing });
+     } else if (line.slots === 4) {
+         const spacing = 60; // distancia desde centro
+         positions.push({ x: midX });          // centro
+         positions.push({ x: midX - spacing }); // izquierda 1
+         positions.push({ x: midX - 2*spacing }); // izquierda 2
+         positions.push({ x: midX + spacing }); // derecha 1
+         positions.push({ x: midX + 2*spacing }); // derecha 2
+     }
+
+     return positions.map(pos => ({ x: pos.x, y: line.y }));
+ }
 
   function placePlayersOnField(teamA, teamB) {
     const fieldA = document.getElementById("fieldA");
     const fieldB = document.getElementById("fieldB");
 
-    const basePositions = [
-        { x: 140, y: 480 }, // Portero
-        { x: 40,  y: 360 }, // Defensa izq
-        { x: 140, y: 330 }, // Defensa centro
-        { x: 240, y: 360 }, // Defensa der
-        { x: 80,  y: 200 }, // Medio izq
-        { x: 200, y: 200 }, // Medio der
-        { x: 140, y: 80 }   // Delantero
+    function getSlotsY(containerHeight) {
+    return [
+        { y: 60, slots: 5 },    // Delanteros
+        { y: 160, slots: 5 },   // Medios
+        { y: 360, slots: 5 },   // Defensas
+        { y: 480, slots: 1 }    // Portero
     ];
+}
+
+function getSlotPositions(line, containerWidth) {
+    const positions = [];
+    const midX = containerWidth / 2;
+    const spacing = 50; // distancia horizontal entre slots
+
+    if (line.slots === 1) {
+        positions.push({ x: midX });
+    } else if (line.slots === 2) {
+        positions.push({ x: midX - spacing });
+        positions.push({ x: midX + spacing });
+    } else if (line.slots === 5) {
+        positions.push({ x: midX });                // centro
+        positions.push({ x: midX - spacing });     // izquierda 1
+        positions.push({ x: midX - 2*spacing });   // izquierda 2
+        positions.push({ x: midX + spacing });     // derecha 1
+        positions.push({ x: midX + 2*spacing });   // derecha 2
+    }
+    return positions.map(pos => ({ x: pos.x, y: line.y }));
+}
+
 
 // solo eliminar los jugadores
 fieldA.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
@@ -447,17 +496,23 @@ fieldB.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
         container.appendChild(wrapper);
     }
 
-    // TEAM A – Negro
-    teamA.forEach((player, i) => {
-        const spot = basePositions[i % basePositions.length];
-        createPlayerEl(player, "negra", spot, fieldA);
-    });
+   function placeTeamOnField(team, color, field) {
+    const lines = getSlotsY(field.clientHeight);
+    let playerIndex = 0;
 
-    // TEAM B – Blanco
-    teamB.forEach((player, i) => {
-        const spot = basePositions[i % basePositions.length];
-        createPlayerEl(player, "blanca", spot, fieldB);
+    lines.forEach(line => {
+        const slots = getSlotPositions(line, field.clientWidth);
+        slots.forEach(slot => {
+            if (playerIndex >= team.length) return;
+            createPlayerEl(team[playerIndex], color, slot, field);
+            playerIndex++;
+        });
     });
+}
+
+placeTeamOnField(teamA, "negra", fieldA);
+placeTeamOnField(teamB, "blanca", fieldB);
+
 
     document.getElementById("fieldBox").style.display = "block";
 }
@@ -480,7 +535,7 @@ setupFieldLines(document.getElementById("fieldB"));
     let offsetX, offsetY;
     let isDragging = false;
 
-    const snapSize = 40; // tamaño del snap (puedes ajustar)
+    const snapSize = 20; // tamaño del snap (puedes ajustar)
 
     const startDrag = (clientX, clientY) => {
         const rect = el.getBoundingClientRect();

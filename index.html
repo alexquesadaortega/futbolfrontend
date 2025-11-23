@@ -42,7 +42,7 @@
   margin: 0 auto;
 }
 
-/* Línea central */
+/* Línea central horizontal */
 .football-field::before {
   content: '';
   position: absolute;
@@ -53,6 +53,7 @@
   background: #fff;
   transform: translateY(-50%);
 }
+
 
 /* Círculo central */
 .football-field::after {
@@ -67,27 +68,28 @@
   transform: translate(-50%, -50%);
 }
 
-/* Área portero izquierda */
-.football-field .goal-area-left {
+/* Área portero superior */
+.football-field .goal-area-top {
   position: absolute;
-  left: 0;
-  top: 180px;
-  width: 70px;
-  height: 190px;
+  top: 0;
+  left: 90px;       /* centrar horizontalmente según ancho del campo */
+  width: 170px;      /* ancho del área */
+  height: 70px;      /* alto del área */
   border: 2px solid #fff;
-  border-left: none;
+  border-top: none;
 }
 
-/* Área portero derecha */
-.football-field .goal-area-right {
+/* Área portero inferior */
+.football-field .goal-area-bottom {
   position: absolute;
-  right: 0;
-  top: 180px;
-  width: 70px;
-  height: 190px;
+  bottom: 0;
+  left: 90px;
+  width: 170px;
+  height: 70px;
   border: 2px solid #fff;
-  border-right: none;
+  border-bottom: none;
 }
+
 
 </style>
 
@@ -460,13 +462,13 @@ fieldB.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
     document.getElementById("fieldBox").style.display = "block";
 }
   function setupFieldLines(field) {
-    const leftArea = document.createElement("div");
-    leftArea.className = "goal-area-left";
-    field.appendChild(leftArea);
+  const topArea = document.createElement("div");
+  topArea.className = "goal-area-top";
+  field.appendChild(topArea);
 
-    const rightArea = document.createElement("div");
-    rightArea.className = "goal-area-right";
-    field.appendChild(rightArea);
+  const bottomArea = document.createElement("div");
+  bottomArea.className = "goal-area-bottom";
+  field.appendChild(bottomArea);
 }
 
 // Llamadas para ambos campos
@@ -475,59 +477,55 @@ setupFieldLines(document.getElementById("fieldB"));
 
 
   function makeDraggableWithSnap(el, container) {
-    el.onmousedown = function(e) {
-        e.preventDefault();
-        el.style.zIndex = 9999;
+  el.onmousedown = function(e) {
+    e.preventDefault();
+    el.style.zIndex = 9999;
 
-        const rect = container.getBoundingClientRect();
-        const offsetX = e.clientX - el.getBoundingClientRect().left;
-        const offsetY = e.clientY - el.getBoundingClientRect().top;
+    const rect = container.getBoundingClientRect();
+    const offsetX = e.clientX - el.getBoundingClientRect().left;
+    const offsetY = e.clientY - el.getBoundingClientRect().top;
 
-        function moveAt(pageX, pageY) {
-          let newX = pageX - rect.left - offsetX;
-          let newY = pageY - rect.top - offsetY;
+    function moveAt(pageX, pageY) {
+      let newX = pageX - rect.left - offsetX;
+      let newY = pageY - rect.top - offsetY;
 
-          // Limitar dentro del contenedor
-          newX = Math.max(0, Math.min(newX, container.clientWidth - el.offsetWidth));
-          newY = Math.max(0, Math.min(newY, container.clientHeight - el.offsetHeight));
+      // Limitar dentro del contenedor
+      newX = Math.max(0, Math.min(newX, container.clientWidth - el.offsetWidth));
+      newY = Math.max(0, Math.min(newY, container.clientHeight - el.offsetHeight));
 
-         // Snap durante arrastre
-         const snapSize = 40;
-         newX = Math.round(newX / snapSize) * snapSize;
-         newY = Math.round(newY / snapSize) * snapSize;
-
-         el.style.left = newX + "px";
-         el.style.top = newY + "px";
+      el.style.left = newX + "px";
+      el.style.top = newY + "px";
     }
 
+    function onMouseMove(e) {
+      moveAt(e.clientX, e.clientY);
+    }
 
-        function onMouseMove(e) {
-            moveAt(e.pageX, e.pageY);
-        }
+    document.addEventListener("mousemove", onMouseMove);
 
-        document.addEventListener("mousemove", onMouseMove);
+    document.onmouseup = function() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.onmouseup = null;
 
-        el.onmouseup = function() {
-            document.removeEventListener("mousemove", onMouseMove);
-            el.onmouseup = null;
+      // Snap a cuadrícula SOLO AL SOLTAR
+      const snapSize = 40;
+      let left = parseInt(el.style.left);
+      let top = parseInt(el.style.top);
+      left = Math.round(left / snapSize) * snapSize;
+      top = Math.round(top / snapSize) * snapSize;
 
-            // Snap a cuadrícula
-            const snapSize = 40;
-            let left = parseInt(el.style.left);
-            let top = parseInt(el.style.top);
-            left = Math.round(left / snapSize) * snapSize;
-            top = Math.round(top / snapSize) * snapSize;
+      // Limitar nuevamente al contenedor
+      left = Math.max(0, Math.min(left, container.clientWidth - el.offsetWidth));
+      top = Math.max(0, Math.min(top, container.clientHeight - el.offsetHeight));
 
-            // Limitar nuevamente al contenedor
-            left = Math.max(0, Math.min(left, container.clientWidth - el.offsetWidth));
-            top = Math.max(0, Math.min(top, container.clientHeight - el.offsetHeight));
-
-            el.style.left = left + "px";
-            el.style.top = top + "px";
-        };
+      el.style.left = left + "px";
+      el.style.top = top + "px";
     };
-    el.ondragstart = () => false;
+  };
+
+  el.ondragstart = () => false;
 }
+
 
 });
 </script>

@@ -68,6 +68,20 @@
   <button id="btnGenerateTeams" class="primary" style="margin:10px 0;">Generar equipos balanceados</button>
 
   <div id="teamsResult" style="margin-top:15px;"></div>
+  <div id="selectedLineup" class="box" style="margin-top:20px; display:none;">
+   <h2>Alineación seleccionada</h2>
+   <div style="display:flex;gap:20px;">
+     <div style="flex:1">
+       <h3>Negro</h3>
+       <ul id="selectedA"></ul>
+     </div>
+     <div style="flex:1">
+       <h3>Blanco</h3>
+       <ul id="selectedB"></ul>
+     </div>
+   </div>
+ </div>
+
 
   <div style="display:flex;gap:20px;margin-top:12px">
     <div style="flex:1">
@@ -300,7 +314,14 @@ async function onGenerateTeamsClicked() {
        flex.style.display = 'flex';
        flex.style.gap = '20px';
 
-       const createTeamList = (team, title) => {
+       const btnSelect = document.createElement('button');
+      btnSelect.textContent = "Seleccionar esta opción";
+      btnSelect.style.marginTop = "10px";
+      btnSelect.addEventListener("click", () => {
+          showSelectedLineup(t.teamA, t.teamB);
+      });
+      div.appendChild(btnSelect);
+      const createTeamList = (team, title) => {
            const container = document.createElement('div');
            container.style.flex = '1';
            const h3 = document.createElement('h5');
@@ -328,6 +349,29 @@ async function onGenerateTeamsClicked() {
        teamsResultEl.appendChild(div);
    });
 }
+  function showSelectedLineup(teamA, teamB) {
+    const box = document.getElementById("selectedLineup");
+    const ulA = document.getElementById("selectedA");
+    const ulB = document.getElementById("selectedB");
+
+    ulA.innerHTML = "";
+    ulB.innerHTML = "";
+
+    teamA.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = `${p.name} (${p.position})`;
+        ulA.appendChild(li);
+    });
+
+    teamB.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = `${p.name} (${p.position})`;
+        ulB.appendChild(li);
+    });
+
+    box.style.display = "block";
+}
+
 
 
   window._supabase = supabase;

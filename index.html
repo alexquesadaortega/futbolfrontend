@@ -33,7 +33,7 @@
     background-image: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
     color: var(--text-main);
     margin: 0; 
-    padding: 20px 15px 120px 15px; /* Espacio extra abajo para scroll */
+    padding: 20px 15px 120px 15px;
     min-height: 100vh;
   }
   
@@ -155,7 +155,7 @@
     position: absolute; width: 42px; height: 42px; border-radius: 50%; 
     display: flex; align-items: center; justify-content: center;
     font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 800; 
-    cursor: grab; z-index: 10; touch-action: none; /* Vital para arrastrar en móvil */
+    cursor: grab; z-index: 10; touch-action: none; 
     box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.3);
     transition: transform 0.1s;
   }
@@ -173,6 +173,7 @@
   .hidden { display: none !important; }
   .error-msg { background: rgba(239,68,68,0.2); color: #fca5a5; padding: 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.4); margin-top: 10px; display: none; text-align: center; }
   .sticky-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+  .btn-group { display: flex; gap: 8px; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
@@ -211,7 +212,10 @@
   <div class="box">
     <div class="sticky-header">
         <h3 style="margin:0; color:var(--primary);">Convocatoria <span id="playerCount" style="color:var(--text-muted); font-size:0.9rem;"></span></h3>
-        <button id="btnSelectAll" class="outline">Marcar Todos</button>
+        <div class="btn-group">
+            <button id="btnSelectAll" class="outline" style="border-color:var(--accent); color:var(--accent);">Marcar Todos</button>
+            <button id="btnDeselectAll" class="outline" style="border-color:#f1f5f9; color:#f1f5f9;">Desmarcar Todos</button> 
+        </div>
     </div>
     <div id="playersList"></div>
   </div>
@@ -258,7 +262,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // --- CONFIG ---
   const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZayholflhqoyflbvuusaIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
   
   let supabase;
   try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Error Supabase", e); }
@@ -273,17 +277,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const playersListEl = document.getElementById('playersList');
   const generateError = document.getElementById('generateError');
   const btnShare = document.getElementById('btnShareWhatsapp');
-
+  
   // --- EVENTOS ---
   document.getElementById('btnRegister').addEventListener('click', () => handleAuth('signup'));
   document.getElementById('btnLogin').addEventListener('click', () => handleAuth('signin'));
   document.getElementById('btnAddPlayer').addEventListener('click', addPlayer);
   document.getElementById('btnGenerateTeams').addEventListener('click', generateTeamOptions);
-  document.getElementById('btnSelectAll').addEventListener('click', () => {
-    document.querySelectorAll('.p-select').forEach(c => c.checked = true);
-  });
+  document.getElementById('btnSelectAll').addEventListener('click', selectAllPlayers);
+  document.getElementById('btnDeselectAll').addEventListener('click', deselectAllPlayers); // NUEVO LISTENER
   btnShare.addEventListener('click', shareFieldsImage);
 
+  // --- FUNCIONES UTILIDAD ---
+  function selectAllPlayers() { document.querySelectorAll('.p-select').forEach(c => c.checked = true); }
+  function deselectAllPlayers() { document.querySelectorAll('.p-select').forEach(c => c.checked = false); } // NUEVA FUNCIÓN
+  
   // --- AUTH ---
   async function handleAuth(type) {
     const email = document.getElementById('authEmail').value.trim();
@@ -307,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function showMsg(txt) { authMsg.textContent = txt; }
   async function initApp() { authBox.style.display = 'none'; appContent.classList.remove('hidden'); await loadPlayers(); }
 
-  // --- JUGADORES ---
+  // --- JUGADORES (SIN CAMBIOS) ---
   async function loadPlayers() {
     if (!currentUser) return;
     const { data } = await supabase.from('players').select('*').eq('user_id', currentUser.id);
@@ -327,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!name || !rating) return alert('Datos incompletos');
     
     const newPlayer = { user_id: currentUser.id, name, position, rating, num_id: Date.now() };
-    allPlayers.push(newPlayer); // Optimistic update
+    allPlayers.push(newPlayer); 
     renderList();
     nameIn.value = ''; skillIn.value = '';
 
@@ -357,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- LÓGICA ESTRICTA (1 GK, 3 DEF, 1 FWD OBLIGATORIOS) ---
+  // --- LÓGICA ESTRICTA (SIN CAMBIOS) ---
   function generateTeamOptions() {
     generateError.style.display = 'none';
     const checks = document.querySelectorAll('.p-select:checked');
@@ -375,7 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let variations = [];
     const seenHashes = new Set(); 
 
-    // Generar 500 intentos y quedarse con los mejores
     for(let i=0; i<500; i++) { 
         const attempt = createStrictMatch(pool);
         if(!attempt) continue;
@@ -389,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
         variations.push(attempt);
     }
 
-    variations.sort((a, b) => a.diff - b.diff); // Ordenar por equilibrio
+    variations.sort((a, b) => a.diff - b.diff); 
     const top3 = variations.slice(0, 3);
     
     if (top3.length === 0) { showError("Error generando combinaciones."); return; }
@@ -406,12 +412,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const teamA = []; const teamB = [];
 
     // 1. REPARTO OBLIGATORIO (ESQUELETO)
-    teamA.push(gks.pop()); teamB.push(gks.pop());          // 1 GK
-    for(let k=0;k<3;k++) { teamA.push(defs.pop()); teamB.push(defs.pop()); } // 3 DEF
-    teamA.push(fwds.pop()); teamB.push(fwds.pop());        // 1 FWD
+    teamA.push(gks.pop()); teamB.push(gks.pop());         
+    for(let k=0;k<3;k++) { teamA.push(defs.pop()); teamB.push(defs.pop()); } 
+    teamA.push(fwds.pop()); teamB.push(fwds.pop());       
 
-    // 2. RELLENO (LO QUE SOBRA SE REPARTE AL AZAR)
-    let leftovers = [...gks, ...defs, ...fwds]; // Juntar sobrantes
+    // 2. RELLENO 
+    let leftovers = [...gks, ...defs, ...fwds]; 
     leftovers = shuffle(leftovers);
 
     while(leftovers.length > 0) {
@@ -458,10 +464,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return [...t].sort((a,b)=>order[a.position]-order[b.position]).map(p=>`<li><span>${p.name}</span><span style="font-size:0.7rem;opacity:0.7;">${p.position.substring(0,3).toUpperCase()}</span></li>`).join('');
   }
 
-  // --- PIZARRA & ARRASTRAR ---
+  // --- PIZARRA TÁCTICA (COLOCACIÓN MEJORADA) ---
   function drawField(team, div, colorClass) {
     div.querySelectorAll('.player-token').forEach(e => e.remove());
-    // Coordenadas fijas para los OBLIGATORIOS (1 GK, 3 DEF, 1 FWD)
+    // Coordenadas fijas OBLIGATORIAS (Esqueleto 1-3-1)
     const coords = {
         portero:   [{x:140, y:400}],
         defensa:   [{x:50, y:300}, {x:140, y:300}, {x:230, y:300}], 
@@ -470,16 +476,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const slots = JSON.parse(JSON.stringify(coords));
 
     team.forEach(p => {
-        let pos = {x: 140, y: 200}; // Posición por defecto (centro) para los "rellenos"
+        let pos = null;
         
-        // Si es parte del esqueleto obligatorio y hay hueco, lo usa
+        // 1. Intentar usar un slot fijo obligatorio
         if (slots[p.position] && slots[p.position].length > 0) {
             pos = slots[p.position].shift();
-        } else {
-            // Si es relleno, aleatorio en medio campo
-            pos.x = 60 + Math.random() * 200;
-            pos.y = 180 + Math.random() * 60;
+        } 
+        
+        // 2. Si no hay slot fijo (es un jugador extra), ubicar en zona lógica
+        if (!pos) {
+            pos = {x: 0, y: 0};
+            pos.x = 60 + Math.random() * 200; // Posición horizontal aleatoria
+            
+            if (p.position === 'portero') pos.y = 380 + Math.random() * 20; // Cerca de la portería
+            else if (p.position === 'defensa') pos.y = 250 + Math.random() * 50; // Línea de medio campo defensiva
+            else if (p.position === 'delantero') pos.y = 130 + Math.random() * 50; // LÍNEA DE ATAQUE AVANZADA (CORREGIDO)
+            else pos.y = 200 + Math.random() * 50; // Centro campo general
         }
+        
         createToken(p, div, colorClass, pos.x, pos.y);
     });
   }
@@ -492,13 +506,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const l = document.createElement('div'); l.className='player-label'; l.textContent=p.name;
     el.appendChild(l);
     
-    // Listeners Touch/Mouse unificados
     el.addEventListener('mousedown', startDrag);
     el.addEventListener('touchstart', startDrag, {passive: false});
     div.appendChild(el);
   }
 
-  // Lógica Drag & Drop Móvil
+  // Lógica Drag & Drop (SIN CAMBIOS)
   let activeItem = null; let activeContainer = null;
   let initialX, initialY, xOffset = 0, yOffset = 0;
 
@@ -514,13 +527,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const offsetY = evt.clientY - rect.top;
     
     const moveHandler = (moveEvent) => {
-        moveEvent.preventDefault(); // Evita scroll
+        moveEvent.preventDefault(); 
         const mv = moveEvent.type === 'touchmove' ? moveEvent.touches[0] : moveEvent;
         
         let newLeft = mv.clientX - parentRect.left - offsetX;
         let newTop = mv.clientY - parentRect.top - offsetY;
         
-        // Límites del campo (320x460 - 42 tamaño ficha)
         newLeft = Math.max(0, Math.min(newLeft, 320 - 42)); 
         newTop = Math.max(0, Math.min(newTop, 460 - 42));
         

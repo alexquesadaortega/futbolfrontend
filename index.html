@@ -477,25 +477,61 @@ setupFieldLines(document.getElementById("fieldB"));
 
 
   function makeDraggableWithSnap(el, container) {
-  el.onmousedown = function(e) {
-    e.preventDefault();
-    el.style.zIndex = 9999;
+    let offsetX, offsetY;
+    let isDragging = false;
 
-    const rect = container.getBoundingClientRect();
-    const offsetX = e.clientX - el.getBoundingClientRect().left;
-    const offsetY = e.clientY - el.getBoundingClientRect().top;
+    const snapSize = 40; // tamaño del snap (puedes ajustar)
 
-    function moveAt(pageX, pageY) {
-      let newX = pageX - rect.left - offsetX;
-      let newY = pageY - rect.top - offsetY;
+    const startDrag = (clientX, clientY) => {
+        const rect = el.getBoundingClientRect();
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+        isDragging = true;
+        el.style.zIndex = 9999;
+    };
 
-      // Limitar dentro del contenedor
-      newX = Math.max(0, Math.min(newX, container.clientWidth - el.offsetWidth));
-      newY = Math.max(0, Math.min(newY, container.clientHeight - el.offsetHeight));
+    const drag = (clientX, clientY) => {
+        if (!isDragging) return;
+        const rect = container.getBoundingClientRect();
+        let newX = clientX - rect.left - offsetX;
+        let newY = clientY - rect.top - offsetY;
 
-      el.style.left = newX + "px";
-      el.style.top = newY + "px";
-    }
+        // Limitar dentro del contenedor
+        newX = Math.max(0, Math.min(newX, container.clientWidth - el.offsetWidth));
+        newY = Math.max(0, Math.min(newY, container.clientHeight - el.offsetHeight));
+
+        // Snap suave: redondear a la cuadrícula
+        newX = Math.round(newX / snapSize) * snapSize;
+        newY = Math.round(newY / snapSize) * snapSize;
+
+        el.style.left = newX + "px";
+        el.style.top = newY + "px";
+    };
+
+    const stopDrag = () => {
+        isDragging = false;
+    };
+
+    // Eventos PC
+    el.addEventListener("mousedown", e => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
+    document.addEventListener("mousemove", e => drag(e.clientX, e.clientY));
+    document.addEventListener("mouseup", stopDrag);
+
+    // Eventos Touch (móvil)
+    el.addEventListener("touchstart", e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        startDrag(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    document.addEventListener("touchmove", e => {
+        const touch = e.touches[0];
+        drag(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    document.addEventListener("touchend", stopDrag);
+}
+
 
     function onMouseMove(e) {
       moveAt(e.clientX, e.clientY);

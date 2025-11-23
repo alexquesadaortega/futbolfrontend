@@ -430,6 +430,16 @@ const fieldLines = [
      return positions.map(pos => ({ x: pos.x, y: line.y }));
  }
 
+  function getSlotsYPorPosicion(position) {
+    switch(position) {
+        case 'portero': return [{ y: 480, slots: 1 }];
+        case 'defensa': return [{ y: 320, slots: 3 }];
+        case 'medio': return [{ y: 160, slots: 2 }];
+        case 'delantero': return [{ y: 60, slots: 1 }];
+        default: return [{ y: 100, slots: 1 }];
+    }
+}
+
   function placePlayersOnField(teamA, teamB) {
     const fieldA = document.getElementById("fieldA");
     const fieldB = document.getElementById("fieldB");
@@ -461,6 +471,7 @@ function getSlotPositions(line, containerWidth) {
     }
     return positions;
 }
+
 
 
 
@@ -497,18 +508,34 @@ fieldB.querySelectorAll(".player-dot-wrapper")?.forEach(el => el.remove());
     }
 
    function placeTeamOnField(team, color, field) {
-    const lines = getSlotsY(field.clientHeight);
-    let playerIndex = 0;
+    const grouped = {
+        portero: [],
+        defensa: [],
+        medio: [],
+        delantero: []
+    };
 
-    lines.forEach(line => {
-        const slots = getSlotPositions(line, field.clientWidth);
-        for (let i = 0; i < slots.length; i++) {
-            if (playerIndex >= team.length) return;
-            createPlayerEl(team[playerIndex], color, slots[i], field);
-            playerIndex++;
-        }
+    team.forEach(p => {
+        if (grouped[p.position]) grouped[p.position].push(p);
+    });
+
+    Object.keys(grouped).forEach(pos => {
+        const players = grouped[pos];
+        if (players.length === 0) return;
+
+        const lines = getSlotsYPorPosicion(pos);
+        let playerIndex = 0;
+        lines.forEach(line => {
+            const slots = getSlotPositions(line, field.clientWidth);
+            for (let i = 0; i < slots.length; i++) {
+                if (playerIndex >= players.length) return;
+                createPlayerEl(players[playerIndex], color, slots[i], field);
+                playerIndex++;
+            }
+        });
     });
 }
+
 
 
 placeTeamOnField(teamA, "negra", fieldA);

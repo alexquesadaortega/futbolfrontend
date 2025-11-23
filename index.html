@@ -424,23 +424,24 @@ async function onGenerateTeamsClicked() {
   window._localPlayers = localPlayers;
   window._remotePlayers = remotePlayers;
 });
+<script>
 function placePlayersOnField(teamA, teamB) {
-
-    const fieldA = document.getElementById("fieldA");
-    const fieldB = document.getElementById("fieldB");
-
-    fieldA.innerHTML = "";
-    fieldB.innerHTML = "";
+    const fieldA = document.getElementById("footballFieldA");
+    const fieldB = document.getElementById("footballFieldB");
 
     const basePositions = [
-        { x: 140, y: 480 },
-        { x: 40,  y: 360 },
-        { x: 140, y: 330 },
-        { x: 240, y: 360 },
-        { x: 80,  y: 200 },
-        { x: 200, y: 200 },
-        { x: 140, y: 80 }
+        { x: 140, y: 480 }, // Portero
+        { x: 40,  y: 360 }, // Defensa izq
+        { x: 140, y: 330 }, // Defensa centro
+        { x: 240, y: 360 }, // Defensa der
+        { x: 80,  y: 200 }, // Medio izq
+        { x: 200, y: 200 }, // Medio der
+        { x: 140, y: 80 }   // Delantero
     ];
+
+    // Limpiar campos antes de colocar jugadores
+    fieldA.innerHTML = "";
+    fieldB.innerHTML = "";
 
     // TEAM A – Negro
     teamA.forEach((player, i) => {
@@ -489,8 +490,20 @@ function makeDraggable(el) {
         function onMouseMove(e) {
             moveAt(e.pageX, e.pageY);
         }
-      function makeDraggableWithSnap(el, container) {
 
+        document.addEventListener("mousemove", onMouseMove);
+
+        el.onmouseup = function () {
+            document.removeEventListener("mousemove", onMouseMove);
+            el.onmouseup = null;
+        };
+    };
+
+    el.ondragstart = () => false;
+}
+
+// Drag & Drop con SNAP
+function makeDraggableWithSnap(el, container) {
     el.onmousedown = function (e) {
         el.style.zIndex = 9999;
 
@@ -525,8 +538,6 @@ function makeDraggable(el) {
 
     el.ondragstart = () => false;
 }
-
-
 </script>
 
 </body>

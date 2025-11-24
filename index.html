@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderList();
   }
 
-  // Corregido: Esperamos a que Supabase confirme la inserción antes de actualizar la lista local.
+  // AÑADIR JUGADOR (Versión revisada)
   async function addPlayer() { 
     const nameIn = document.getElementById('playerName');
     const skillIn = document.getElementById('playerSkill');
@@ -367,22 +367,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ELIMINAR JUGADOR (Corregido para asegurar el tipo de dato del ID en el filtro)
   async function deletePlayer(playerId) {
+      if (!playerId) {
+          console.error("Error de eliminación: ID de jugador no válido.");
+          return;
+      }
+
       if (!confirm("¿Estás seguro de que quieres eliminar este jugador de la plantilla?")) {
           return;
       }
 
-      // 1. Eliminar de la base de datos (Usamos el ID real de Supabase)
-      const { error } = await supabase.from('players').delete().eq('id', playerId);
+      // 1. Eliminar de la base de datos: Usamos String(playerId) para garantizar la compatibilidad del filtro
+      const { error } = await supabase.from('players').delete().eq('id', String(playerId));
 
       if (error) {
           console.error("Error al eliminar en Supabase:", error);
-          alert('Error al eliminar el jugador. Inténtalo de nuevo.');
+          alert('Error al eliminar el jugador. Inténtalo de nuevo. Mensaje: ' + error.message);
           return;
       }
 
       // 2. Eliminar de la lista local
-      allPlayers = allPlayers.filter(p => p.id !== playerId);
+      const numericId = parseInt(playerId);
+      allPlayers = allPlayers.filter(p => p.id !== numericId);
 
       // 3. Refrescar la interfaz
       renderList();
@@ -394,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const order = { portero: 1, defensa: 2, delantero: 3 };
     
     [...allPlayers].sort((a,b) => order[a.position] - order[b.position] || b.rating - a.rating).forEach(p => {
-      // Usamos p.id para la eliminación. Si p.id es NULL, el jugador aún no se sincronizó.
+      // Usamos p.id, que ahora está garantizado que es el ID de Supabase si la adición fue exitosa
       const playerId = p.id; 
       const isDisabled = !playerId;
       
@@ -420,17 +427,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Añadir event listeners a los nuevos botones
     document.querySelectorAll('.delete-btn').forEach(button => {
-        // Solo añadimos el listener si el botón no está deshabilitado
         if (!button.disabled) {
             button.addEventListener('click', (e) => {
-                const idToDelete = parseInt(e.currentTarget.dataset.id);
+                // Obtenemos el ID como string directamente del atributo data-id
+                const idToDelete = e.currentTarget.dataset.id;
                 if (idToDelete) deletePlayer(idToDelete);
             });
         }
     });
   }
 
-  // --- GENERACIÓN DE EQUIPOS (Mantenidas) ---
+  // --- GENERACIÓN DE EQUIPOS ---
   function generateTeamOptions() { 
     generateError.style.display = 'none';
     const checks = document.querySelectorAll('.p-select:checked');

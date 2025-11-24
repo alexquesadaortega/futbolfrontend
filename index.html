@@ -271,8 +271,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   // --- CONFIG (TUS CLAVES DE SUPABASE) ---
-  const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheWhvbGZsaHFveWZsYnZ1dXNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA' ;
+  const SUPABASE_URL = 'https://vayholflhqoyflbvuusa.supabase.co'; 
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZayholflhqoyflbvuusaIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzc5NjcsImV4cCI6MjA3ODY1Mzk2N30.QxD4_XbYlQarPRUcmoQQclw8cCnnzRiHZcYzSsUXGDA';
+  
   let supabase;
   try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { console.error("Error Supabase", e); }
 
@@ -343,13 +344,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!name || !rating) return alert('Datos incompletos');
     
-    const newPlayer = { user_id: currentUser.id, name, position, rating, num_id: Date.now() };
+    // Usamos num_id para evitar conflictos mientras se sincroniza con Supabase
+    const tempId = 'temp-' + Date.now();
+    const newPlayer = { user_id: currentUser.id, name, position, rating, num_id: tempId };
     allPlayers.push(newPlayer); 
     renderList();
     nameIn.value = ''; skillIn.value = '';
 
     const { data } = await supabase.from('players').insert([newPlayer]).select();
-    if(data && data.length) allPlayers[allPlayers.length-1] = data[0];
+    // Reemplaza el objeto temporal con el objeto real de Supabase si tiene éxito
+    if(data && data.length) {
+        const index = allPlayers.findIndex(p => p.num_id === tempId);
+        if (index !== -1) allPlayers[index] = data[0];
+    }
+  }
+
+  async function deletePlayer(playerId) {
+      if (!confirm("¿Estás seguro de que quieres eliminar este jugador de la plantilla?")) {
+          return;
+      }
+
+      // 1. Eliminar de la base de datos (Usamos el ID real si existe)
+      const { error } = await supabase.from('players').delete().eq('id', playerId);
+
+      if (error) {
+          console.error("Error al eliminar en Supabase:", error);
+          alert('Error al eliminar el jugador. Inténtalo de nuevo.');
+          return;
+      }
+
+      // 2. Eliminar de la lista local
+      allPlayers = allPlayers.filter(p => p.id !== playerId);
+
+      // 3. Refrescar la interfaz
+      renderList();
   }
 
   function renderList() { 
@@ -358,6 +386,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const order = { portero: 1, defensa: 2, delantero: 3 };
     
     [...allPlayers].sort((a,b) => order[a.position] - order[b.position] || b.rating - a.rating).forEach(p => {
+      // Usamos p.id para la eliminación (es el ID real de Supabase)
+      const playerId = p.id; 
+      
       const div = document.createElement('div');
       div.className = 'player-row';
       div.innerHTML = `
@@ -368,9 +399,23 @@ document.addEventListener('DOMContentLoaded', () => {
              <span class="tag ${p.position}">${p.position}</span>
           </div>
         </div>
-        <div class="rating-badge">${p.rating}</div>
+        <div style="display:flex; align-items:center; gap: 10px;">
+            <div class="rating-badge">${p.rating}</div>
+            <button class="outline delete-btn" data-id="${playerId}" style="border-color:#ef4444; color:#ef4444; padding: 4px 8px; font-size:0.7rem; width: auto; margin:0;">
+                🗑️
+            </button>
+        </div>
       `;
       playersListEl.appendChild(div);
+    });
+
+    // Añadir event listeners a los nuevos botones
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            // Asegúrate de que el ID es un número antes de intentar eliminar
+            const idToDelete = parseInt(e.currentTarget.dataset.id);
+            if (idToDelete) deletePlayer(idToDelete);
+        });
     });
   }
 
@@ -379,7 +424,8 @@ document.addEventListener('DOMContentLoaded', () => {
     generateError.style.display = 'none';
     const checks = document.querySelectorAll('.p-select:checked');
     const selectedIds = Array.from(checks).map(c => c.value);
-    const pool = allPlayers.filter(p => selectedIds.includes(String(p.num_id)) || selectedIds.includes(String(p.id)));
+    // Ahora filtramos por ID de Supabase si existe, si no, usamos num_id temporal
+    const pool = allPlayers.filter(p => selectedIds.includes(String(p.id)) || selectedIds.includes(String(p.num_id)));
 
     if (pool.length < 14) { showError('Selecciona al menos 14 jugadores para 7vs7.'); return; }
     
@@ -395,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const attempt = createStrictMatch(pool);
         if(!attempt) continue;
         
+        // Usamos el ID de Supabase para generar el hash si está disponible
         const idsA = attempt.teamA.map(p => p.id||p.num_id).sort().join('-');
         const idsB = attempt.teamB.map(p => p.id||p.num_id).sort().join('-');
         const hash = [idsA, idsB].sort().join('::');
